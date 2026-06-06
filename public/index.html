@@ -4,13 +4,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>JA Travel & Experiences | Travel Planning, Activities & Support</title>
-  <meta name="description" content="JA Travel & Experiences helps travellers plan trips, discover activities, understand transport options, explore accommodation ideas and access travel support from JA Group Services Ltd.">
+  <title>JA Travel & Experiences | Coming Soon</title>
+  <meta name="description" content="JA Travel & Experiences is currently being developed by JA Group Services Ltd as a travel discovery, planning and support platform.">
 
   <style>
     :root {
       --navy: #102a4c;
       --deep: #071f3a;
+      --royal: #1f5fd1;
       --blue: #2457c5;
       --soft-blue: #eef4ff;
       --paper: #ffffff;
@@ -19,6 +20,8 @@
       --muted: #62728a;
       --border: #dbe4f0;
       --green: #00b67a;
+      --warning: #fff7df;
+      --warning-border: #f2d48b;
       --shadow: 0 24px 70px rgba(16, 42, 76, 0.14);
       --radius: 24px;
     }
@@ -54,12 +57,12 @@
       color: #ffffff;
       text-align: center;
       font-size: 14px;
-      font-weight: 700;
+      font-weight: 800;
       padding: 10px 16px;
     }
 
     .header {
-      background: rgba(255, 255, 255, 0.94);
+      background: rgba(255, 255, 255, 0.96);
       backdrop-filter: blur(16px);
       border-bottom: 1px solid rgba(16, 42, 76, 0.08);
       position: sticky;
@@ -79,7 +82,7 @@
       display: flex;
       align-items: center;
       gap: 14px;
-      font-weight: 900;
+      font-weight: 950;
       letter-spacing: -0.02em;
       color: var(--navy);
     }
@@ -87,7 +90,7 @@
     .brand-mark {
       width: 52px;
       height: 52px;
-      border-radius: 12px;
+      border-radius: 10px;
       background: linear-gradient(135deg, #1877ff, #003c92);
       color: #ffffff;
       display: grid;
@@ -109,9 +112,9 @@
     .links {
       display: flex;
       align-items: center;
-      gap: 26px;
+      gap: 24px;
       font-size: 15px;
-      font-weight: 700;
+      font-weight: 750;
       color: var(--navy);
     }
 
@@ -147,8 +150,8 @@
       position: relative;
       overflow: hidden;
       background:
-        linear-gradient(90deg, rgba(7, 31, 58, 0.94), rgba(7, 31, 58, 0.66), rgba(7, 31, 58, 0.25)),
-        radial-gradient(circle at 80% 20%, rgba(36, 87, 197, 0.45), transparent 34%),
+        linear-gradient(90deg, rgba(7, 31, 58, 0.96), rgba(7, 31, 58, 0.78), rgba(7, 31, 58, 0.48)),
+        radial-gradient(circle at 78% 18%, rgba(36, 87, 197, 0.45), transparent 34%),
         linear-gradient(135deg, #102a4c, #1e4d91);
       color: #ffffff;
       padding: 92px 0 84px;
@@ -156,7 +159,7 @@
 
     .hero-grid {
       display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
+      grid-template-columns: 1.08fr 0.92fr;
       gap: 44px;
       align-items: center;
     }
@@ -170,14 +173,14 @@
       color: #ffffff;
       padding: 10px 16px;
       border-radius: 999px;
-      font-weight: 800;
+      font-weight: 850;
       font-size: 14px;
       margin-bottom: 24px;
     }
 
     h1 {
       font-family: Georgia, "Times New Roman", serif;
-      font-size: clamp(46px, 7vw, 86px);
+      font-size: clamp(44px, 7vw, 82px);
       line-height: 0.98;
       margin: 0 0 24px;
       letter-spacing: -0.06em;
@@ -185,9 +188,9 @@
 
     .hero p {
       font-size: 20px;
-      max-width: 760px;
+      max-width: 780px;
       color: rgba(255, 255, 255, 0.88);
-      margin: 0 0 30px;
+      margin: 0 0 28px;
     }
 
     .hero-actions {
@@ -221,16 +224,32 @@
     }
 
     .hero-card {
-      background: rgba(255, 255, 255, 0.96);
+      background: rgba(255, 255, 255, 0.97);
       color: var(--navy);
       border-radius: var(--radius);
-      padding: 28px;
+      padding: 30px;
       box-shadow: var(--shadow);
     }
 
     .hero-card h2 {
       margin: 0 0 12px;
       font-size: 26px;
+      letter-spacing: -0.03em;
+    }
+
+    .status-box {
+      background: var(--warning);
+      border: 1px solid var(--warning-border);
+      border-radius: 18px;
+      padding: 18px;
+      margin: 20px 0;
+      color: #4b3b11;
+    }
+
+    .status-box strong {
+      display: block;
+      margin-bottom: 6px;
+      color: #2f2508;
     }
 
     .service-list {
@@ -252,7 +271,7 @@
     }
 
     .section-title {
-      max-width: 760px;
+      max-width: 780px;
       margin-bottom: 34px;
     }
 
@@ -356,6 +375,11 @@
       color: #ffffff;
     }
 
+    .step p {
+      margin: 4px 0 0;
+      color: var(--muted);
+    }
+
     .notice {
       background: var(--soft-blue);
       border: 1px solid #cfe0ff;
@@ -368,6 +392,31 @@
     .notice strong {
       display: block;
       margin-bottom: 8px;
+    }
+
+    .launch-panel {
+      background: var(--deep);
+      color: #ffffff;
+      border-radius: 32px;
+      padding: 44px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 30px;
+      align-items: center;
+    }
+
+    .launch-panel h2 {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(30px, 4vw, 48px);
+      line-height: 1.05;
+      margin: 0 0 12px;
+      letter-spacing: -0.04em;
+    }
+
+    .launch-panel p {
+      color: rgba(255, 255, 255, 0.82);
+      margin: 0;
+      max-width: 760px;
     }
 
     .footer-main {
@@ -401,7 +450,7 @@
 
     .footer-main p {
       color: var(--muted);
-      max-width: 360px;
+      max-width: 380px;
       margin: 0;
       font-size: 16px;
     }
@@ -450,6 +499,7 @@
       color: #ffffff;
       padding: 18px 0;
       font-size: 14px;
+      margin-bottom: 76px;
     }
 
     .footer-bottom .wrap {
@@ -492,6 +542,11 @@
       line-height: 1.45;
     }
 
+    .cookie-inner a {
+      color: #ffffff;
+      text-decoration: underline;
+    }
+
     .cookie-actions {
       display: flex;
       gap: 10px;
@@ -516,7 +571,8 @@
     @media (max-width: 980px) {
       .hero-grid,
       .split,
-      .footer-grid {
+      .footer-grid,
+      .launch-panel {
         grid-template-columns: 1fr;
       }
 
@@ -588,13 +644,17 @@
       .cookie-actions button {
         flex: 1;
       }
+
+      .footer-bottom {
+        margin-bottom: 150px;
+      }
     }
   </style>
 </head>
 
 <body>
   <div class="topbar">
-    JA Travel & Experiences is currently being developed as part of JA Group Services Ltd.
+    JA Travel & Experiences is currently being prepared for launch.
   </div>
 
   <header class="header">
@@ -603,73 +663,79 @@
         <span class="brand-mark">JA</span>
         <span>
           JA Travel & Experiences
-          <small>Plan more of the journey</small>
+          <small>By JA Group Services Ltd</small>
         </span>
       </a>
 
       <button class="menu" id="menu" aria-label="Open menu">☰</button>
 
       <nav class="links" id="links">
-        <a href="/">Home</a>
-        <a href="/destinations/">Destinations</a>
-        <a href="/activities/">Activities</a>
-        <a href="/how-it-works/">How It Works</a>
-        <a href="/booking-partners/">Booking Partners</a>
-        <a class="cta" href="/contact/">Contact Us</a>
+        <a href="#coming-soon">Coming Soon</a>
+        <a href="#what-we-are-building">What We Are Building</a>
+        <a href="#ja-support">JA Support</a>
+        <a href="#partners">Partner Bookings</a>
+        <a class="cta" href="#contact">Launch Updates</a>
       </nav>
     </div>
   </header>
 
   <main>
-    <section class="hero">
+    <section class="hero" id="coming-soon">
       <div class="wrap hero-grid">
         <div>
-          <div class="eyebrow">Travel planning, activities, transfers and local advice</div>
-          <h1>Plan better trips with JA.</h1>
+          <div class="eyebrow">Pre-launch development stage</div>
+          <h1>Travel planning platform coming soon.</h1>
           <p>
-            JA Travel & Experiences is being developed as a practical travel discovery and planning platform,
-            helping customers explore things to do, understand transport options, find accommodation ideas,
-            and access direct travel support from JA Group Services Ltd.
+            JA Travel & Experiences is currently being developed by JA Group Services Ltd as a wider travel discovery,
+            planning and support platform. The service is not yet open for public launch.
+          </p>
+          <p>
+            When launched, the platform is intended to help travellers explore activities, transfers, accommodation
+            ideas, local transport guidance and direct JA travel support.
           </p>
 
           <div class="hero-actions">
-            <a class="btn primary" href="/how-it-works/">How It Works</a>
-            <a class="btn secondary" href="/contact/">Register Interest</a>
+            <a class="btn primary" href="#what-we-are-building">What We Are Building</a>
+            <a class="btn secondary" href="#contact">Contact Us</a>
           </div>
         </div>
 
         <aside class="hero-card">
-          <h2>More than booking links.</h2>
-          <p>
-            The platform will combine JA direct support services with trusted third-party booking options.
-          </p>
+          <h2>Launch status</h2>
+
+          <div class="status-box">
+            <strong>Website under redevelopment</strong>
+            JA Travel & Experiences is not yet operating as a fully launched public booking or travel support service.
+            Content shown on this page is provided as part of the pre-launch development stage.
+          </div>
 
           <div class="service-list">
-            <div>✓ Trip planning and itinerary support</div>
-            <div>✓ Activities, tours and attractions</div>
-            <div>✓ Transfers and local transport guidance</div>
-            <div>✓ Accommodation and destination research</div>
+            <div>✓ Travel planning concept in development</div>
+            <div>✓ Direct JA support services being scoped</div>
+            <div>✓ Activities and partner booking options being reviewed</div>
+            <div>✓ Legal, provider and affiliate wording being prepared</div>
           </div>
         </aside>
       </div>
     </section>
 
-    <section>
+    <section id="what-we-are-building">
       <div class="wrap">
         <div class="section-title">
           <span>What we are building</span>
-          <h2>A wider travel support platform.</h2>
+          <h2>A wider travel discovery and planning platform.</h2>
           <p>
-            The website is being developed to help travellers plan more of the journey, not just find a single activity.
+            The website is being developed to help travellers plan more of the journey, not simply browse third-party
+            affiliate links.
           </p>
         </div>
 
         <div class="cards">
           <article class="card">
             <div class="icon">🧭</div>
-            <h3>Plan Your Trip</h3>
+            <h3>Trip Planning</h3>
             <p>
-              Practical support for organising trip ideas, destinations, timings, travel needs and pre-travel planning.
+              Practical planning support for trip ideas, destinations, timing, travel needs and pre-travel preparation.
             </p>
           </article>
 
@@ -677,15 +743,15 @@
             <div class="icon">🎟️</div>
             <h3>Activities & Tours</h3>
             <p>
-              Discover attraction tickets, guided tours, day trips, shows, excursions and memorable experiences.
+              Future access to attraction tickets, guided tours, day trips, excursions and memorable experiences.
             </p>
           </article>
 
           <article class="card">
             <div class="icon">🚕</div>
-            <h3>Transfers & Transport</h3>
+            <h3>Transfers</h3>
             <p>
-              Explore airport transfers, local trains, buses, metro systems, route ideas and practical travel guidance.
+              Guidance around airport transfers, private transfer options, shuttle services and local arrival planning.
             </p>
           </article>
 
@@ -693,15 +759,15 @@
             <div class="icon">🏨</div>
             <h3>Accommodation Ideas</h3>
             <p>
-              Research areas to stay, compare travel styles and explore accommodation options through trusted partners.
+              Destination research and accommodation-area guidance to help customers understand where to stay.
             </p>
           </article>
 
           <article class="card">
-            <div class="icon">📍</div>
-            <h3>Destination Advice</h3>
+            <div class="icon">🚆</div>
+            <h3>Local Transport</h3>
             <p>
-              Useful destination notes covering local tips, safety considerations, accessibility and travel reminders.
+              Practical information around buses, trains, metros, travel cards and local transport routes.
             </p>
           </article>
 
@@ -709,28 +775,27 @@
             <div class="icon">🤝</div>
             <h3>JA Direct Support</h3>
             <p>
-              Direct travel planning, research and support services may be provided by JA Group Services Ltd.
+              Direct travel planning, research and information support services from JA Group Services Ltd.
             </p>
           </article>
         </div>
       </div>
     </section>
 
-    <section style="background:#ffffff;">
+    <section id="ja-support" style="background:#ffffff;">
       <div class="wrap split">
         <div class="section-title">
-          <span>Service model</span>
-          <h2>JA support plus trusted partners.</h2>
+          <span>Direct JA services</span>
+          <h2>Travel support from JA Group Services Ltd.</h2>
           <p>
-            The platform will clearly separate direct JA services from third-party booking services, giving customers
-            transparency before they make decisions.
+            We are developing direct travel planning and research support services, including itinerary planning,
+            destination research, transfer guidance, local transport advice and pre-travel checklists.
           </p>
 
           <div class="notice">
-            <strong>Important customer distinction</strong>
-            JA Group Services Ltd may provide travel planning, research and information services directly. Where tours,
-            accommodation, transport or other products are booked through third-party providers, those services are
-            supplied under the relevant provider’s own terms.
+            <strong>Direct service note</strong>
+            Direct JA travel support services are currently being scoped and are not yet open for public booking.
+            Final service descriptions, pricing, availability and terms will be confirmed before launch.
           </div>
         </div>
 
@@ -739,35 +804,99 @@
             <div class="step">
               <strong>1</strong>
               <div>
-                <strong>Choose where you are going</strong>
-                <p>Browse destinations, travel styles and practical information.</p>
+                <strong>Destination research</strong>
+                <p>Helping customers understand where they are going, what to expect and what to consider.</p>
               </div>
             </div>
 
             <div class="step">
               <strong>2</strong>
               <div>
-                <strong>Build your trip plan</strong>
-                <p>Explore activities, local transport, transfers, accommodation areas and planning needs.</p>
+                <strong>Itinerary planning</strong>
+                <p>Supporting customers with practical day-by-day planning ideas and travel flow.</p>
               </div>
             </div>
 
             <div class="step">
               <strong>3</strong>
               <div>
-                <strong>Use JA support or partner bookings</strong>
-                <p>Request direct JA planning support or continue to trusted third-party booking partners.</p>
+                <strong>Transport and transfer guidance</strong>
+                <p>Helping explain airport routes, local transport options, trains, buses, metros and transfers.</p>
               </div>
             </div>
 
             <div class="step">
               <strong>4</strong>
               <div>
-                <strong>Travel with clearer information</strong>
-                <p>Keep key travel notes, provider details, checklists and booking reminders in one place.</p>
+                <strong>Pre-travel checklists</strong>
+                <p>Creating clear reminders for bookings, travel documents, timings and useful destination notes.</p>
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="partners">
+      <div class="wrap split">
+        <div class="panel">
+          <div class="steps">
+            <div class="step">
+              <strong>A</strong>
+              <div>
+                <strong>Third-party booking partners</strong>
+                <p>Activities, tours, accommodation, transfers or travel products may be supplied by external providers.</p>
+              </div>
+            </div>
+
+            <div class="step">
+              <strong>B</strong>
+              <div>
+                <strong>Clear provider distinction</strong>
+                <p>Bookings with third-party providers will be subject to the relevant provider’s own terms.</p>
+              </div>
+            </div>
+
+            <div class="step">
+              <strong>C</strong>
+              <div>
+                <strong>Affiliate transparency</strong>
+                <p>JA Group Services Ltd may receive a commission where customers book through selected referral links.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title">
+          <span>Partner bookings</span>
+          <h2>Booking options will be introduced carefully.</h2>
+          <p>
+            Where third-party booking links or partner services are introduced, bookings will be completed with the
+            relevant external provider and will be subject to that provider’s own terms, prices, availability,
+            amendment rules and cancellation policies.
+          </p>
+
+          <div class="notice">
+            <strong>Not yet a live booking service</strong>
+            The public booking journey is not currently open. Partner booking links, supplier details and affiliate
+            disclosures will be reviewed before wider public launch.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="contact" style="padding-top:0;">
+      <div class="wrap">
+        <div class="launch-panel">
+          <div>
+            <h2>Launch updates will follow.</h2>
+            <p>
+              JA Travel & Experiences is being developed in stages. Further information will be published once the
+              platform structure, direct service wording, legal notices and partner arrangements have been reviewed.
+            </p>
+          </div>
+
+          <a class="btn primary" href="mailto:alfie@jagroupservices.co.uk">Contact JA Group Services</a>
         </div>
       </div>
     </section>
@@ -787,8 +916,8 @@
         </div>
 
         <p>
-          Providing structured, accountable and professionally governed travel discovery, planning support,
-          partner recommendations and customer-facing resources.
+          Providing structured, accountable and professionally governed travel discovery, pre-launch information,
+          planning support concepts and partner recommendation frameworks.
         </p>
       </div>
 
@@ -803,12 +932,11 @@
 
       <div class="footer-col">
         <h4>Website</h4>
-        <a href="/destinations/">Destinations</a>
-        <a href="/activities/">Activities & Tours</a>
-        <a href="/how-it-works/">How It Works</a>
-        <a href="/booking-partners/">Booking Partners</a>
-        <a href="/affiliate-disclosure/">Affiliate Disclosure</a>
-        <a href="/contact/">Contact Us</a>
+        <a href="#coming-soon">Coming Soon</a>
+        <a href="#what-we-are-building">What We Are Building</a>
+        <a href="#ja-support">JA Direct Support</a>
+        <a href="#partners">Partner Bookings</a>
+        <a href="#contact">Contact Us</a>
       </div>
 
       <div class="footer-col">
@@ -821,8 +949,8 @@
         <a href="/legal/privacy/">Privacy Notice</a>
         <a href="/legal/cookies/">Cookie Policy</a>
         <a href="/affiliate-disclosure/">Affiliate Disclosure</a>
-        <a href="/contact/">Customer Support</a>
-        <a href="#">Cookie Settings</a>
+        <a href="#contact">Contact Us</a>
+        <a href="#" id="openCookieSettings">Cookie Settings</a>
       </div>
     </div>
   </footer>
@@ -864,6 +992,8 @@
       const cookieBar = document.querySelector("#cookieBar");
       const acceptCookies = document.querySelector("#acceptCookies");
       const declineCookies = document.querySelector("#declineCookies");
+      const settingsCookies = document.querySelector("#settingsCookies");
+      const openCookieSettings = document.querySelector("#openCookieSettings");
 
       const savedCookieChoice = localStorage.getItem("jaTravelCookieChoice");
 
@@ -884,7 +1014,20 @@
           cookieBar.style.display = "none";
         });
       }
+
+      if (settingsCookies) {
+        settingsCookies.addEventListener("click", () => {
+          alert("Cookie settings will be available before public launch.");
+        });
+      }
+
+      if (openCookieSettings) {
+        openCookieSettings.addEventListener("click", (event) => {
+          event.preventDefault();
+          localStorage.removeItem("jaTravelCookieChoice");
+          if (cookieBar) cookieBar.style.display = "block";
+        });
+      }
     })();
   </script>
 </body>
-</html>
