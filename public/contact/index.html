@@ -1,27 +1,38 @@
 <!doctype html>
 <html lang="en-GB">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Contact | JA Experiences & Discovery</title>
-  <link rel="stylesheet" href="/assets/css/styles.css">
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Contact Us | JA Experiences & Discovery</title>
+  <meta name="description" content="Contact JA Experiences & Discovery for customer support, general enquiries, complaints and service information.">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/css/ja-travel-rebuild.css">
 </head>
-<body>
-  <div id="site-header"></div>
-
-  <main class="page">
-    <div class="container">
-      <h1 class="page-title">Contact</h1>
-      <p class="lead">This page is being prepared.</p>
-
-      <div class="placeholder-box">
-        This page is currently blank and will be developed later.
-      </div>
+<body data-page="contact"><div id="siteShellHeader"></div><main id="main">
+  <section class="page-hero"><div class="container"><span class="eyebrow">Contact Us</span><h1>How can we help?</h1><p>Use this form for general enquiries, customer support, plans and pricing, social tariff questions, website issues, data protection or complaints.</p></div></section>
+  <section class="section"><div class="container enquiry-layout">
+    <aside class="enquiry-sidebar">
+      <span class="kicker">Contact information</span><h2>JA Group Services Ltd</h2>
+      <p><strong>Email</strong><br><a href="mailto:hello@jagroupservices.co.uk">hello@jagroupservices.co.uk</a></p>
+      <p><strong>Telephone</strong><br><a href="tel:+442038342790">020 3834 2790</a></p>
+      <p><strong>Registered Office</strong><br>167–169 Great Portland Street<br>5th Floor<br>London<br>W1W 5PF<br>United Kingdom</p>
+      <div class="privacy-note">For a new destination or activity guidance request, please use the dedicated <a href="/enquiry/">Free Discovery Enquiry</a>.</div>
+    </aside>
+    <div class="form-card">
+      <h2>Send a message</h2><p>Fields marked * are required.</p>
+      <form id="customerForm" data-form-type="contact">
+        <input type="hidden" name="startedAt" value=""><input type="hidden" name="formType" value="Contact Us">
+        <div class="honeypot" aria-hidden="true"><label>Website<input name="website" type="text" tabindex="-1" autocomplete="off"></label></div>
+        <div class="form-grid">
+          <label>Full name *<input name="name" type="text" autocomplete="name" maxlength="100" required></label>
+          <label>Email address *<input name="email" type="email" autocomplete="email" maxlength="160" required></label>
+          <label>Telephone number optional<input name="telephone" type="tel" autocomplete="tel" maxlength="40"></label>
+          <label>Enquiry type *<select name="enquiryType" required><option value="">Please select</option><option>General enquiry</option><option>Customer support</option><option>Activities and experiences</option><option>Plans and pricing</option><option>Social tariff</option><option>Website issue</option><option>Data protection</option><option>Complaint</option></select></label>
+        </div>
+        <label>Message *<textarea name="message" rows="8" maxlength="4000" required></textarea></label>
+        <label class="checkbox-label"><input name="privacyAccepted" type="checkbox" required> I agree that JA Group Services Ltd may use this information to respond to my enquiry. *</label>
+        <button class="button accent" type="submit">Send message</button>
+      </form>
+      <div id="formStatus" class="form-status" role="status" aria-live="polite"></div>
     </div>
-  </main>
-
-  <div id="site-footer"></div>
-
-  <script src="/assets/js/site-shell.js"></script>
-</body>
-</html>
+  </div></section>
+</main><div id="siteShellFooter"></div><script src="/assets/js/site-shell.js"></script><script src="/assets/js/enquiry-form.js"></script></body></html>

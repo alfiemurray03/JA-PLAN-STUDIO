@@ -1,0 +1,14 @@
+{
+  "name": "ja-tours-activities",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-06-06",
+
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+
+  "vars": {
+    "ENQUIRY_TO_EMAIL": "hello@jagroupservices.co.uk"
+  }
+}
