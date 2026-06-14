@@ -616,8 +616,13 @@ body { background: #fff; }
 .site-footer { padding-top: 80px; background: #061f36; }
 .site-footer .brand { font-family: var(--serif); font-size: 19px; }
 .site-footer .brand-mark { border-radius: 50%; background: transparent; border: 1px solid #8fa3b4; }
+.footer-company-logo { display: inline-block; margin-bottom: 22px; }
+.footer-company-logo img { display: block; width: 150px; height: auto; }
+.footer-brand-column > p { max-width: 340px; }
 .footer-col h3 { color: #f5f7f8; font-family: Inter, sans-serif; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
 .site-footer a:hover { color: white; }
+.footer-company address { margin-top: 5px; color: #b7c7d6; font-size: 12px; font-style: normal; line-height: 1.65; }
+.footer-company address strong { color: #d8e2ea; }
 
 body:not(.hub-home) .site-header { position: relative; color: var(--hub-ink); border-bottom-color: var(--line); background: white; }
 body:not(.hub-home) .site-header .brand, body:not(.hub-home) .site-header .site-nav a { color: var(--hub-ink); }
@@ -806,20 +811,10 @@ body:not(.hub-home) .page-hero h1 { font-family: var(--serif); font-size: clamp(
 .coming-partner h2 { font-size: 42px; }
 .coming-partner p { color: #bdcad4; font-size: 13px; }
 .coming-partner a { padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,.45); font-size: 13px; font-weight: 700; }
-.coming-footer { padding: 75px 0 0; color: #b8c6d2; background: #061f36; }
-.coming-footer-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 70px; }
-.coming-footer-logo { display: inline-block; margin-bottom: 20px; }
-.coming-footer-logo img { display: block; width: 190px; height: auto; }
-.coming-footer p { color: #aebdca; font-size: 12px; line-height: 1.7; }
-.coming-footer-grid > div > strong { display: block; margin-bottom: 14px; color: white; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
-.coming-footer-grid > div > a:not(.coming-brand) { display: block; margin: 7px 0; color: #aebdca; font-size: 12px; }
-.coming-footer-bottom { margin-top: 48px; padding: 20px 0; border-top: 1px solid rgba(255,255,255,.1); font-size: 11px; }
-
 @media (max-width: 900px) {
   .coming-hero-inner, .coming-partner .container { display: grid; grid-template-columns: 1fr; }
   .coming-status { width: min(100%, 360px); }
   .coming-intro-grid { grid-template-columns: 1fr; gap: 35px; }
-  .coming-footer-grid { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 620px) {
@@ -841,5 +836,5 @@ body:not(.hub-home) .page-hero h1 { font-family: var(--serif); font-size: clamp(
   .coming-pillars article, .coming-pillars article + article { padding: 30px 0; border-right: 0; border-bottom: 1px solid var(--line); }
   .coming-partner { padding: 75px 0; }
   .coming-partner h2 { font-size: 40px; }
-  .coming-footer-grid { grid-template-columns: 1fr; gap: 35px; }
+  .footer-company-logo img { width: 135px; }
 }

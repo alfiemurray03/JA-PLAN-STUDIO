@@ -38,13 +38,14 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (footer) {
-    footer.innerHTML = footer.id === "site-footer" ? `
-      <footer class="site-footer"><div class="container"><div class="footer-grid"><div><a class="brand" href="/coming-soon/"><span class="brand-mark">JA</span><span>JA Experiences &amp; Discovery<small>A trading division of JA Group Services Ltd</small></span></a><p>This service is being prepared by JA Group Services Ltd.</p></div><div class="footer-col"><h3>Contact</h3><a href="mailto:hello@jagroupservices.co.uk">hello@jagroupservices.co.uk</a><a href="tel:+442038342790">020 3834 2790</a></div></div><div class="footer-legal">Copyright JA Group Services Ltd &amp; its Licensors.</div></div></footer>` : `
+    footer.innerHTML = `
       <footer class="site-footer">
         <div class="container">
           <div class="footer-grid">
-            <div>
-              <a class="brand" href="/"><span class="brand-mark">JA</span><span>JA Experiences &amp; Discovery<small>A trading division of JA Group Services Ltd</small></span></a>
+            <div class="footer-brand-column">
+              <a class="footer-company-logo" href="https://jagroupservices.co.uk" aria-label="JA Group Services">
+                <img src="/assets/images/ja-group-services-logo-footer-dark.png" alt="JA Group Services">
+              </a>
               <p>Remarkable places, memorable experiences and practical guidance for the journey ahead.</p>
               <p><a href="mailto:hello@jagroupservices.co.uk">hello@jagroupservices.co.uk</a><br><a href="tel:+442038342790">020 3834 2790</a></p>
             </div>
@@ -56,7 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="footer-company">
             <p>JA Experiences &amp; Discovery is a trading division/service line of JA Group Services Ltd.</p>
             <p>JA Group Services Ltd is incorporated in England and Wales, Company Number 16314179.</p>
-            <p>Registered Office: 167–169 Great Portland Street, 5th Floor, London, W1W 5PF, United Kingdom.</p>
+            <address><strong>Registered Office:</strong> 167–169 Great Portland Street, 5th Floor, London, W1W 5PF, United Kingdom.</address>
           </div>
           <div class="footer-legal">Copyright JA Group Services Ltd &amp; its Licensors.</div>
         </div>
