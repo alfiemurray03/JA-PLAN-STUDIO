@@ -3,13 +3,13 @@ document.addEventListener("DOMContentLoaded", function () {
   const footer = document.getElementById("site-footer");
 
   if (header) {
-    header.innerHTML = 
+    header.innerHTML = `
       <header class="site-header">
         <a class="brand" href="/">
           <span class="brand-mark" aria-hidden="true"></span>
           <span>
             <strong>JA Experiences &amp; Discovery</strong>
-            <span>by JA Group Services</span>
+            <span>by JA Group Services Ltd</span>
           </span>
         </a>
 
@@ -26,11 +26,11 @@ document.addEventListener("DOMContentLoaded", function () {
           <a class="cta-small" href="/contact/">Reach Out</a>
         </div>
       </header>
-    ;
+    `;
   }
 
   if (footer) {
-    footer.innerHTML = 
+    footer.innerHTML = `
       <footer class="site-footer">
         <div class="footer-grid">
           <div>
@@ -57,9 +57,9 @@ document.addEventListener("DOMContentLoaded", function () {
         </div>
 
         <div class="footer-bottom">
-          © JA Group Services Ltd and its licensors. JA Experiences &amp; Discovery is being prepared as a division/service line of JA Group Services Ltd.
+          &copy; JA Group Services Ltd and its licensors. JA Experiences &amp; Discovery is being prepared as a division/service line of JA Group Services Ltd.
         </div>
       </footer>
-    ;
+    `;
   }
 });
