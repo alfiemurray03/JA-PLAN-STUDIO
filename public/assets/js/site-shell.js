@@ -5,21 +5,26 @@ document.addEventListener("DOMContentLoaded", function () {
   if (header) {
     header.innerHTML = 
       <header class="site-header">
-        <a class="logo" href="/">
-          JA Experiences &amp; Discovery
-          <span>A new division by JA Group Services Ltd</span>
+        <a class="brand" href="/">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span>
+            <strong>JA Experiences &amp; Discovery</strong>
+            <span>by JA Group Services</span>
+          </span>
         </a>
 
         <nav class="main-nav" aria-label="Main navigation">
-          <a href="/">Home</a>
           <a href="/about/">About</a>
-          <a href="/plans-pricing/">Plans &amp; Pricing</a>
+          <a href="/plans-pricing/">Plans</a>
           <a href="/activities/">Activities</a>
           <a href="/destinations/">Destinations</a>
-          <a href="/affiliate-partners/">Affiliate Partners</a>
-          <a href="/contact/">Contact</a>
-          <a href="/login/">Login</a>
+          <a href="/affiliate-partners/">Partners</a>
         </nav>
+
+        <div class="header-actions">
+          <a class="sign-in" href="/login/">Sign in</a>
+          <a class="cta-small" href="/contact/">Reach Out</a>
+        </div>
       </header>
     ;
   }
@@ -27,21 +32,32 @@ document.addEventListener("DOMContentLoaded", function () {
   if (footer) {
     footer.innerHTML = 
       <footer class="site-footer">
-        <div class="footer-inner">
-          <p><strong>JA Experiences &amp; Discovery</strong></p>
-          <p>JA Experiences &amp; Discovery is being prepared as a new division/service line of JA Group Services Ltd.</p>
+        <div class="footer-grid">
+          <div>
+            <h3>JA Experiences &amp; Discovery</h3>
+            <p>Destination discovery, activity signposting and online planning guidance operated by JA Group Services Ltd.</p>
+            <p><strong>Important:</strong> Customers remain responsible for arranging their own travel and transport.</p>
+          </div>
 
-          <div class="footer-links">
-            <a href="/">Home</a>
+          <div>
+            <h4>Explore</h4>
             <a href="/about/">About</a>
             <a href="/plans-pricing/">Plans &amp; Pricing</a>
             <a href="/activities/">Activities</a>
             <a href="/destinations/">Destinations</a>
             <a href="/affiliate-partners/">Affiliate Partners</a>
-            <a href="/contact/">Contact</a>
           </div>
 
-          <p class="small-print">© JA Group Services Ltd and its licensors.</p>
+          <div>
+            <h4>Support</h4>
+            <a href="/contact/">Contact</a>
+            <a href="/login/">Sign In</a>
+            <a href="/account/">Create Account</a>
+          </div>
+        </div>
+
+        <div class="footer-bottom">
+          © JA Group Services Ltd and its licensors. JA Experiences &amp; Discovery is being prepared as a division/service line of JA Group Services Ltd.
         </div>
       </footer>
     ;
