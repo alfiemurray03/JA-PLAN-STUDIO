@@ -1,10 +1,291 @@
+@"
 <!doctype html>
 <html lang="en-GB">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>JA Experiences & Discovery</title>
+  <title>JA Experiences & Discovery | Coming Soon</title>
+  <meta name="description" content="JA Group Services Ltd is creating a new division. Browse affiliate partner tours and activities powered by GetYourGuide while the new service is being prepared.">
+  <style>
+    :root {
+      --navy: #0b2447;
+      --blue: #145da0;
+      --orange: #f59e0b;
+      --cream: #f8f4ec;
+      --white: #ffffff;
+      --text: #172033;
+      --muted: #5f6b7a;
+      --border: rgba(255,255,255,0.28);
+      --shadow: 0 24px 70px rgba(11,36,71,0.22);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background: linear-gradient(135deg, #f8f4ec 0%, #ffffff 45%, #eaf3ff 100%);
+      min-height: 100vh;
+    }
+
+    header {
+      width: 100%;
+      padding: 22px 6%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255,255,255,0.84);
+      border-bottom: 1px solid rgba(11,36,71,0.08);
+      backdrop-filter: blur(14px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+      color: var(--navy);
+    }
+
+    .brand-mark {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--navy), var(--blue));
+      box-shadow: 0 10px 28px rgba(20,93,160,0.22);
+    }
+
+    .brand-text strong {
+      display: block;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-text span {
+      display: block;
+      margin-top: 3px;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    main {
+      min-height: calc(100vh - 94px);
+      display: grid;
+      place-items: center;
+      padding: 50px 6%;
+    }
+
+    .hero {
+      width: min(1120px, 100%);
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 34px;
+      align-items: stretch;
+    }
+
+    .hero-card,
+    .side-card {
+      border-radius: 34px;
+      box-shadow: var(--shadow);
+    }
+
+    .hero-card {
+      padding: clamp(34px, 5vw, 64px);
+      background: linear-gradient(135deg, var(--navy), var(--blue));
+      color: var(--white);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      width: 280px;
+      height: 280px;
+      right: -90px;
+      top: -90px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.13);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      padding: 9px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.14);
+      border: 1px solid var(--border);
+      font-size: 0.78rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 26px;
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 760px;
+      font-size: clamp(2.5rem, 6vw, 5.2rem);
+      line-height: 0.95;
+      letter-spacing: -0.06em;
+    }
+
+    .lead {
+      margin: 26px 0 0;
+      max-width: 680px;
+      font-size: clamp(1.05rem, 2vw, 1.28rem);
+      line-height: 1.65;
+      color: rgba(255,255,255,0.91);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 32px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 52px;
+      padding: 0 22px;
+      border-radius: 999px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .button:hover {
+      transform: translateY(-2px);
+    }
+
+    .button-primary {
+      background: var(--orange);
+      color: #121826;
+      box-shadow: 0 12px 30px rgba(245,158,11,0.28);
+    }
+
+    .button-secondary {
+      color: var(--white);
+      border: 1px solid rgba(255,255,255,0.38);
+      background: rgba(255,255,255,0.10);
+    }
+
+    .side-card {
+      padding: 34px;
+      background: rgba(255,255,255,0.90);
+      border: 1px solid rgba(11,36,71,0.10);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .side-card h2 {
+      margin: 0 0 18px;
+      color: var(--navy);
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      letter-spacing: -0.03em;
+    }
+
+    .side-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 1rem;
+    }
+
+    .notice-list {
+      margin: 24px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 12px;
+    }
+
+    .notice-list li {
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: var(--cream);
+      color: var(--navy);
+      font-weight: 700;
+    }
+
+    footer {
+      padding: 22px 6%;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 860px) {
+      header {
+        align-items: flex-start;
+      }
+
+      .hero {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-card,
+      .side-card {
+        border-radius: 26px;
+      }
+    }
+  </style>
 </head>
 <body>
+  <header>
+    <a class="brand" href="/" aria-label="JA Experiences and Discovery home">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-text">
+        <strong>JA Experiences &amp; Discovery</strong>
+        <span>A new division by JA Group Services Ltd</span>
+      </span>
+    </a>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="page-title">
+      <div class="hero-card">
+        <span class="eyebrow">Coming soon</span>
+        <h1 id="page-title">We are bringing exciting things.</h1>
+        <p class="lead">
+          JA Group Services Ltd is creating a new division which is coming soon.
+          You can still browse our affiliate partner offers powered by GetYourGuide,
+          which offer a range of tours and activities in the UK and worldwide.
+        </p>
+        <div class="actions">
+          <a class="button button-primary" href="https://tours.jagroupservices.co.uk">
+            Browse GetYourGuide offers
+          </a>
+          <a class="button button-secondary" href="https://jagroupservices.co.uk">
+            Visit JA Group Services Ltd
+          </a>
+        </div>
+      </div>
+
+      <aside class="side-card">
+        <h2>Check back here for updates.</h2>
+        <p>
+          Our new Experiences &amp; Discovery service is being prepared.
+          Further updates will be published on this website as development progresses.
+        </p>
+        <ul class="notice-list">
+          <li>New division coming soon</li>
+          <li>UK and worldwide activities</li>
+          <li>Affiliate partner offers available now</li>
+        </ul>
+      </aside>
+    </section>
+  </main>
+
+  <footer>
+    © JA Group Services Ltd and its licensors. JA Experiences &amp; Discovery is being prepared as a division/service line of JA Group Services Ltd.
+  </footer>
 </body>
 </html>
+"@ | Set-Content -Path public\index.html -Encoding UTF8
