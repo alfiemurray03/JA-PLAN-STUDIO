@@ -1,21 +1,19 @@
 /*
  * SHARED WEBSITE HEADER
- * Edit this file to change the header on every page.
+ * Clean white header using the official JA Group Services logo.
  */
 
 .site-header {
-  position: absolute;
+  position: sticky;
   top: 0;
-  left: 0;
-  right: 0;
-  z-index: 20;
-  color: white;
-  border-bottom: 1px solid rgba(255, 255, 255, .2);
-  background: transparent;
+  z-index: 1000;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
 }
 
 .site-header .nav-shell {
-  min-height: 94px;
+  min-height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -23,223 +21,182 @@
 }
 
 .site-header .brand {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 11px;
-  color: white;
-  font-family: var(--serif);
-  font-size: 20px;
-  font-weight: 600;
-  letter-spacing: -.02em;
+  gap: 12px;
+  color: #111827;
+  text-decoration: none;
+  min-width: 260px;
 }
 
-.site-header .brand-mark {
-  display: grid;
-  width: 38px;
-  height: 38px;
-  place-items: center;
-  border: 1px solid rgba(255, 255, 255, .6);
-  border-radius: 50%;
-  color: white;
-  background: transparent;
-  font-family: "DM Sans", sans-serif;
-  font-size: 13px;
-}
-
-.site-header .brand i {
-  color: var(--hub-orange);
-  font-style: normal;
-}
-
-.site-header .brand small {
+.site-header .brand img {
   display: block;
-  margin-top: -2px;
-  color: rgba(255, 255, 255, .68);
-  font-family: Inter, sans-serif;
-  font-size: 9px;
+  width: auto;
+  max-width: 118px;
+  max-height: 42px;
+  object-fit: contain;
+}
+
+.site-header .brand-text {
+  display: block;
+  line-height: 1.1;
+}
+
+.site-header .brand-text strong {
+  display: block;
+  color: #111827;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.site-header .brand-text small {
+  display: block;
+  margin-top: 3px;
+  color: #6b7280;
+  font-size: 12px;
   font-weight: 500;
-  letter-spacing: .12em;
-  text-transform: uppercase;
 }
 
 .site-header .site-nav {
   display: flex;
   align-items: center;
-  gap: 30px;
-  font-size: 13px;
-  font-weight: 600;
+  justify-content: center;
+  gap: 28px;
+  flex: 1;
 }
 
-.site-header .site-nav > a:not(.nav-cta) {
-  padding: 35px 0 31px;
-  border-bottom: 2px solid transparent;
+.site-header .site-nav a {
+  position: relative;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 8px 0;
 }
 
 .site-header .site-nav a:hover,
+.site-header .site-nav a:focus-visible,
 .site-header .site-nav a[aria-current="page"] {
-  color: white;
-  border-bottom-color: var(--hub-orange);
+  color: #1d4ed8;
+}
+
+.site-header .site-nav a[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 2px;
+  border-radius: 999px;
+  background: #1d4ed8;
+}
+
+.site-header .nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.site-header .nav-signin {
+  color: #111827;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.site-header .nav-signin:hover,
+.site-header .nav-signin:focus-visible {
+  background: #f3f4f6;
 }
 
 .site-header .nav-cta {
   display: inline-flex;
-  min-height: 42px;
   align-items: center;
   justify-content: center;
-  padding: 0 18px;
-  border: 1px solid white;
-  border-radius: 2px;
-  color: var(--hub-navy);
-  background: white;
-  font-weight: 750;
-  transition: transform .18s ease, background-color .18s ease, border-color .18s ease;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 8px;
+  color: #ffffff;
+  background: #1e40af;
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 10px 22px rgba(30, 64, 175, 0.22);
 }
 
-.site-header .nav-cta:hover {
-  color: white;
-  background: transparent;
-  transform: translateY(-1px);
+.site-header .nav-cta:hover,
+.site-header .nav-cta:focus-visible {
+  background: #1d4ed8;
 }
 
 .site-header .menu-toggle {
   display: none;
   min-height: 40px;
-  padding: 0 13px;
-  border: 1px solid rgba(255, 255, 255, .55);
+  padding: 0 14px;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
-  color: white;
-  background: transparent;
+  color: #111827;
+  background: #ffffff;
   font: inherit;
-  font-weight: 750;
-}
-
-/* Inner pages use a white header. */
-body:not(.hub-home) .site-header {
-  position: relative;
-  color: var(--hub-ink);
-  border-bottom-color: var(--line);
-  background: white;
-}
-
-body:not(.hub-home) .site-header .brand,
-body:not(.hub-home) .site-header .site-nav a {
-  color: var(--hub-ink);
-}
-
-body:not(.hub-home) .site-header .brand-mark {
-  color: white;
-  border-color: var(--hub-navy);
-  background: var(--hub-navy);
-}
-
-body:not(.hub-home) .site-header .brand small {
-  color: #73808a;
-}
-
-body:not(.hub-home) .site-header .nav-cta {
-  color: white;
-  border-color: var(--hub-navy);
-  background: var(--hub-navy);
-}
-
-body:not(.hub-home) .site-header .menu-toggle {
-  color: var(--hub-navy);
-  border-color: var(--line);
-}
-
-/* The Coming Soon page places the header over its hero image. */
-body.coming-soon-page .site-header {
-  position: absolute;
-  color: white;
-  border-bottom-color: rgba(255, 255, 255, .22);
-  background: transparent;
-}
-
-body.coming-soon-page .site-header .brand,
-body.coming-soon-page .site-header .site-nav a {
-  color: white;
-}
-
-body.coming-soon-page .site-header .brand-mark {
-  color: white;
-  border-color: rgba(255, 255, 255, .65);
-  background: transparent;
-}
-
-body.coming-soon-page .site-header .brand small {
-  color: rgba(255, 255, 255, .68);
-}
-
-body.coming-soon-page .site-header .nav-cta {
-  color: var(--hub-navy);
-  border-color: white;
-  background: white;
-}
-
-body.coming-soon-page .site-header .menu-toggle {
-  color: white;
-  border-color: rgba(255, 255, 255, .55);
-  background: transparent;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 @media (max-width: 900px) {
+  .site-header .site-nav,
+  .site-header .nav-actions {
+    display: none;
+  }
+
   .site-header .menu-toggle {
     display: inline-flex;
     align-items: center;
   }
 
-  .site-header .site-nav {
-    display: none;
-    position: absolute;
-    top: 78px;
-    left: 20px;
-    right: 20px;
-    padding: 18px;
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    color: var(--hub-ink);
-    background: white;
-    box-shadow: var(--shadow);
-  }
-
   .site-header .site-nav.open {
     display: grid;
+    position: absolute;
+    top: 74px;
+    left: 16px;
+    right: 16px;
+    gap: 4px;
+    padding: 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    background: #ffffff;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
   }
 
-  .site-header .site-nav > a:not(.nav-cta) {
-    padding: 10px 0;
-    color: var(--hub-ink);
+  .site-header .site-nav.open a {
+    padding: 12px;
+    border-radius: 8px;
   }
 
-  body.coming-soon-page .site-header .site-nav {
-    background: white;
-  }
-
-  body.coming-soon-page .site-header .site-nav > a:not(.nav-cta) {
-    color: var(--hub-ink);
-  }
-
-  body.coming-soon-page .site-header .nav-cta {
-    color: white;
-    border-color: var(--hub-navy);
-    background: var(--hub-navy);
+  .site-header .site-nav.open a:hover,
+  .site-header .site-nav.open a:focus-visible {
+    background: #f3f4f6;
   }
 }
 
 @media (max-width: 620px) {
-  .site-header .nav-shell {
-    min-height: 76px;
-  }
-
   .site-header .brand {
-    font-size: 16px;
+    min-width: 0;
   }
 
-  .site-header .brand > span:last-child {
-    font-size: 14px;
+  .site-header .brand img {
+    max-width: 92px;
+    max-height: 36px;
   }
 
-  .site-header .brand small {
+  .site-header .brand-text strong {
+    font-size: 13px;
+  }
+
+  .site-header .brand-text small {
     display: none;
   }
 }
