@@ -61,26 +61,26 @@
   ];
 
   const headoutCountries = [
-    country("GB", "United Kingdom", "Headout activity widgets for selected UK destinations.", ["london", "edinburgh", "manchester", "liverpool", "york", "belfast"]),
-    country("PT", "Portugal", "Headout activity widgets for Portugal, Madeira and Algarve destinations.", ["lisbon", "porto", "algarve", "funchal", "madeira", "albufeira"]),
-    country("ES", "Spain", "Headout activity widgets for selected Spanish mainland and island destinations.", ["barcelona", "madrid", "alicante", "malaga", "tenerife", "ibiza"]),
-    country("FR", "France", "Headout activity widgets for selected French destinations.", ["paris", "normandy"]),
-    country("IT", "Italy", "Headout activity widgets for selected Italian city destinations.", ["rome", "venice", "florence"]),
-    country("GR", "Greece", "Headout activity widgets for selected Greek destinations.", ["athens", "rhodes", "santorini"]),
-    country("AE", "United Arab Emirates", "Headout activity widgets for the United Arab Emirates.", ["dubai", "abu-dhabi"]),
-    country("US", "United States", "Headout activity widgets for selected United States destinations.", ["new-york", "orlando", "las-vegas"]),
-    country("NL", "Netherlands", "Headout activity widgets for selected Netherlands destinations.", ["amsterdam", "rotterdam"]),
-    country("DE", "Germany", "Headout activity widgets for Germany.", ["berlin"]),
-    country("AT", "Austria", "Headout activity widgets for Austria.", ["vienna"]),
-    country("CZ", "Czech Republic", "Headout activity widgets for the Czech Republic.", ["prague"]),
-    country("TR", "Turkey", "Headout activity widgets for Turkey.", ["istanbul"]),
-    country("TH", "Thailand", "Headout activity widgets for Thailand.", ["bangkok"]),
-    country("JP", "Japan", "Headout activity widgets for Japan.", ["tokyo"]),
-    country("SG", "Singapore", "Headout activity widgets for Singapore.", ["singapore"]),
-    country("MA", "Morocco", "Headout activity widgets for Morocco.", ["marrakech"]),
-    country("ZA", "South Africa", "Headout activity widgets for South Africa.", ["cape-town"]),
-    country("HU", "Hungary", "Headout activity widgets for Hungary.", ["budapest"]),
-    country("BR", "Brazil", "Headout activity widgets for Brazil.", ["sao-paulo"])
+    country("GB", "United Kingdom", "Tours and experiences for selected UK destinations.", ["london", "edinburgh", "manchester", "liverpool", "york", "belfast"]),
+    country("PT", "Portugal", "Tours and experiences across Portugal, Madeira and the Algarve.", ["lisbon", "porto", "algarve", "funchal", "madeira", "albufeira"]),
+    country("ES", "Spain", "Tours and experiences for mainland Spain and selected islands.", ["barcelona", "madrid", "alicante", "malaga", "tenerife", "ibiza"]),
+    country("FR", "France", "Tours and experiences for selected French destinations.", ["paris", "normandy"]),
+    country("IT", "Italy", "Tours and experiences for selected Italian cities.", ["rome", "venice", "florence"]),
+    country("GR", "Greece", "Tours and experiences for selected Greek destinations.", ["athens", "rhodes", "santorini"]),
+    country("AE", "United Arab Emirates", "Tours and experiences for Dubai and Abu Dhabi.", ["dubai", "abu-dhabi"]),
+    country("US", "United States", "Tours and experiences for selected United States destinations.", ["new-york", "orlando", "las-vegas"]),
+    country("NL", "Netherlands", "Tours and experiences for selected Netherlands destinations.", ["amsterdam", "rotterdam"]),
+    country("DE", "Germany", "Tours and experiences for selected German destinations.", ["berlin"]),
+    country("AT", "Austria", "Tours and experiences for selected Austrian destinations.", ["vienna"]),
+    country("CZ", "Czech Republic", "Tours and experiences for Prague and nearby highlights.", ["prague"]),
+    country("TR", "Turkey", "Tours and experiences for selected Turkish destinations.", ["istanbul"]),
+    country("TH", "Thailand", "Tours and experiences for selected Thai destinations.", ["bangkok"]),
+    country("JP", "Japan", "Tours and experiences for selected Japanese destinations.", ["tokyo"]),
+    country("SG", "Singapore", "Tours and experiences for Singapore.", ["singapore"]),
+    country("MA", "Morocco", "Tours and experiences for selected Moroccan destinations.", ["marrakech"]),
+    country("ZA", "South Africa", "Tours and experiences for selected South African destinations.", ["cape-town"]),
+    country("HU", "Hungary", "Tours and experiences for selected Hungarian destinations.", ["budapest"]),
+    country("BR", "Brazil", "Tours and experiences for selected Brazilian destinations.", ["sao-paulo"])
   ];
 
   let selectedHeadoutCountry = null;
@@ -123,10 +123,18 @@
       "Greece": "greece",
       "United Arab Emirates": "united-arab-emirates",
       "United States": "united-states",
+      "Netherlands": "europe",
+      "Germany": "europe",
+      "Austria": "europe",
+      "Czech Republic": "europe",
+      "Turkey": "middle-east",
+      "Thailand": "asia",
       "Japan": "japan",
+      "Singapore": "asia",
       "Morocco": "morocco",
-      "Australia": "australia",
-      "Canada": "canada"
+      "South Africa": "travel",
+      "Hungary": "europe",
+      "Brazil": "travel"
     };
     return `/assets/images/destinations/${images[name] || "travel"}.jpg`;
   }
@@ -216,8 +224,8 @@
         return `
           <button class="partner-browser-card" type="button" data-headout-country="${escapeHtml(item.name)}" style="--partner-card-image:url('${escapeHtml(countryImage(item.name))}')">
             <div class="partner-browser-card-top"><img src="${escapeHtml(flagUrl(item.code))}" alt="${escapeHtml(item.name)} flag" loading="lazy"><span>${destinations.length} ${destinations.length === 1 ? "destination" : "destinations"}</span></div>
-            <h3>${escapeHtml(item.name)}</h3>
-            <p>${escapeHtml(item.description)}</p>
+            <div class="partner-browser-card-copy"><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p></div>
+            <span class="partner-card-action">Open country</span>
           </button>`;
       }).join("");
     }
@@ -259,7 +267,7 @@
               <div class="partner-widget-empty">
                 <span class="kicker">Select a destination</span>
                 <h4>Choose a city or area above.</h4>
-                <p>The Headout experience widget will load here after you choose a destination.</p>
+                <p>Tours and experiences will appear here after you choose a destination.</p>
               </div>
             `}
           </div>

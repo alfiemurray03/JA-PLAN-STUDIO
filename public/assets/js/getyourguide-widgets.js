@@ -118,12 +118,40 @@
       "France": "france",
       "Italy": "italy",
       "Greece": "greece",
+      "Ireland": "united-kingdom",
       "United Arab Emirates": "united-arab-emirates",
       "United States": "united-states",
+      "Netherlands": "europe",
+      "Germany": "europe",
+      "Austria": "europe",
+      "Czech Republic": "europe",
+      "Belgium": "europe",
+      "Turkey": "middle-east",
+      "Thailand": "asia",
       "Japan": "japan",
+      "Singapore": "asia",
       "Australia": "australia",
       "Morocco": "morocco",
-      "Canada": "canada"
+      "South Africa": "travel",
+      "Canada": "canada",
+      "Mexico": "north-america",
+      "Croatia": "europe",
+      "Egypt": "middle-east",
+      "Iceland": "europe",
+      "Switzerland": "europe",
+      "Norway": "europe",
+      "Sweden": "europe",
+      "Poland": "europe",
+      "Denmark": "europe",
+      "New Zealand": "oceania",
+      "Brazil": "travel",
+      "Vietnam": "asia",
+      "India": "asia",
+      "Indonesia": "asia",
+      "Malaysia": "asia",
+      "South Korea": "asia",
+      "Philippines": "asia",
+      "Channel Islands": "united-kingdom"
     };
     return `/assets/images/destinations/${images[name] || "travel"}.jpg`;
   }
@@ -180,8 +208,8 @@
         return `
           <button class="partner-browser-card" type="button" data-country="${escapeHtml(item.name)}" style="--partner-card-image:url('${escapeHtml(countryImage(item.name))}')">
             <div class="partner-browser-card-top"><img src="${escapeHtml(flagUrl(item.code))}" alt="${escapeHtml(item.name)} flag" loading="lazy"><span>${item.destinations.length} ${item.destinations.length === 1 ? "destination" : "destinations"}</span></div>
-            <h3>${escapeHtml(item.name)}</h3>
-            <p>${escapeHtml(item.description)}</p>
+            <div class="partner-browser-card-copy"><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p></div>
+            <span class="partner-card-action">Open country</span>
           </button>`;
       }).join("") : `<div class="partner-empty">No matching countries or destinations found.</div>`;
     }
@@ -235,7 +263,7 @@
               <div class="partner-widget-empty">
                 <span class="kicker">Select a destination</span>
                 <h4>Choose a city or area above.</h4>
-                <p>The GetYourGuide activity widget will load here after you choose a destination.</p>
+                <p>Tours and experiences will appear here after you choose a destination.</p>
               </div>
             `}
           </div>
