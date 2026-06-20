@@ -1,23 +1,67 @@
 <!doctype html>
 <html lang="en-GB">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Headout Experiences | JA Experiences & Discovery</title>
-  <meta name="description" content="Browse selected Headout activity and experience widgets through JA Experiences & Discovery.">
-  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/css/ja-travel-rebuild.css?v=20260620-6">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Headout Experiences | JA Experiences &amp; Discovery</title>
+  <meta name="description" content="Browse selected Headout tours, attractions and activities through JA Experiences & Discovery.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/ja-travel-rebuild.css?v=20260620-7">
 </head>
-<body data-page="experiences" class="partner-tours-page partner-headout-page"><div id="siteShellHeader"></div><main id="main">
-  <section class="partner-tours-hero headout-tours-hero"><div class="container"><div class="partner-tours-hero-panel"><span>Headout activity partner</span><h1>Find bookable experiences by country.</h1><p>Start with a country, open the destination page and browse the relevant Headout widget.</p></div></div></section>
-  <section class="partner-country-browser"><div class="container">
-    <div class="partner-browser-intro">
-      <div><span class="kicker">Destination finder</span><h2>Select a country to open its activity page.</h2><p>Each country opens into a focused destination view with the relevant Headout activity widget.</p></div>
-    </div>
-    <div class="notice affiliate-notice"><strong>Affiliate disclosure:</strong> Bookings made through Headout are made with Headout or the relevant third-party provider. JA Group Services Ltd may receive a commission where eligible.</div>
-    <div class="partner-browser-topbar">
-      <div><h2 id="headoutBrowserTitle">Countries</h2><p id="headoutBrowserHelp">Choose a country to view available destinations and open the activity widget.</p></div>
-      <button id="headoutBrowserBack" class="button secondary partner-back-button" type="button">Back</button>
-    </div>
-    <div id="headoutWidgetGrid" class="partner-browser-grid headout-widget-grid"></div>
-  </div></section>
-</main><div id="siteShellFooter"></div><script src="/assets/js/site-shell.js?v=20260620-5"></script><script src="/assets/js/headout-widgets.js?v=20260620-3"></script></body></html>
+<body data-page="experiences" class="partner-redesign-page partner-headout-page">
+  <div id="siteShellHeader"></div>
+  <main id="main">
+    <section class="partner-booking-hero">
+      <div class="container partner-booking-hero-grid">
+        <div class="partner-booking-copy">
+          <span class="partner-badge">Headout</span>
+          <h1>Book memorable things to do around the world.</h1>
+          <p>Explore selected tours, attractions and activities by country, then choose a destination to view current Headout options.</p>
+          <a class="button accent" href="#countries">Browse countries</a>
+        </div>
+        <aside class="partner-hero-panel" aria-label="Headout booking highlights">
+          <strong>Browse by place</strong>
+          <span>Country cards lead into destination tabs, keeping the experience clear and easy to compare.</span>
+        </aside>
+      </div>
+    </section>
+
+    <section class="partner-country-showcase" id="countries">
+      <div class="container">
+        <div class="partner-section-heading">
+          <span class="kicker">Choose your country</span>
+          <h2>Start with where you want to go.</h2>
+          <p>Select a country to open its destination page, then choose a city or area to load available experiences.</p>
+        </div>
+
+        <div class="partner-browser-topbar">
+          <div><h2 id="headoutBrowserTitle">Countries</h2><p id="headoutBrowserHelp">Choose a country to view available destinations.</p></div>
+          <button id="headoutBrowserBack" class="button secondary partner-back-button" type="button">All countries</button>
+        </div>
+        <div id="headoutWidgetGrid" class="partner-browser-grid headout-widget-grid"></div>
+      </div>
+    </section>
+
+    <section class="partner-crosslink-section">
+      <div class="container partner-crosslink-card">
+        <div>
+          <span class="kicker">Looking for more options?</span>
+          <h2>If you cannot find the experience you want through Headout, you can also browse our GetYourGuide collection for more tours, attractions and activities.</h2>
+        </div>
+        <a class="button accent" href="/getyourguide/">Browse GetYourGuide experiences</a>
+      </div>
+    </section>
+
+    <section class="partner-disclosure-section">
+      <div class="container">
+        <div class="notice affiliate-notice"><strong>Affiliate disclosure:</strong> Bookings made through Headout are made with Headout or the relevant third-party provider. JA Group Services Ltd may receive a commission where eligible. Prices, availability, booking terms, cancellation rules and customer support are provided by the relevant provider.</div>
+      </div>
+    </section>
+  </main>
+  <div id="siteShellFooter"></div>
+  <script src="/assets/js/site-shell.js?v=20260620-5"></script>
+  <script src="/assets/js/headout-widgets.js?v=20260620-4"></script>
+</body>
+</html>

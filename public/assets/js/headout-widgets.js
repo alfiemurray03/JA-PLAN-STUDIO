@@ -113,6 +113,24 @@
     return `https://flagcdn.com/w80/${code.toLowerCase()}.png`;
   }
 
+  function countryImage(name) {
+    const images = {
+      "United Kingdom": "united-kingdom",
+      "Portugal": "portugal",
+      "Spain": "spain",
+      "France": "france",
+      "Italy": "italy",
+      "Greece": "greece",
+      "United Arab Emirates": "united-arab-emirates",
+      "United States": "united-states",
+      "Japan": "japan",
+      "Morocco": "morocco",
+      "Australia": "australia",
+      "Canada": "canada"
+    };
+    return `/assets/images/destinations/${images[name] || "travel"}.jpg`;
+  }
+
   function loadHeadoutScript() {
     if (document.querySelector('script[src*="partner.headout.com/embed/script"]')) {
       initialiseHeadoutWidgets();
@@ -189,27 +207,26 @@
     function renderCountries() {
       selectedHeadoutCountry = null;
       selectedHeadoutDestination = null;
-      if (title) title.textContent = "Explore Headout countries";
-      if (help) help.textContent = "Choose a country to view available Headout destinations and open the activity widget.";
+      if (title) title.textContent = "Countries";
+      if (help) help.textContent = "Choose a country to view available destinations.";
       if (back) back.classList.remove("show");
       grid.className = "partner-browser-grid headout-widget-grid";
       grid.innerHTML = headoutCountries.map(function (item) {
         const destinations = item.destinationSlugs.map(getDestinationBySlug).filter(Boolean);
         return `
-          <button class="partner-browser-card" type="button" data-headout-country="${escapeHtml(item.name)}">
-            <div class="partner-browser-card-top"><img src="${escapeHtml(flagUrl(item.code))}" alt="${escapeHtml(item.name)} flag" loading="lazy"><span>View</span></div>
+          <button class="partner-browser-card" type="button" data-headout-country="${escapeHtml(item.name)}" style="--partner-card-image:url('${escapeHtml(countryImage(item.name))}')">
+            <div class="partner-browser-card-top"><img src="${escapeHtml(flagUrl(item.code))}" alt="${escapeHtml(item.name)} flag" loading="lazy"><span>${destinations.length} ${destinations.length === 1 ? "destination" : "destinations"}</span></div>
             <h3>${escapeHtml(item.name)}</h3>
-            <p>${destinations.length} ${destinations.length === 1 ? "destination" : "destinations"}</p>
+            <p>${escapeHtml(item.description)}</p>
           </button>`;
       }).join("");
     }
 
     function renderCountryPage(item, destinationSlug) {
       const destinations = item.destinationSlugs.map(getDestinationBySlug).filter(Boolean);
-      const destination = getDestinationBySlug(destinationSlug) || destinations[0];
-      if (!destination) return;
+      const destination = destinationSlug ? getDestinationBySlug(destinationSlug) : null;
       selectedHeadoutCountry = item;
-      selectedHeadoutDestination = destination;
+      selectedHeadoutDestination = destination || null;
       if (title) title.textContent = item.name;
       if (help) help.textContent = item.description;
       if (back) back.classList.add("show");
@@ -218,28 +235,36 @@
         <section class="partner-country-page">
           <div class="partner-country-hero">
             <div>
-              <span class="kicker">Country activity page</span>
+              <span class="kicker">Choose a destination</span>
               <h3>${escapeHtml(item.name)}</h3>
-              <p>${escapeHtml(item.description)}</p>
+              <p>${escapeHtml(item.description)} Select a destination below to browse current experiences.</p>
             </div>
             <img src="${escapeHtml(flagUrl(item.code))}" alt="${escapeHtml(item.name)} flag" loading="lazy">
           </div>
           <div class="partner-destination-tabs" aria-label="${escapeHtml(item.name)} destinations">
             ${destinations.map(function (entry) {
-              return `<button class="${entry.slug === destination.slug ? "active" : ""}" type="button" data-headout-destination="${escapeHtml(entry.slug)}">${escapeHtml(entry.name)}</button>`;
+              return `<button class="${destination && entry.slug === destination.slug ? "active" : ""}" type="button" data-headout-destination="${escapeHtml(entry.slug)}">${escapeHtml(entry.name)}</button>`;
             }).join("")}
           </div>
           <div class="partner-widget-stage">
-            <div class="partner-widget-heading">
-              <span class="kicker">Widget now showing</span>
-              <h4>${escapeHtml(destination.name)}</h4>
-              <p>Browse current Headout activities, attractions and tours for ${escapeHtml(destination.name)}.</p>
-            </div>
-            ${renderGallery(destination)}
-            ${destination.slug === "madeira" ? renderMadeiraLinks() : ""}
+            ${destination ? `
+              <div class="partner-widget-heading">
+                <span class="kicker">Now showing</span>
+                <h4>${escapeHtml(destination.name)}</h4>
+                <p>Browse current Headout activities, attractions and tours for ${escapeHtml(destination.name)}.</p>
+              </div>
+              ${renderGallery(destination)}
+              ${destination.slug === "madeira" ? renderMadeiraLinks() : ""}
+            ` : `
+              <div class="partner-widget-empty">
+                <span class="kicker">Select a destination</span>
+                <h4>Choose a city or area above.</h4>
+                <p>The Headout experience widget will load here after you choose a destination.</p>
+              </div>
+            `}
           </div>
         </section>`;
-      loadHeadoutScript();
+      if (destination) loadHeadoutScript();
     }
 
     grid.addEventListener("click", function (event) {
@@ -278,8 +303,9 @@
     return true;
   }
 
-  const rendered = renderDestinationWidget() || renderHeadoutDirectory() || document.querySelector("[data-hawt]");
-  if (rendered) loadHeadoutScript();
+  const renderedDestinationWidget = renderDestinationWidget();
+  const renderedDirectory = renderHeadoutDirectory();
+  if (renderedDestinationWidget || (!renderedDirectory && document.querySelector("[data-hawt]"))) loadHeadoutScript();
 
   window.JA_HEADOUT_DESTINATIONS = headoutDestinations;
 })();

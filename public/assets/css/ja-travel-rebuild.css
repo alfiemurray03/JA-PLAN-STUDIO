@@ -1429,3 +1429,486 @@ body:not(.hub-home) .page-hero h1 {
     padding: 22px;
   }
 }
+
+/* Partner collection redesign */
+.partner-redesign-page {
+  color: #102033;
+  background: #fffdf9;
+}
+
+.partner-redesign-page #main {
+  background: #fffdf9;
+}
+
+.partner-booking-hero {
+  min-height: 690px;
+  display: flex;
+  align-items: flex-end;
+  padding: 86px 0 72px;
+  color: #fff;
+  background:
+    linear-gradient(90deg, rgba(8, 42, 73, .9), rgba(8, 42, 73, .46), rgba(8, 42, 73, .16)),
+    url("/assets/images/destinations/travel.jpg") center / cover;
+}
+
+.partner-headout-page .partner-booking-hero {
+  background:
+    linear-gradient(90deg, rgba(8, 42, 73, .9), rgba(8, 42, 73, .42), rgba(8, 42, 73, .14)),
+    url("/assets/images/destinations/portugal.jpg") center / cover;
+}
+
+.partner-getyourguide-page .partner-booking-hero {
+  background:
+    linear-gradient(90deg, rgba(8, 42, 73, .9), rgba(8, 42, 73, .44), rgba(8, 42, 73, .16)),
+    url("/assets/images/destinations/europe.jpg") center / cover;
+}
+
+.partner-booking-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 56px;
+  align-items: end;
+}
+
+.partner-booking-copy {
+  max-width: 850px;
+}
+
+.partner-badge {
+  display: inline-flex;
+  margin-bottom: 22px;
+  padding: 9px 14px;
+  border-radius: 8px;
+  color: #fff;
+  background: #e86f34;
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.partner-booking-copy h1 {
+  max-width: 860px;
+  margin: 0 0 22px;
+  color: #fff;
+  font-family: var(--serif);
+  font-size: clamp(54px, 7vw, 94px);
+  font-weight: 600;
+  line-height: .98;
+}
+
+.partner-booking-copy p {
+  max-width: 670px;
+  margin: 0;
+  color: rgba(255, 255, 255, .9);
+  font-size: 19px;
+  line-height: 1.65;
+}
+
+.partner-booking-copy .button {
+  margin-top: 34px;
+}
+
+.partner-hero-panel {
+  padding: 24px;
+  border-top: 3px solid #e86f34;
+  color: #102033;
+  background: #fff;
+}
+
+.partner-hero-panel strong,
+.partner-hero-panel span {
+  display: block;
+}
+
+.partner-hero-panel strong {
+  margin-bottom: 8px;
+  font-size: 20px;
+}
+
+.partner-hero-panel span {
+  color: #5d6b78;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.partner-country-showcase {
+  padding: 98px 0 104px;
+  background: #fffdf9;
+}
+
+.partner-section-heading {
+  max-width: 820px;
+  margin-bottom: 36px;
+}
+
+.partner-section-heading h2 {
+  margin: 10px 0 14px;
+  font-family: var(--serif);
+  font-size: clamp(42px, 5.2vw, 70px);
+  font-weight: 600;
+  line-height: 1.03;
+}
+
+.partner-section-heading p {
+  max-width: 700px;
+  margin: 0;
+  color: #5d6b78;
+  font-size: 17px;
+}
+
+.partner-search-panel {
+  max-width: 820px;
+  margin: 0 0 34px;
+  padding: 22px 24px;
+  border: 1px solid #d8e1e7;
+  border-left: 4px solid #e86f34;
+  background: #fff;
+}
+
+.partner-search-panel label {
+  display: block;
+  margin-bottom: 8px;
+  color: #102033;
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.partner-redesign-page .partner-search-input {
+  width: 100%;
+  min-height: 54px;
+  padding: 0;
+  border: 0;
+  border-bottom: 2px solid #082a49;
+  border-radius: 0;
+  background: transparent;
+  color: #102033;
+  font-size: 20px;
+}
+
+.partner-redesign-page .partner-suggestion-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.partner-redesign-page .partner-suggestion-row button {
+  padding: 8px 11px;
+  border: 1px solid #d8e1e7;
+  border-radius: 999px;
+  color: #102033;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.partner-redesign-page .partner-browser-topbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: end;
+  margin: 0 0 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.partner-redesign-page .partner-browser-topbar h2 {
+  margin: 0 0 5px;
+  font-size: clamp(28px, 3vw, 40px);
+}
+
+.partner-redesign-page .partner-browser-topbar p {
+  max-width: 720px;
+  margin: 0;
+  color: #5d6b78;
+}
+
+.partner-redesign-page .partner-back-button {
+  display: none;
+}
+
+.partner-redesign-page .partner-back-button.show {
+  display: inline-flex;
+}
+
+.partner-redesign-page .partner-browser-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+  border: 0;
+  background: transparent;
+}
+
+.partner-redesign-page .partner-browser-card {
+  position: relative;
+  min-height: 330px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  padding: 24px;
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  background:
+    linear-gradient(0deg, rgba(8, 42, 73, .9), rgba(8, 42, 73, .18)),
+    var(--partner-card-image, url("/assets/images/destinations/travel.jpg")) center / cover;
+  text-align: left;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.partner-redesign-page .partner-browser-card:hover {
+  transform: translateY(-3px);
+}
+
+.partner-redesign-page .partner-browser-card-top {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  right: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0;
+  color: #fff;
+}
+
+.partner-redesign-page .partner-browser-card-top img {
+  width: 58px;
+  height: 40px;
+  border: 1px solid rgba(255,255,255,.6);
+  border-radius: 6px;
+}
+
+.partner-redesign-page .partner-browser-card-top span:not(.partner-number) {
+  padding: 7px 10px;
+  border: 1px solid rgba(255,255,255,.35);
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(8, 42, 73, .72);
+  font-size: 11px;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.partner-redesign-page .partner-browser-card h3 {
+  max-width: 230px;
+  margin: 0 0 10px;
+  color: #fff;
+  font-family: var(--serif);
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.partner-redesign-page .partner-browser-card p {
+  max-width: 270px;
+  margin: 0;
+  color: rgba(255,255,255,.82);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.partner-redesign-page .partner-browser-card::after {
+  content: "Open country";
+  position: absolute;
+  right: 22px;
+  bottom: 22px;
+  color: #ffc09b;
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.partner-redesign-page .partner-browser-result {
+  display: block;
+}
+
+.partner-redesign-page .partner-country-page {
+  border: 1px solid #d8e1e7;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.partner-redesign-page .partner-country-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 92px;
+  gap: 24px;
+  align-items: center;
+  padding: 34px;
+  border-bottom: 1px solid #d8e1e7;
+  background: #fff;
+}
+
+.partner-redesign-page .partner-country-hero h3 {
+  margin: 8px 0 10px;
+  font-family: var(--serif);
+  font-size: clamp(42px, 5vw, 68px);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.partner-redesign-page .partner-country-hero p {
+  max-width: 760px;
+  margin: 0;
+  color: #5d6b78;
+}
+
+.partner-redesign-page .partner-country-hero img {
+  width: 82px;
+  height: 56px;
+  border: 1px solid #d8e1e7;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.partner-redesign-page .partner-destination-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 20px 24px;
+  border-bottom: 1px solid #d8e1e7;
+  background: #fff;
+}
+
+.partner-redesign-page .partner-destination-tabs button {
+  padding: 10px 15px;
+  border: 1px solid #d8e1e7;
+  border-radius: 999px;
+  color: #102033;
+  background: #fff;
+  font-weight: 800;
+}
+
+.partner-redesign-page .partner-destination-tabs button.active {
+  border-color: #082a49;
+  color: #fff;
+  background: #082a49;
+}
+
+.partner-redesign-page .partner-widget-stage {
+  padding: 30px;
+  background: #fff;
+}
+
+.partner-redesign-page .partner-widget-heading,
+.partner-redesign-page .partner-widget-empty {
+  max-width: 760px;
+  margin-bottom: 22px;
+}
+
+.partner-redesign-page .partner-widget-heading h4,
+.partner-redesign-page .partner-widget-empty h4 {
+  margin: 8px 0 8px;
+  font-family: var(--serif);
+  font-size: clamp(34px, 4vw, 52px);
+  font-weight: 600;
+  line-height: 1.05;
+}
+
+.partner-redesign-page .partner-widget-heading p,
+.partner-redesign-page .partner-widget-empty p {
+  margin: 0;
+  color: #5d6b78;
+}
+
+.partner-redesign-page .provider-widget,
+.partner-redesign-page .headout-gallery {
+  overflow: hidden;
+  border: 1px solid #d8e1e7;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.partner-crosslink-section {
+  padding: 0 0 92px;
+  background: #fffdf9;
+}
+
+.partner-crosslink-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 34px;
+  align-items: center;
+  padding: 38px;
+  border: 1px solid #d8e1e7;
+  border-left: 4px solid #e86f34;
+  background: #fff;
+}
+
+.partner-crosslink-card h2 {
+  max-width: 780px;
+  margin: 8px 0 0;
+  font-family: var(--serif);
+  font-size: clamp(28px, 3vw, 42px);
+  font-weight: 600;
+  line-height: 1.12;
+}
+
+.partner-disclosure-section {
+  padding: 0 0 86px;
+  background: #fffdf9;
+}
+
+.partner-disclosure-section .affiliate-notice {
+  margin: 0;
+  border-left-color: #1f6ea5;
+  background: #eef5f7;
+}
+
+@media (max-width: 900px) {
+  .partner-booking-hero-grid,
+  .partner-redesign-page .partner-browser-topbar,
+  .partner-crosslink-card {
+    grid-template-columns: 1fr;
+  }
+
+  .partner-hero-panel {
+    max-width: 520px;
+  }
+}
+
+@media (max-width: 620px) {
+  .partner-booking-hero {
+    min-height: 650px;
+    padding: 64px 0 54px;
+  }
+
+  .partner-booking-copy h1 {
+    font-size: 52px;
+  }
+
+  .partner-hero-panel {
+    display: none;
+  }
+
+  .partner-country-showcase {
+    padding: 68px 0 74px;
+  }
+
+  .partner-redesign-page .partner-browser-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .partner-redesign-page .partner-browser-card {
+    min-height: 300px;
+  }
+
+  .partner-redesign-page .partner-country-hero {
+    grid-template-columns: 1fr;
+    padding: 24px;
+  }
+
+  .partner-redesign-page .partner-widget-stage,
+  .partner-crosslink-card {
+    padding: 24px;
+  }
+}

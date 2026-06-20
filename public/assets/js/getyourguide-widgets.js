@@ -110,6 +110,24 @@
     return `https://flagcdn.com/w80/${code.toLowerCase()}.png`;
   }
 
+  function countryImage(name) {
+    const images = {
+      "United Kingdom": "united-kingdom",
+      "Spain": "spain",
+      "Portugal": "portugal",
+      "France": "france",
+      "Italy": "italy",
+      "Greece": "greece",
+      "United Arab Emirates": "united-arab-emirates",
+      "United States": "united-states",
+      "Japan": "japan",
+      "Australia": "australia",
+      "Morocco": "morocco",
+      "Canada": "canada"
+    };
+    return `/assets/images/destinations/${images[name] || "travel"}.jpg`;
+  }
+
   function getSearchUrl(query) {
     return `https://www.getyourguide.com/s/?q=${encodeURIComponent(query)}&partner_id=${encodeURIComponent(PARTNER_ID)}&locale=${encodeURIComponent(LOCALE)}&currency=${encodeURIComponent(CURRENCY)}`;
   }
@@ -156,24 +174,24 @@
       const list = countries.filter(function (item) {
         return (`${item.name} ${item.code} ${item.destinations.join(" ")}`).toLowerCase().includes(term);
       });
-      setTitle(term ? "Search results" : "Explore popular destinations", term ? `Showing matching countries and destinations for "${filter}".` : "Choose a country to view destinations, then open a GetYourGuide-powered activity widget.");
+      setTitle(term ? "Search results" : "Countries", term ? `Showing matching countries and destinations for "${filter}".` : "Choose a country to view available destinations.");
       content.className = "partner-browser-grid";
       content.innerHTML = list.length ? list.map(function (item) {
         return `
-          <button class="partner-browser-card" type="button" data-country="${escapeHtml(item.name)}">
-            <div class="partner-browser-card-top"><img src="${escapeHtml(flagUrl(item.code))}" alt="${escapeHtml(item.name)} flag" loading="lazy"><span>View</span></div>
+          <button class="partner-browser-card" type="button" data-country="${escapeHtml(item.name)}" style="--partner-card-image:url('${escapeHtml(countryImage(item.name))}')">
+            <div class="partner-browser-card-top"><img src="${escapeHtml(flagUrl(item.code))}" alt="${escapeHtml(item.name)} flag" loading="lazy"><span>${item.destinations.length} ${item.destinations.length === 1 ? "destination" : "destinations"}</span></div>
             <h3>${escapeHtml(item.name)}</h3>
-            <p>${item.destinations.length} ${item.destinations.length === 1 ? "destination" : "destinations"}</p>
+            <p>${escapeHtml(item.description)}</p>
           </button>`;
       }).join("") : `<div class="partner-empty">No matching countries or destinations found.</div>`;
     }
 
     function renderCountryPage(country, destination) {
       selectedCountry = country;
-      selectedDestination = destination || country.destinations[0];
-      const query = `${selectedDestination}, ${country.name}`;
-      const locationId = locationIds[`${country.name}|${selectedDestination}`];
-      const url = getSearchUrl(query);
+      selectedDestination = destination || null;
+      const query = selectedDestination ? `${selectedDestination}, ${country.name}` : "";
+      const locationId = selectedDestination ? locationIds[`${country.name}|${selectedDestination}`] : "";
+      const url = selectedDestination ? getSearchUrl(query) : "";
       back.classList.add("show");
       setTitle(country.name, country.description);
       content.className = "partner-browser-result";
@@ -181,9 +199,9 @@
         <section class="partner-country-page">
           <div class="partner-country-hero">
             <div>
-              <span class="kicker">Country activity page</span>
+              <span class="kicker">Choose a destination</span>
               <h3>${escapeHtml(country.name)}</h3>
-              <p>${escapeHtml(country.description)}</p>
+              <p>${escapeHtml(country.description)} Select a destination below to browse current experiences.</p>
             </div>
             <img src="${escapeHtml(flagUrl(country.code))}" alt="${escapeHtml(country.name)} flag" loading="lazy">
           </div>
@@ -193,28 +211,36 @@
             }).join("")}
           </div>
           <div class="partner-widget-stage">
-            <div class="partner-widget-heading">
-              <span class="kicker">Widget now showing</span>
-              <h4>${escapeHtml(query)}</h4>
-              <p>Browse activities, attractions, tours and experiences for this destination.</p>
-            </div>
-            <div class="provider-widget destination-provider-widget">
-              <div
-                data-gyg-href="https://widget.getyourguide.com/default/activities.frame"
-                data-gyg-widget="activities"
-                data-gyg-partner-id="${PARTNER_ID}"
-                ${locationId ? `data-gyg-location-id="${escapeHtml(locationId)}"` : `data-gyg-q="${escapeHtml(query)}"`}
-                data-gyg-locale-code="${LOCALE}"
-                data-gyg-currency="${CURRENCY}"
-                data-gyg-number-of-items="${ITEMS}"
-                data-gyg-cmp="jags-find-activities-tours">
-                <span>Powered by <a target="_blank" rel="sponsored noopener noreferrer" href="${escapeHtml(url)}">GetYourGuide</a></span>
+            ${selectedDestination ? `
+              <div class="partner-widget-heading">
+                <span class="kicker">Now showing</span>
+                <h4>${escapeHtml(query)}</h4>
+                <p>Browse activities, attractions, tours and experiences for this destination.</p>
               </div>
-            </div>
-            <a class="button accent" href="${escapeHtml(url)}" target="_blank" rel="sponsored noopener noreferrer">View more ${escapeHtml(selectedDestination)} activities</a>
+              <div class="provider-widget destination-provider-widget">
+                <div
+                  data-gyg-href="https://widget.getyourguide.com/default/activities.frame"
+                  data-gyg-widget="activities"
+                  data-gyg-partner-id="${PARTNER_ID}"
+                  ${locationId ? `data-gyg-location-id="${escapeHtml(locationId)}"` : `data-gyg-q="${escapeHtml(query)}"`}
+                  data-gyg-locale-code="${LOCALE}"
+                  data-gyg-currency="${CURRENCY}"
+                  data-gyg-number-of-items="${ITEMS}"
+                  data-gyg-cmp="jags-find-activities-tours">
+                  <span>Powered by <a target="_blank" rel="sponsored noopener noreferrer" href="${escapeHtml(url)}">GetYourGuide</a></span>
+                </div>
+              </div>
+              <a class="button accent" href="${escapeHtml(url)}" target="_blank" rel="sponsored noopener noreferrer">View more ${escapeHtml(selectedDestination)} activities</a>
+            ` : `
+              <div class="partner-widget-empty">
+                <span class="kicker">Select a destination</span>
+                <h4>Choose a city or area above.</h4>
+                <p>The GetYourGuide activity widget will load here after you choose a destination.</p>
+              </div>
+            `}
           </div>
         </section>`;
-      loadPartnerScript(true);
+      if (selectedDestination) loadPartnerScript(true);
     }
 
     content.addEventListener("click", function (event) {

@@ -1,31 +1,73 @@
 <!doctype html>
 <html lang="en-GB">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>GetYourGuide Activities | JA Experiences & Discovery</title>
-  <meta name="description" content="Explore selected GetYourGuide activities and experiences through JA Experiences & Discovery.">
-  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/css/ja-travel-rebuild.css?v=20260620-6">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>GetYourGuide Activities | JA Experiences &amp; Discovery</title>
+  <meta name="description" content="Browse selected GetYourGuide tours, attractions and activities through JA Experiences & Discovery.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/ja-travel-rebuild.css?v=20260620-7">
 </head>
-<body data-page="experiences" class="partner-tours-page partner-getyourguide-page"><div id="siteShellHeader"></div><main id="main">
-  <section class="partner-tours-hero"><div class="container"><div class="partner-tours-hero-panel"><span>GetYourGuide activity partner</span><h1>Browse activities by destination.</h1><p>Choose a country first, then open the destination widget for tours, tickets and experiences supplied by GetYourGuide.</p></div></div></section>
-  <section class="partner-country-browser" id="destinations"><div class="container">
-    <div class="partner-browser-intro">
-      <div><span class="kicker">Destination finder</span><h2>Select a country to open its activity page.</h2><p>The widget appears after you choose a country and destination, so customers are guided through one clear route.</p></div>
-      <div>
-        <label for="gygDestinationSearch">Search destinations</label>
-        <input id="gygDestinationSearch" class="partner-search-input" name="destination" type="search" placeholder="Try London, Dubai, Rome or Tenerife">
-        <div id="gygSuggestions" class="partner-suggestion-row" aria-label="Popular destination ideas"></div>
+<body data-page="experiences" class="partner-redesign-page partner-getyourguide-page">
+  <div id="siteShellHeader"></div>
+  <main id="main">
+    <section class="partner-booking-hero">
+      <div class="container partner-booking-hero-grid">
+        <div class="partner-booking-copy">
+          <span class="partner-badge">GetYourGuide</span>
+          <h1>Explore tours, tickets and experiences by destination.</h1>
+          <p>Choose a country, select a city or area, then browse current GetYourGuide options for the destination you are interested in.</p>
+          <a class="button accent" href="#countries">Browse countries</a>
+        </div>
+        <aside class="partner-hero-panel" aria-label="GetYourGuide browsing highlights">
+          <strong>Simple destination browsing</strong>
+          <span>Move from country to destination before loading the activity widget, so each page stays clear and focused.</span>
+        </aside>
       </div>
-    </div>
-    <div class="partner-browser-topbar">
-      <div><h2 id="gygBrowserTitle">Countries</h2><p id="gygBrowserHelp">Choose a country to view destinations, then open the GetYourGuide activity widget.</p></div>
-      <button id="gygBrowserBack" class="button secondary partner-back-button" type="button">Back</button>
-    </div>
-    <div id="gygBrowserContent" class="partner-browser-grid" aria-live="polite"></div>
-    <div class="notice affiliate-notice"><strong>Referral notice:</strong> JA Group Services Ltd acts as an online referral and discovery service only. Tours, tickets, activities and bookings are provided by GetYourGuide and/or the relevant third-party travel provider.</div>
-  </div></section>
-  <section class="section"><div class="container">
-    <div class="notice affiliate-notice"><strong>Affiliate and booking disclaimer:</strong> JA Group Services Ltd acts as an online referral and discovery service only. Activities, attractions, tours, tickets, experiences, availability, prices, booking terms, cancellation rules and customer support are provided by GetYourGuide and/or the relevant third-party travel provider. Bookings are completed directly through GetYourGuide and are subject to GetYourGuide's own terms, conditions and privacy notice. JA Group Services Ltd is not the tour operator, travel provider, ticket issuer or booking agent, and may receive a commission for successful bookings made through links or widgets on this page using our affiliate partner ID.</div>
-  </div></section>
-</main><div id="siteShellFooter"></div><script src="/assets/js/site-shell.js?v=20260620-5"></script><script src="/assets/js/getyourguide-widgets.js?v=20260620-3"></script></body></html>
+    </section>
+
+    <section class="partner-country-showcase" id="countries">
+      <div class="container">
+        <div class="partner-section-heading">
+          <span class="kicker">Choose your country</span>
+          <h2>Find experiences in the places you are considering.</h2>
+          <p>Select a country to open its destination page, then choose a city or area to load relevant GetYourGuide activities.</p>
+        </div>
+
+        <div class="partner-search-panel">
+          <label for="gygDestinationSearch">Search countries and destinations</label>
+          <input id="gygDestinationSearch" class="partner-search-input" name="destination" type="search" placeholder="Try London, Dubai, Rome or Tenerife">
+          <div id="gygSuggestions" class="partner-suggestion-row" aria-label="Popular destination ideas"></div>
+        </div>
+
+        <div class="partner-browser-topbar">
+          <div><h2 id="gygBrowserTitle">Countries</h2><p id="gygBrowserHelp">Choose a country to view available destinations.</p></div>
+          <button id="gygBrowserBack" class="button secondary partner-back-button" type="button">All countries</button>
+        </div>
+        <div id="gygBrowserContent" class="partner-browser-grid" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section class="partner-crosslink-section">
+      <div class="container partner-crosslink-card">
+        <div>
+          <span class="kicker">Want to compare availability?</span>
+          <h2>You can also explore selected Headout experiences for alternative availability, pricing and activity options.</h2>
+        </div>
+        <a class="button accent" href="/headout/">Browse Headout experiences</a>
+      </div>
+    </section>
+
+    <section class="partner-disclosure-section">
+      <div class="container">
+        <div class="notice affiliate-notice"><strong>Affiliate disclosure:</strong> Activities, attractions, tours, tickets, experiences, availability, prices, booking terms, cancellation rules and customer support are provided by GetYourGuide and/or the relevant third-party provider. JA Group Services Ltd may receive a commission for qualifying bookings made through links or widgets on this page.</div>
+      </div>
+    </section>
+  </main>
+  <div id="siteShellFooter"></div>
+  <script src="/assets/js/site-shell.js?v=20260620-5"></script>
+  <script src="/assets/js/getyourguide-widgets.js?v=20260620-4"></script>
+</body>
+</html>
