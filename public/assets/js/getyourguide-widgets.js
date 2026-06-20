@@ -168,48 +168,51 @@
       }).join("") : `<div class="partner-empty">No matching countries or destinations found.</div>`;
     }
 
-    function renderDestinations(country) {
+    function renderCountryPage(country, destination) {
       selectedCountry = country;
-      selectedDestination = null;
-      back.classList.add("show");
-      setTitle(country.name, country.description);
-      content.className = "partner-browser-grid";
-      content.innerHTML = country.destinations.map(function (destination) {
-        return `
-          <button class="partner-browser-card" type="button" data-destination="${escapeHtml(destination)}">
-            <div class="partner-browser-card-top"><span class="partner-number">JA</span><span>Open</span></div>
-            <h3>${escapeHtml(destination)}</h3>
-            <p>Open the GetYourGuide activity widget for ${escapeHtml(destination)}, ${escapeHtml(country.name)}.</p>
-          </button>`;
-      }).join("");
-    }
-
-    function renderWidget(destination) {
-      selectedDestination = destination;
-      const query = `${destination}, ${selectedCountry.name}`;
-      const locationId = locationIds[`${selectedCountry.name}|${destination}`];
+      selectedDestination = destination || country.destinations[0];
+      const query = `${selectedDestination}, ${country.name}`;
+      const locationId = locationIds[`${country.name}|${selectedDestination}`];
       const url = getSearchUrl(query);
       back.classList.add("show");
-      setTitle(query, "Explore activities, attractions, tours and experiences for this destination, powered by GetYourGuide.");
+      setTitle(country.name, country.description);
       content.className = "partner-browser-result";
       content.innerHTML = `
-        <section class="partner-result-panel">
-          <h3>${escapeHtml(query)}</h3>
-          <p>Explore activities, attractions, tours and experiences in <strong>${escapeHtml(query)}</strong>. The activity widget below is powered by GetYourGuide.</p>
-          <div class="provider-widget destination-provider-widget">
-            <div
-              data-gyg-href="https://widget.getyourguide.com/default/activities.frame"
-              data-gyg-widget="activities"
-              data-gyg-partner-id="${PARTNER_ID}"
-              ${locationId ? `data-gyg-location-id="${escapeHtml(locationId)}"` : `data-gyg-q="${escapeHtml(query)}"`}
-              data-gyg-locale-code="${LOCALE}"
-              data-gyg-currency="${CURRENCY}"
-              data-gyg-number-of-items="${ITEMS}"
-              data-gyg-cmp="jags-find-activities-tours">
-              <span>Powered by <a target="_blank" rel="sponsored noopener noreferrer" href="${escapeHtml(url)}">GetYourGuide</a></span>
+        <section class="partner-country-page">
+          <div class="partner-country-hero">
+            <div>
+              <span class="kicker">Country activity page</span>
+              <h3>${escapeHtml(country.name)}</h3>
+              <p>${escapeHtml(country.description)}</p>
             </div>
+            <img src="${escapeHtml(flagUrl(country.code))}" alt="${escapeHtml(country.name)} flag" loading="lazy">
           </div>
-          <a class="button accent" href="${escapeHtml(url)}" target="_blank" rel="sponsored noopener noreferrer">View more ${escapeHtml(destination)} activities</a>
+          <div class="partner-destination-tabs" aria-label="${escapeHtml(country.name)} destinations">
+            ${country.destinations.map(function (item) {
+              return `<button class="${item === selectedDestination ? "active" : ""}" type="button" data-destination="${escapeHtml(item)}">${escapeHtml(item)}</button>`;
+            }).join("")}
+          </div>
+          <div class="partner-widget-stage">
+            <div class="partner-widget-heading">
+              <span class="kicker">Widget now showing</span>
+              <h4>${escapeHtml(query)}</h4>
+              <p>Browse activities, attractions, tours and experiences for this destination.</p>
+            </div>
+            <div class="provider-widget destination-provider-widget">
+              <div
+                data-gyg-href="https://widget.getyourguide.com/default/activities.frame"
+                data-gyg-widget="activities"
+                data-gyg-partner-id="${PARTNER_ID}"
+                ${locationId ? `data-gyg-location-id="${escapeHtml(locationId)}"` : `data-gyg-q="${escapeHtml(query)}"`}
+                data-gyg-locale-code="${LOCALE}"
+                data-gyg-currency="${CURRENCY}"
+                data-gyg-number-of-items="${ITEMS}"
+                data-gyg-cmp="jags-find-activities-tours">
+                <span>Powered by <a target="_blank" rel="sponsored noopener noreferrer" href="${escapeHtml(url)}">GetYourGuide</a></span>
+              </div>
+            </div>
+            <a class="button accent" href="${escapeHtml(url)}" target="_blank" rel="sponsored noopener noreferrer">View more ${escapeHtml(selectedDestination)} activities</a>
+          </div>
         </section>`;
       loadPartnerScript(true);
     }
@@ -219,18 +222,16 @@
       const destinationButton = event.target.closest("[data-destination]");
       if (countryButton) {
         const country = countries.find(function (item) { return item.name === countryButton.dataset.country; });
-        if (country) renderDestinations(country);
+        if (country) renderCountryPage(country);
       }
       if (destinationButton && selectedCountry) {
-        renderWidget(destinationButton.dataset.destination);
+        renderCountryPage(selectedCountry, destinationButton.dataset.destination);
       }
     });
 
     back.addEventListener("click", function () {
-      if (selectedDestination && selectedCountry) {
-        renderDestinations(selectedCountry);
-        return;
-      }
+      selectedCountry = null;
+      selectedDestination = null;
       search.value = "";
       renderCountries("");
     });
@@ -306,10 +307,4 @@
   }
 
   renderBrowser();
-  const featuredRendered = renderFeatured();
-  const citiesRendered = renderCities();
-  const renderedDynamicWidgets = featuredRendered || citiesRendered;
-  if (renderedDynamicWidgets || document.querySelector("[data-gyg-widget]")) {
-    loadPartnerScript(false);
-  }
 })();

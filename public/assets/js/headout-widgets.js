@@ -60,6 +60,36 @@
     }
   ];
 
+  const headoutCountries = [
+    country("GB", "United Kingdom", "Headout activity widgets for selected UK destinations.", ["london", "edinburgh", "manchester", "liverpool", "york", "belfast"]),
+    country("PT", "Portugal", "Headout activity widgets for Portugal, Madeira and Algarve destinations.", ["lisbon", "porto", "algarve", "funchal", "madeira", "albufeira"]),
+    country("ES", "Spain", "Headout activity widgets for selected Spanish mainland and island destinations.", ["barcelona", "madrid", "alicante", "malaga", "tenerife", "ibiza"]),
+    country("FR", "France", "Headout activity widgets for selected French destinations.", ["paris", "normandy"]),
+    country("IT", "Italy", "Headout activity widgets for selected Italian city destinations.", ["rome", "venice", "florence"]),
+    country("GR", "Greece", "Headout activity widgets for selected Greek destinations.", ["athens", "rhodes", "santorini"]),
+    country("AE", "United Arab Emirates", "Headout activity widgets for the United Arab Emirates.", ["dubai", "abu-dhabi"]),
+    country("US", "United States", "Headout activity widgets for selected United States destinations.", ["new-york", "orlando", "las-vegas"]),
+    country("NL", "Netherlands", "Headout activity widgets for selected Netherlands destinations.", ["amsterdam", "rotterdam"]),
+    country("DE", "Germany", "Headout activity widgets for Germany.", ["berlin"]),
+    country("AT", "Austria", "Headout activity widgets for Austria.", ["vienna"]),
+    country("CZ", "Czech Republic", "Headout activity widgets for the Czech Republic.", ["prague"]),
+    country("TR", "Turkey", "Headout activity widgets for Turkey.", ["istanbul"]),
+    country("TH", "Thailand", "Headout activity widgets for Thailand.", ["bangkok"]),
+    country("JP", "Japan", "Headout activity widgets for Japan.", ["tokyo"]),
+    country("SG", "Singapore", "Headout activity widgets for Singapore.", ["singapore"]),
+    country("MA", "Morocco", "Headout activity widgets for Morocco.", ["marrakech"]),
+    country("ZA", "South Africa", "Headout activity widgets for South Africa.", ["cape-town"]),
+    country("HU", "Hungary", "Headout activity widgets for Hungary.", ["budapest"]),
+    country("BR", "Brazil", "Headout activity widgets for Brazil.", ["sao-paulo"])
+  ];
+
+  let selectedHeadoutCountry = null;
+  let selectedHeadoutDestination = null;
+
+  function country(code, name, description, destinationSlugs) {
+    return { code, name, description, destinationSlugs };
+  }
+
   function escapeHtml(value) {
     return String(value).replace(/[&<>"']/g, function (char) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char];
@@ -79,8 +109,15 @@
       </div>`;
   }
 
+  function flagUrl(code) {
+    return `https://flagcdn.com/w80/${code.toLowerCase()}.png`;
+  }
+
   function loadHeadoutScript() {
-    if (document.querySelector('script[src*="partner.headout.com/embed/script"]')) return;
+    if (document.querySelector('script[src*="partner.headout.com/embed/script"]')) {
+      initialiseHeadoutWidgets();
+      return;
+    }
     const script = document.createElement("script");
     script.type = "text/javascript";
     script.async = true;
@@ -93,6 +130,16 @@
       }
     };
     document.body.appendChild(script);
+  }
+
+  function initialiseHeadoutWidgets() {
+    window.setTimeout(function () {
+      try {
+        if (typeof HWS !== "undefined" && HWS.init) HWS.init();
+      } catch (error) {
+        console.warn("Headout widgets could not be initialised.", error);
+      }
+    }, 0);
   }
 
   function renderDestinationWidget() {
@@ -133,6 +180,89 @@
   }
 
   function renderHeadoutDirectory() {
+    const grid = document.getElementById("headoutWidgetGrid");
+    if (!grid) return false;
+    const title = document.getElementById("headoutBrowserTitle");
+    const help = document.getElementById("headoutBrowserHelp");
+    const back = document.getElementById("headoutBrowserBack");
+
+    function renderCountries() {
+      selectedHeadoutCountry = null;
+      selectedHeadoutDestination = null;
+      if (title) title.textContent = "Explore Headout countries";
+      if (help) help.textContent = "Choose a country to view available Headout destinations and open the activity widget.";
+      if (back) back.classList.remove("show");
+      grid.className = "partner-browser-grid headout-widget-grid";
+      grid.innerHTML = headoutCountries.map(function (item) {
+        const destinations = item.destinationSlugs.map(getDestinationBySlug).filter(Boolean);
+        return `
+          <button class="partner-browser-card" type="button" data-headout-country="${escapeHtml(item.name)}">
+            <div class="partner-browser-card-top"><img src="${escapeHtml(flagUrl(item.code))}" alt="${escapeHtml(item.name)} flag" loading="lazy"><span>View</span></div>
+            <h3>${escapeHtml(item.name)}</h3>
+            <p>${destinations.length} ${destinations.length === 1 ? "destination" : "destinations"}</p>
+          </button>`;
+      }).join("");
+    }
+
+    function renderCountryPage(item, destinationSlug) {
+      const destinations = item.destinationSlugs.map(getDestinationBySlug).filter(Boolean);
+      const destination = getDestinationBySlug(destinationSlug) || destinations[0];
+      if (!destination) return;
+      selectedHeadoutCountry = item;
+      selectedHeadoutDestination = destination;
+      if (title) title.textContent = item.name;
+      if (help) help.textContent = item.description;
+      if (back) back.classList.add("show");
+      grid.className = "partner-browser-result";
+      grid.innerHTML = `
+        <section class="partner-country-page">
+          <div class="partner-country-hero">
+            <div>
+              <span class="kicker">Country activity page</span>
+              <h3>${escapeHtml(item.name)}</h3>
+              <p>${escapeHtml(item.description)}</p>
+            </div>
+            <img src="${escapeHtml(flagUrl(item.code))}" alt="${escapeHtml(item.name)} flag" loading="lazy">
+          </div>
+          <div class="partner-destination-tabs" aria-label="${escapeHtml(item.name)} destinations">
+            ${destinations.map(function (entry) {
+              return `<button class="${entry.slug === destination.slug ? "active" : ""}" type="button" data-headout-destination="${escapeHtml(entry.slug)}">${escapeHtml(entry.name)}</button>`;
+            }).join("")}
+          </div>
+          <div class="partner-widget-stage">
+            <div class="partner-widget-heading">
+              <span class="kicker">Widget now showing</span>
+              <h4>${escapeHtml(destination.name)}</h4>
+              <p>Browse current Headout activities, attractions and tours for ${escapeHtml(destination.name)}.</p>
+            </div>
+            ${renderGallery(destination)}
+            ${destination.slug === "madeira" ? renderMadeiraLinks() : ""}
+          </div>
+        </section>`;
+      loadHeadoutScript();
+    }
+
+    grid.addEventListener("click", function (event) {
+      const countryButton = event.target.closest("[data-headout-country]");
+      const destinationButton = event.target.closest("[data-headout-destination]");
+      if (countryButton) {
+        const item = headoutCountries.find(function (entry) { return entry.name === countryButton.dataset.headoutCountry; });
+        if (item) renderCountryPage(item);
+      }
+      if (destinationButton && selectedHeadoutCountry) {
+        renderCountryPage(selectedHeadoutCountry, destinationButton.dataset.headoutDestination);
+      }
+    });
+
+    if (back) {
+      back.addEventListener("click", renderCountries);
+    }
+
+    renderCountries();
+    return true;
+  }
+
+  function renderLegacyHeadoutDirectory() {
     const grid = document.getElementById("headoutWidgetGrid");
     if (!grid) return false;
     grid.innerHTML = headoutDestinations.map(function (destination) {
