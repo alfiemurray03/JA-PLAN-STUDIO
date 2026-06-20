@@ -452,9 +452,6 @@ tr:last-child td { border-bottom: 0; }
 /* Partner pages: tours website inspired, without liquid-glass styling */
 .partner-tours-page { background: #fff; }
 .partner-tours-page #main { background: #fff; }
-.partner-moving-notice { padding: 36px 0 24px; background: #fff; }
-.partner-moving-notice .container { padding: 13px 20px; border-top: 1px solid #f1e3bd; border-bottom: 1px solid #f1e3bd; color: #1f2933; background: #fff8e8; text-align: center; font-size: 14px; line-height: 1.45; }
-.partner-moving-notice strong { color: #7a5400; font-weight: 900; }
 .partner-tours-hero { padding: 42px 0 62px; background: #fff; }
 .partner-tours-hero-panel { min-height: 520px; display: flex; flex-direction: column; justify-content: center; padding: clamp(34px, 6vw, 68px); border-radius: 24px; color: white; background: linear-gradient(90deg, rgba(5, 20, 34, .9), rgba(6, 28, 48, .62)), url("/assets/images/destinations/travel.jpg") center / cover; }
 .headout-tours-hero .partner-tours-hero-panel { background-image: linear-gradient(90deg, rgba(5, 20, 34, .9), rgba(6, 28, 48, .58)), url("/assets/images/destinations/europe.jpg"); }
@@ -1109,10 +1106,6 @@ body:not(.hub-home) .page-hero h1 {
   border-radius: 8px;
 }
 
-.partner-moving-notice {
-  padding-top: 24px;
-}
-
 @media (max-width: 900px) {
   .container { width: min(100% - 34px, 1220px); }
   .section { padding: 78px 0; }
@@ -1141,5 +1134,298 @@ body:not(.hub-home) .page-hero h1 {
     grid-template-columns: 38px 1fr;
     min-height: 0;
     padding: 24px 0;
+  }
+}
+
+/* Partner activity pages: focused destination-to-widget journey */
+.partner-tours-page {
+  background: #fffdf9;
+}
+
+.partner-tours-page #main {
+  background: #fffdf9;
+}
+
+.partner-tours-page .partner-tours-hero {
+  padding: 44px 0 26px;
+  background: #fffdf9;
+}
+
+.partner-tours-page .partner-tours-hero-panel {
+  min-height: 470px;
+  justify-content: flex-end;
+  padding: clamp(32px, 5vw, 58px);
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, rgba(8, 42, 73, .88), rgba(8, 42, 73, .42)),
+    url("/assets/images/destinations/europe.jpg") center / cover;
+}
+
+.partner-getyourguide-page .partner-tours-hero-panel {
+  background:
+    linear-gradient(90deg, rgba(8, 42, 73, .9), rgba(8, 42, 73, .38)),
+    url("/assets/images/destinations/travel.jpg") center / cover;
+}
+
+.partner-headout-page .partner-tours-hero-panel {
+  background:
+    linear-gradient(90deg, rgba(8, 42, 73, .9), rgba(8, 42, 73, .34)),
+    url("/assets/images/destinations/portugal.jpg") center / cover;
+}
+
+.partner-tours-page .partner-tours-hero-panel > span {
+  margin-bottom: 18px;
+  border: 0;
+  border-radius: 8px;
+  background: #e86f34;
+  color: #fff;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.partner-tours-page .partner-tours-hero-panel h1 {
+  max-width: 780px;
+  margin-bottom: 18px;
+  font-family: var(--serif);
+  font-size: clamp(48px, 6vw, 76px);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.partner-tours-page .partner-tours-hero-panel p {
+  max-width: 640px;
+  color: rgba(255, 255, 255, .9);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.partner-tours-page .partner-country-browser {
+  padding: 58px 0 92px;
+  background: #fffdf9;
+}
+
+.partner-tours-page .partner-browser-intro {
+  grid-template-columns: minmax(0, .95fr) minmax(320px, .55fr);
+  align-items: start;
+  gap: 54px;
+  margin-bottom: 34px;
+  padding: 0 0 34px;
+  border-bottom: 1px solid #d8e1e7;
+}
+
+.partner-tours-page .partner-browser-intro h2 {
+  max-width: 780px;
+  font-family: var(--serif);
+  font-size: clamp(42px, 5vw, 64px);
+  font-weight: 600;
+  line-height: 1.04;
+}
+
+.partner-tours-page .partner-browser-intro p {
+  max-width: 650px;
+  color: #5d6b78;
+  font-size: 17px;
+}
+
+.partner-tours-page .partner-search-input {
+  min-height: 58px;
+  padding: 0 4px;
+  border: 0;
+  border-bottom: 2px solid #082a49;
+  border-radius: 0;
+  background: transparent;
+  color: #102033;
+  font-size: 20px;
+}
+
+.partner-tours-page .partner-suggestion-row {
+  margin-top: 14px;
+}
+
+.partner-tours-page .partner-suggestion-row button {
+  border-radius: 999px;
+}
+
+.partner-tours-page .affiliate-notice {
+  margin: 0 0 30px;
+  border-left-color: #e86f34;
+  background: #fff7ed;
+}
+
+.partner-tours-page .partner-browser-topbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  margin: 0 0 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.partner-tours-page .partner-browser-topbar h2 {
+  margin: 0 0 6px;
+  font-family: "DM Sans", Inter, sans-serif;
+  font-size: clamp(28px, 3vw, 40px);
+}
+
+.partner-tours-page .partner-browser-topbar p {
+  max-width: 720px;
+}
+
+.partner-tours-page .partner-back-button {
+  min-width: 112px;
+}
+
+.partner-tours-page .partner-browser-grid {
+  gap: 16px;
+  border: 0;
+  background: transparent;
+  grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
+}
+
+.partner-tours-page .partner-browser-card {
+  position: relative;
+  min-height: 190px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  padding: 22px;
+  border: 1px solid #d8e1e7;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.partner-tours-page .partner-browser-card::after {
+  content: "Open";
+  position: absolute;
+  right: 18px;
+  bottom: 16px;
+  color: #1f6ea5;
+  font-size: 12px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.partner-tours-page .partner-browser-card:hover {
+  transform: translateY(-2px);
+  border-color: #1f6ea5;
+  background: #fff;
+}
+
+.partner-tours-page .partner-browser-card-top {
+  margin-bottom: 18px;
+}
+
+.partner-tours-page .partner-browser-card-top span:not(.partner-number) {
+  border-bottom: 0;
+  color: #e86f34;
+}
+
+.partner-tours-page .partner-browser-card-top img {
+  width: 64px;
+  height: 44px;
+  border-radius: 8px;
+}
+
+.partner-tours-page .partner-browser-card h3 {
+  max-width: 190px;
+  margin-bottom: 10px;
+  font-family: "DM Sans", Inter, sans-serif;
+  font-size: 24px;
+}
+
+.partner-tours-page .partner-browser-card p {
+  max-width: 210px;
+  padding-right: 36px;
+  color: #5d6b78;
+}
+
+.partner-tours-page .partner-country-page {
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.partner-tours-page .partner-country-hero {
+  grid-template-columns: minmax(0, 1fr) 94px;
+  gap: 24px;
+  padding: 30px;
+  border: 1px solid #d8e1e7;
+  border-radius: 8px 8px 0 0;
+  background: #fff;
+}
+
+.partner-tours-page .partner-country-hero h3 {
+  font-family: var(--serif);
+  font-weight: 600;
+}
+
+.partner-tours-page .partner-destination-tabs {
+  gap: 10px;
+  padding: 18px;
+  border-right: 1px solid #d8e1e7;
+  border-bottom: 1px solid #d8e1e7;
+  border-left: 1px solid #d8e1e7;
+  background: #fff;
+}
+
+.partner-tours-page .partner-destination-tabs button {
+  padding: 10px 14px;
+  border: 1px solid #d8e1e7;
+  border-radius: 999px;
+  background: #fff;
+}
+
+.partner-tours-page .partner-destination-tabs button.active {
+  border-color: #082a49;
+  color: #fff;
+  background: #082a49;
+}
+
+.partner-tours-page .partner-widget-stage {
+  padding: 28px;
+  border-right: 1px solid #d8e1e7;
+  border-bottom: 1px solid #d8e1e7;
+  border-left: 1px solid #d8e1e7;
+  border-radius: 0 0 8px 8px;
+  background: #fff;
+}
+
+.partner-tours-page .provider-widget,
+.partner-tours-page .headout-gallery {
+  border-radius: 8px;
+}
+
+@media (max-width: 900px) {
+  .partner-tours-page .partner-browser-intro,
+  .partner-tours-page .partner-browser-topbar {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .partner-tours-page .partner-tours-hero {
+    padding-top: 24px;
+  }
+
+  .partner-tours-page .partner-tours-hero-panel {
+    min-height: 560px;
+  }
+
+  .partner-tours-page .partner-tours-hero-panel h1 {
+    font-size: 52px;
+  }
+
+  .partner-tours-page .partner-country-browser {
+    padding: 46px 0 70px;
+  }
+
+  .partner-tours-page .partner-country-hero,
+  .partner-tours-page .partner-widget-stage {
+    padding: 22px;
   }
 }
