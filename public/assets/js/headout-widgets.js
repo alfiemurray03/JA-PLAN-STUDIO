@@ -166,7 +166,7 @@
       try {
         if (typeof HWS !== "undefined" && HWS.init) HWS.init();
       } catch (error) {
-        console.warn("Headout widgets could not be initialised.", error);
+        console.warn("Headout partner content could not be initialised.", error);
       }
     };
     document.body.appendChild(script);
@@ -177,7 +177,7 @@
       try {
         if (typeof HWS !== "undefined" && HWS.init) HWS.init();
       } catch (error) {
-        console.warn("Headout widgets could not be initialised.", error);
+        console.warn("Headout partner content could not be initialised.", error);
       }
     }, 0);
   }

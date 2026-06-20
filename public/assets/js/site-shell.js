@@ -14,8 +14,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.head.appendChild(stylesheet);
   }
 
-  loadSharedStyles("/assets/includes/header.css?v=20260620-7");
-  loadSharedStyles("/assets/includes/footer.css?v=20260620-7");
+  loadSharedStyles("/assets/includes/header.css?v=20260621-1");
+  loadSharedStyles("/assets/includes/footer.css?v=20260621-1");
 
   async function loadPartial(target, path) {
     if (!target) return;
@@ -30,8 +30,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   try {
     await Promise.all([
-      loadPartial(headerTarget, "/assets/includes/header.html?v=20260620-7"),
-      loadPartial(footerTarget, "/assets/includes/footer.html?v=20260620-7")
+      loadPartial(headerTarget, "/assets/includes/header.html?v=20260621-1"),
+      loadPartial(footerTarget, "/assets/includes/footer.html?v=20260621-1")
     ]);
   } catch (error) {
     console.error(error);
