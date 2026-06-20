@@ -139,6 +139,20 @@
     return `/assets/images/destinations/${images[name] || "travel"}.jpg`;
   }
 
+  function countryMeta(name) {
+    const meta = {
+      "United Kingdom": ["Best for: 3–5 days", ["culture", "family", "attractions"], "Historic cities, major landmarks, theatre, museums and easy-to-combine city breaks."],
+      "Portugal": ["Best for: 4–7 days", ["food", "coast", "islands"], "Colourful cities, Atlantic coast, island scenery and relaxed cultural discovery."],
+      "Spain": ["Best for: 4–7 days", ["beaches", "food", "nightlife"], "Vibrant cities, Mediterranean coast, island breaks and lively neighbourhoods."],
+      "France": ["Best for: 3–5 days", ["culture", "food", "attractions"], "Classic city sights, museums, food, neighbourhoods and memorable day trips."],
+      "Italy": ["Best for: 4–7 days", ["culture", "history", "food"], "Ancient landmarks, art, piazzas, food and city-to-city cultural routes."],
+      "Greece": ["Best for: 5–7 days", ["history", "islands", "beaches"], "Ancient sites, island views, blue seas and relaxed Mediterranean days."],
+      "United Arab Emirates": ["Best for: 3–5 days", ["attractions", "family", "desert"], "Modern skylines, beaches, landmark attractions and desert experiences."],
+      "United States": ["Best for: 4–7 days", ["attractions", "cities", "family"], "Big-city icons, entertainment, observation decks and landmark experiences."]
+    };
+    return meta[name] || ["Best for: 2–4 days", ["culture", "attractions", "day trips"], "A useful starting point for tours, tickets and memorable things to do."];
+  }
+
   function loadHeadoutScript() {
     if (document.querySelector('script[src*="partner.headout.com/embed/script"]')) {
       initialiseHeadoutWidgets();
@@ -233,6 +247,8 @@
     function renderCountryPage(item, destinationSlug) {
       const destinations = item.destinationSlugs.map(getDestinationBySlug).filter(Boolean);
       const destination = destinationSlug ? getDestinationBySlug(destinationSlug) : null;
+      const meta = countryMeta(item.name);
+      const tags = meta[1].map(function (tag) { return `<span>${escapeHtml(tag)}</span>`; }).join("");
       selectedHeadoutCountry = item;
       selectedHeadoutDestination = destination || null;
       if (title) title.textContent = item.name;
@@ -246,6 +262,8 @@
               <span class="kicker">Choose a destination</span>
               <h3>${escapeHtml(item.name)}</h3>
               <p>${escapeHtml(item.description)} Select a destination below to browse current experiences.</p>
+              <div class="partner-country-meta"><strong>${escapeHtml(meta[0])}</strong><div>${tags}</div></div>
+              <div class="partner-why-visit"><h4>Why visit</h4><p>${escapeHtml(meta[2])}</p></div>
             </div>
             <img src="${escapeHtml(flagUrl(item.code))}" alt="${escapeHtml(item.name)} flag" loading="lazy">
           </div>

@@ -156,6 +156,21 @@
     return `/assets/images/destinations/${images[name] || "travel"}.jpg`;
   }
 
+  function countryMeta(name) {
+    const meta = {
+      "United Kingdom": ["Best for: 3–7 days", ["culture", "family", "attractions"], "Historic cities, royal landmarks, museums, theatre, countryside and easy day trips."],
+      "Spain": ["Best for: 4–7 days", ["beaches", "food", "nightlife"], "Warm city breaks, coast, islands, architecture, food and lively local culture."],
+      "Portugal": ["Best for: 4–7 days", ["food", "coast", "islands"], "Colourful cities, Atlantic coast, island landscapes and relaxed food-led travel."],
+      "France": ["Best for: 3–7 days", ["culture", "food", "attractions"], "Museums, neighbourhoods, food, landmark attractions and varied regional day trips."],
+      "Italy": ["Best for: 4–8 days", ["culture", "history", "food"], "Ancient cities, art, piazzas, food and memorable city-to-city routes."],
+      "Greece": ["Best for: 5–7 days", ["history", "islands", "beaches"], "Ancient sites, island scenery, blue seas and relaxed Mediterranean experiences."],
+      "United Arab Emirates": ["Best for: 3–5 days", ["attractions", "family", "desert"], "Modern skylines, beaches, landmark attractions, shopping and desert experiences."],
+      "United States": ["Best for: 4–10 days", ["attractions", "cities", "family"], "Major cities, observation decks, entertainment, museums and memorable landmark experiences."],
+      "Japan": ["Best for: 7–12 days", ["culture", "food", "cities"], "Contrasting cities, temples, gardens, food culture and efficient rail connections."]
+    };
+    return meta[name] || ["Best for: 2–5 days", ["culture", "attractions", "day trips"], "A useful starting point for tours, tickets and memorable things to do."];
+  }
+
   function getSearchUrl(query) {
     return `https://www.getyourguide.com/s/?q=${encodeURIComponent(query)}&partner_id=${encodeURIComponent(PARTNER_ID)}&locale=${encodeURIComponent(LOCALE)}&currency=${encodeURIComponent(CURRENCY)}`;
   }
@@ -217,6 +232,8 @@
     function renderCountryPage(country, destination) {
       selectedCountry = country;
       selectedDestination = destination || null;
+      const meta = countryMeta(country.name);
+      const tags = meta[1].map(function (tag) { return `<span>${escapeHtml(tag)}</span>`; }).join("");
       const query = selectedDestination ? `${selectedDestination}, ${country.name}` : "";
       const locationId = selectedDestination ? locationIds[`${country.name}|${selectedDestination}`] : "";
       const url = selectedDestination ? getSearchUrl(query) : "";
@@ -230,6 +247,8 @@
               <span class="kicker">Choose a destination</span>
               <h3>${escapeHtml(country.name)}</h3>
               <p>${escapeHtml(country.description)} Select a destination below to browse current experiences.</p>
+              <div class="partner-country-meta"><strong>${escapeHtml(meta[0])}</strong><div>${tags}</div></div>
+              <div class="partner-why-visit"><h4>Why visit</h4><p>${escapeHtml(meta[2])}</p></div>
             </div>
             <img src="${escapeHtml(flagUrl(country.code))}" alt="${escapeHtml(country.name)} flag" loading="lazy">
           </div>

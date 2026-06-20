@@ -541,3 +541,138 @@
     display: none;
   }
 }
+
+/* Homepage travel discovery additions */
+.home-clean .clean-heading.left {
+  max-width: 820px;
+  margin-left: 0;
+  text-align: left;
+}
+
+.home-activity-row {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.home-activity-card {
+  display: flex;
+  min-width: 0;
+  min-height: 430px;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #d8e1e7;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.home-activity-card img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+}
+
+.home-activity-card span,
+.home-activity-card h3,
+.home-activity-card p,
+.home-activity-card small,
+.home-activity-card b {
+  margin-right: 18px;
+  margin-left: 18px;
+}
+
+.home-activity-card span {
+  width: fit-content;
+  margin-top: 18px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  color: #fff;
+  background: #e86f34;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.home-activity-card h3 {
+  margin-top: 14px;
+  margin-bottom: 8px;
+  font-family: "DM Sans", Inter, sans-serif;
+  font-size: 19px;
+  line-height: 1.16;
+}
+
+.home-activity-card p {
+  margin-top: 0;
+  margin-bottom: 8px;
+  color: #1f6ea5;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.home-activity-card small {
+  color: #5d6b78;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.home-activity-card b {
+  margin-top: auto;
+  margin-bottom: 18px;
+  color: #102033;
+  font-size: 13px;
+}
+
+.home-activity-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 26px;
+}
+
+.home-partner-links {
+  display: grid;
+  gap: 14px;
+}
+
+.home-partner-links a {
+  display: grid;
+  padding: 24px;
+  border: 1px solid #d8e1e7;
+  border-left: 4px solid #e86f34;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.home-partner-links span {
+  color: #1f6ea5;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.home-partner-links strong {
+  margin: 8px 0 5px;
+  color: #102033;
+  font-size: 21px;
+}
+
+.home-partner-links small {
+  color: #5d6b78;
+}
+
+@media (max-width: 1100px) {
+  .home-activity-row {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scroll-snap-type: x proximity;
+  }
+
+  .home-activity-card {
+    width: min(320px, 82vw);
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
+}

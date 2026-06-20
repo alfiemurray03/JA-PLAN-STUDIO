@@ -152,6 +152,22 @@ const imageSets = {
   default: "/assets/images/destinations/travel.jpg"
 };
 
+const destinationTags = {
+  "united-kingdom": ["culture", "family", "attractions", "day trips"],
+  spain: ["beaches", "food", "nightlife", "family"],
+  portugal: ["food", "coast", "culture", "islands"],
+  france: ["culture", "food", "attractions", "romance"],
+  italy: ["culture", "food", "history", "day trips"],
+  greece: ["beaches", "history", "islands", "family"],
+  japan: ["culture", "food", "cities", "day trips"],
+  thailand: ["beaches", "food", "family", "nature"],
+  "united-states": ["attractions", "family", "cities", "day trips"],
+  canada: ["nature", "cities", "family", "scenery"],
+  australia: ["beaches", "wildlife", "family", "outdoors"],
+  "united-arab-emirates": ["attractions", "family", "shopping", "desert"],
+  morocco: ["culture", "food", "markets", "day trips"]
+};
+
 const destinationImages = new Set([
   "australia", "canada", "france", "greece", "italy", "japan", "morocco",
   "portugal", "spain", "united-arab-emirates", "united-kingdom", "united-states"
@@ -196,6 +212,7 @@ function renderDestination() {
     : (imageSets[profile.region] || imageSets.default);
   const highlights = (profile.highlights || ["Major sights", "Local culture", "Food and neighbourhoods", "Day-trip options"]).map(item => `<li>${item}</li>`).join("");
   const plan = (profile.plan || []).map(item => `<li>${item}</li>`).join("");
+  const tags = (destinationTags[slug] || ["culture", "attractions", "food", "day trips"]).map(tag => `<span>${tag}</span>`).join("");
   document.title = `${name} Destination Guide | JA Experiences & Discovery`;
   document.querySelector('meta[name="description"]')?.setAttribute("content", `Practical ${name} destination guidance, suggested trip structure and personalised research support from JA Experiences & Discovery.`);
 
@@ -205,7 +222,8 @@ function renderDestination() {
         <span class="eyebrow">${profile.type} planning guide</span>
         <h1>${name}</h1>
         <p>${profile.summary}</p>
-        <div class="actions"><a class="button light" href="/contact/?destination=${encodeURIComponent(name)}">Ask us to plan ${name}</a><a class="button destination-outline" href="/pricing/">View planning prices</a></div>
+        <div class="destination-hero-tags">${tags}</div>
+        <div class="actions"><a class="button light" href="/headout/">Browse Headout experiences</a><a class="button destination-outline" href="/getyourguide/">Browse GetYourGuide activities</a></div>
       </div>
     </section>
     <nav class="guide-nav" aria-label="On this page"><div class="container guide-nav-inner"><a href="#overview">Overview</a><a href="#highlights">What to include</a><a href="#sample-plan">Suggested plan</a><a href="#practical">Practical checks</a><a href="#support">Planning support</a></div></nav>
@@ -216,11 +234,12 @@ function renderDestination() {
         <div class="fact"><span>Currency</span><strong>${profile.currency}</strong></div>
         <div class="fact"><span>Suggested trip length</span><strong>${profile.suggestedStay}</strong></div>
       </div>
-      <div class="split destination-copy"><div><div class="section-heading left"><span class="kicker">Planning overview</span><h2>Is ${name} right for your trip?</h2><p>${profile.summary}</p></div><p>JA can research the areas, travel pace, attractions and practical considerations that match your circumstances. We do not make the booking or guarantee that a destination or provider is suitable.</p></div><aside class="panel"><h3>Language information</h3><p>${profile.languages}</p><h3>Best for</h3><p>Customers who want a clearer route, manageable daily plan and a shortlist based on their own interests rather than generic rankings.</p></aside></div>
+      <div class="split destination-copy"><div><div class="section-heading left"><span class="kicker">Planning overview</span><h2>Why visit ${name}?</h2><p>${profile.summary}</p></div><p>Use this guide to shape the route, understand the likely pace and decide which attractions, experiences and day trips are worth prioritising.</p></div><aside class="panel"><h3>Recommended stay</h3><p>${profile.suggestedStay}</p><h3>Best for</h3><div class="destination-tag-list">${tags}</div><h3>Language information</h3><p>${profile.languages}</p></aside></div>
     </div></section>
     <section class="section alt" id="highlights"><div class="container split"><div class="destination-image" style="background-image:url('${image}')"></div><div><div class="section-heading left"><span class="kicker">What to include</span><h2>Build the trip around a few strong priorities</h2></div><ul class="check-list">${highlights}</ul><p class="subtle">Attractions, prices, opening arrangements and access information can change. Confirm all important details with the provider before booking.</p></div></div></section>
     <section class="section" id="sample-plan"><div class="container"><div class="section-heading"><span class="kicker">Example structure</span><h2>A sensible ${name} planning approach</h2><p>This is a planning framework, not a fixed package or booking.</p></div><div class="itinerary-grid"><article class="itinerary-day"><span>Stage 1</span><h3>Arrive and orientate</h3><p>Keep arrival day light. Learn the immediate area, collect essentials and avoid committing to a time-sensitive activity after a long journey.</p></article><article class="itinerary-day"><span>Stage 2</span><h3>Core experiences</h3><p>Group the most important sights by area. Balance pre-booked attractions with flexible neighbourhood time and realistic meal breaks.</p></article><article class="itinerary-day"><span>Stage 3</span><h3>Wider exploration</h3><p>Add one day trip, cultural experience or slower local day only when transfer times and energy levels make sense.</p></article><article class="itinerary-day"><span>Stage 4</span><h3>Departure buffer</h3><p>Leave enough time for luggage, transport disruption and provider check-in requirements. Avoid a distant activity immediately before departure.</p></article></div><div class="panel plan-points"><h3>Destination-specific planning points</h3><ul class="check-list">${plan}</ul></div></div></section>
     <section class="section mist" id="practical"><div class="container"><div class="section-heading"><span class="kicker">Before you book</span><h2>Important checks for ${name}</h2></div><div class="card-grid"><article class="card"><span class="card-icon">01</span><h3>Official travel advice</h3><p>Check current FCDO advice, entry requirements, local laws, health information and safety updates.</p><a href="https://www.gov.uk/foreign-travel-advice" target="_blank" rel="noopener">Open GOV.UK advice</a></article><article class="card"><span class="card-icon">02</span><h3>Accessibility</h3><p>Ask venues and transport providers to confirm step-free access, assistance, seating, toilets and any individual requirements.</p></article><article class="card"><span class="card-icon">03</span><h3>Costs and terms</h3><p>Read cancellation rules, taxes, deposits, card charges and what is included before paying a provider.</p></article></div></div></section>
+    <section class="destination-partner-cta"><div class="container"><div class="destination-partner-card"><div><span class="kicker">Tours and experiences</span><h2>Browse activities for ${name}</h2><p>Compare selected tours, attraction tickets, guided visits and memorable things to do through our travel partner pages.</p></div><div><a class="button accent" href="/headout/">Browse Headout</a><a class="button secondary" href="/getyourguide/">Browse GetYourGuide</a></div></div></div></section>
     <section class="cta-band" id="support"><div class="container"><div><h2>Want a ${name} plan built around you?</h2><p>Tell us your dates, interests, pace, budget range and any accessibility or family requirements.</p></div><a class="button light" href="/contact/?destination=${encodeURIComponent(name)}">Request personalised research</a></div></section>`;
 }
 
@@ -228,6 +247,6 @@ renderDestination();
 
 if (document.querySelector("#destinationGuide")) {
   const headoutScript = document.createElement("script");
-  headoutScript.src = "/assets/js/headout-widgets.js?v=20260620-3";
+  headoutScript.src = "/assets/js/headout-widgets.js?v=20260620-6";
   document.body.appendChild(headoutScript);
 }
