@@ -9,20 +9,31 @@
 </head>
 <body data-page="experiences"><div id="siteShellHeader"></div><main id="main">
   <section class="page-hero experiences-hero"><div class="container"><span class="eyebrow">GetYourGuide</span><h1>Explore selected activities and experiences through our third-party affiliate partner.</h1><p>Use the approved GetYourGuide widgets to browse current activity information and availability.</p></div></section>
-  <section class="section alt"><div class="container">
-    <div class="destination-widget-search">
-      <div><span class="kicker">Destination activity search</span><h2>Where would you like to explore?</h2><p>Enter a country, city, island or region to load GetYourGuide activities for that destination.</p></div>
-      <form id="gygDestinationForm"><label for="gygDestination">Destination</label><div class="search-action"><input id="gygDestination" name="destination" type="search" placeholder="Try London, Madeira or New York" required><button class="button accent" type="submit">Find activities</button></div></form>
+  <section class="section alt" id="destinations"><div class="container">
+    <div class="destination-widget-search partner-browser-search">
+      <div><span class="kicker">Find activities and tours</span><h2>Search countries and destinations</h2><p>Choose a country, select a destination, then open a GetYourGuide-powered activity widget.</p></div>
+      <div>
+        <label for="gygDestinationSearch">Search destinations</label>
+        <input id="gygDestinationSearch" class="partner-search-input" name="destination" type="search" placeholder="Try London, Dubai, Rome or Tenerife">
+        <div id="gygSuggestions" class="partner-suggestion-row" aria-label="Popular destination ideas"></div>
+      </div>
     </div>
-    <div id="gygDestinationResult" class="destination-widget-result" hidden aria-live="polite"></div>
-    <div class="notice affiliate-notice"><strong>Affiliate disclosure:</strong> Bookings made through GetYourGuide are made with GetYourGuide or the relevant third-party provider. JA Group Services Ltd may receive a commission where eligible.</div>
+    <div class="partner-browser-topbar">
+      <div><h2 id="gygBrowserTitle">Explore popular destinations</h2><p id="gygBrowserHelp">Choose a country to view destinations, then open a GetYourGuide-powered activity widget.</p></div>
+      <button id="gygBrowserBack" class="button secondary partner-back-button" type="button">Back</button>
+    </div>
+    <div id="gygBrowserContent" class="partner-browser-grid" aria-live="polite"></div>
+    <div class="notice affiliate-notice"><strong>Referral notice:</strong> JA Group Services Ltd acts as an online referral and discovery service only. Tours, tickets, activities and bookings are provided by GetYourGuide and/or the relevant third-party travel provider.</div>
   </div></section>
   <section class="section" id="featured"><div class="container">
-    <div class="section-heading left"><span class="kicker">Featured activities</span><h2>Selected activity widgets</h2><p>These are the GetYourGuide widgets supplied in the approved legacy asset package.</p></div>
+    <div class="section-heading left"><span class="kicker">Featured activities and tours</span><h2>Featured experiences</h2><p>Selected activities with live GetYourGuide availability widgets.</p></div>
     <div id="jaFeaturedGrid" class="partner-widget-grid"></div>
   </div></section>
   <section class="section alt" id="cities"><div class="container">
-    <div class="section-heading left"><span class="kicker">Popular cities</span><h2>Explore activities by city</h2><p>Browse the twelve city widgets supplied for JA Experiences &amp; Discovery.</p></div>
+    <div class="section-heading left"><span class="kicker">Popular city experiences</span><h2>Explore world-famous cities</h2><p>Browse city experiences, attraction tickets, guided tours and memorable activities from selected travel partners.</p></div>
     <div id="jaCityGrid" class="partner-widget-grid city-widget-grid"></div>
+  </div></section>
+  <section class="section"><div class="container">
+    <div class="notice affiliate-notice"><strong>Affiliate and booking disclaimer:</strong> JA Group Services Ltd acts as an online referral and discovery service only. Activities, attractions, tours, tickets, experiences, availability, prices, booking terms, cancellation rules and customer support are provided by GetYourGuide and/or the relevant third-party travel provider. Bookings are completed directly through GetYourGuide and are subject to GetYourGuide's own terms, conditions and privacy notice. JA Group Services Ltd is not the tour operator, travel provider, ticket issuer or booking agent, and may receive a commission for successful bookings made through links or widgets on this page using our affiliate partner ID.</div>
   </div></section>
 </main><div id="siteShellFooter"></div><script src="/assets/js/site-shell.js"></script><script src="/assets/js/getyourguide-widgets.js"></script></body></html>

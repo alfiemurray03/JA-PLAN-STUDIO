@@ -1,5 +1,5 @@
 (function () {
-  const SCRIPT_SRC = "https://partner.headout.com/embed/script?affiliate_code=JL2D9u&currency=GBP&utm_source=https%3A%2F%2Ftours.jagroupservices.co.uk&language=en";
+  const SCRIPT_SRC = "https://partner.headout.com/embed/script?affiliate_code=JL2D9u&currency=GBP&utm_source=https://tours.jagroupservices.co.uk&language=en";
 
   const headoutDestinations = [
     { slug: "london", name: "London", cityCode: "LONDON" },
@@ -75,7 +75,7 @@
   function renderGallery(destination) {
     return `
       <div class="headout-gallery" data-headout-city="${escapeHtml(destination.cityCode)}">
-        <div data-hawt="gallery" data-city="${escapeHtml(destination.cityCode)}" data-max-count="100"></div>
+        <div data-hawt="gallery" data-city="${escapeHtml(destination.cityCode)}" data-max-count="100" data-show-read-more="[object Object]"></div>
       </div>`;
   }
 
@@ -85,6 +85,13 @@
     script.type = "text/javascript";
     script.async = true;
     script.src = SCRIPT_SRC;
+    script.onload = function () {
+      try {
+        if (typeof HWS !== "undefined" && HWS.init) HWS.init();
+      } catch (error) {
+        console.warn("Headout widgets could not be initialised.", error);
+      }
+    };
     document.body.appendChild(script);
   }
 
@@ -130,13 +137,11 @@
     if (!grid) return false;
     grid.innerHTML = headoutDestinations.map(function (destination) {
       return `
-        <article class="partner-experience-card headout-card">
-          <div class="partner-card-top">
-            <span class="partner-card-icon">HD</span>
-            <span class="partner-card-pill">${escapeHtml(destination.name)}</span>
+        <article class="headout-widget-section">
+          <div class="section-heading left">
+            <span class="kicker">Headout</span>
+            <h2>${escapeHtml(destination.name)}</h2>
           </div>
-          <h4>${escapeHtml(destination.name)} experiences</h4>
-          <p>Browse current Headout activity and attraction options for ${escapeHtml(destination.name)}.</p>
           ${renderGallery(destination)}
         </article>`;
     }).join("");
