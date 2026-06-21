@@ -459,17 +459,10 @@
         const identity = await response.json();
 
         const email =
-          identity.email ||
-          identity.user_email ||
-          identity.username ||
-          fallbackEmail;
+          identity.email || identity.user_email || identity.username || identity.common_name || fallbackEmail;
 
         const name =
-          identity.name ||
-          identity.user_name ||
-          identity.preferred_username ||
-          email ||
-          fallbackName;
+          identity.name || identity.user_name || identity.preferred_username || identity.common_name || email || fallbackName;
 
         const provider =
           identity.idp && identity.idp.name
@@ -517,3 +510,4 @@
   <script src="/assets/js/site-shell.js?v=20260621-15"></script>
 </body>
 </html>
+
