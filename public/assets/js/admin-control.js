@@ -70,6 +70,7 @@ function renderSection(section, data) {
   if (section === "branding") renderBranding(data.branding);
   if (section === "policies") renderPolicies(data.policies);
   if (section === "support") renderSupport(data.support);
+  if (section === "maintenance") renderMaintenance(data.maintenance);
   if (section === "system") renderSystem(data.system);
 }
 
@@ -468,6 +469,62 @@ function renderSystem(items) {
   });
 }
 
+
+function renderMaintenance(settings) {
+  const enabled = settings && settings.maintenance_enabled === "true";
+
+  document.getElementById("adminPanel").innerHTML = `
+    <div class="admin-card">
+      <h2>Maintenance Mode</h2>
+      <p>Bring the public website down for maintenance while keeping the admin portal available.</p>
+
+      <form class="admin-form" id="maintenanceForm">
+        <label class="check">
+          <input id="maintenance_enabled" type="checkbox">
+          Maintenance mode enabled
+        </label>
+
+        ${input("Public maintenance title", "maintenance_title")}
+        ${textarea("Public maintenance message", "maintenance_message")}
+        ${input("Estimated return time", "maintenance_eta")}
+
+        <button class="admin-button orange" type="submit">Save maintenance settings</button>
+      </form>
+
+      <div id="maintenanceSaved" class="admin-success" hidden></div>
+
+      <div class="admin-alert" style="margin-top: 1rem;">
+        When enabled, public visitors will see the maintenance page. The admin portal, Cloudflare Access and assets remain available.
+      </div>
+    </div>
+  `;
+
+  document.getElementById("maintenance_enabled").checked = enabled;
+  setValue("maintenance_title", settings?.maintenance_title || "We’ll be back shortly.");
+  setValue("maintenance_message", settings?.maintenance_message || "JA Experiences & Discovery is temporarily unavailable while essential maintenance is carried out.");
+  setValue("maintenance_eta", settings?.maintenance_eta || "");
+
+  document.getElementById("maintenanceForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const data = await api("maintenance", {
+      method: "POST",
+      body: JSON.stringify({
+        maintenance_enabled: document.getElementById("maintenance_enabled").checked,
+        maintenance_title: getValue("maintenance_title"),
+        maintenance_message: getValue("maintenance_message"),
+        maintenance_eta: getValue("maintenance_eta")
+      })
+    });
+
+    document.getElementById("maintenanceSaved").hidden = false;
+    document.getElementById("maintenanceSaved").textContent = data.maintenance.maintenance_enabled === "true"
+      ? "Maintenance mode is ON. The public website is now showing the maintenance page."
+      : "Maintenance mode is OFF. The public website is live again.";
+
+    renderMaintenance(data.maintenance);
+  });
+}
 function stat(label, value) {
   return `<article class="admin-stat"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></article>`;
 }
@@ -540,3 +597,4 @@ function formatMoney(amount, currency) {
     currency: (currency || "gbp").toUpperCase()
   }).format(Number(amount) / 100);
 }
+

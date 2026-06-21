@@ -69,6 +69,20 @@ function clean(value, max = 2000) {
 
 async function ensureTables(DB) {
   await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS profiles (
+      email TEXT PRIMARY KEY,
+      verified_name TEXT,
+      display_name TEXT,
+      contact_email TEXT,
+      phone TEXT,
+      communication_preference TEXT,
+      support_notes TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+
+  await DB.prepare(`
     CREATE TABLE IF NOT EXISTS service_plans (
       id TEXT PRIMARY KEY,
       plan_name TEXT,
@@ -137,6 +151,14 @@ async function ensureTables(DB) {
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `).run();
+
+  await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS site_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
 }
 
 async function seedDefaults(DB) {
@@ -201,6 +223,11 @@ async function seedDefaults(DB) {
   }
 }
 
+async function all(DB, sql) {
+  const result = await DB.prepare(sql).all();
+  return result.results || [];
+}
+
 async function getOverview(DB) {
   const customers = await DB.prepare(`SELECT COUNT(*) AS count FROM profiles`).first().catch(() => ({ count: 0 }));
   const plans = await DB.prepare(`SELECT COUNT(*) AS count FROM service_plans`).first();
@@ -217,11 +244,6 @@ async function getOverview(DB) {
     supportTickets: tickets?.count || 0,
     openIssues: issues?.count || 0
   };
-}
-
-async function all(DB, sql) {
-  const result = await DB.prepare(sql).all();
-  return result.results || [];
 }
 
 async function savePlan(DB, body) {
@@ -357,6 +379,55 @@ async function saveSystemEvent(DB, body) {
   return all(DB, `SELECT * FROM system_events ORDER BY updated_at DESC, created_at DESC LIMIT 500`);
 }
 
+async function getMaintenance(DB) {
+  const defaults = {
+    maintenance_enabled: "false",
+    maintenance_title: "We’ll be back shortly.",
+    maintenance_message: "JA Experiences & Discovery is temporarily unavailable while essential maintenance is carried out.",
+    maintenance_eta: ""
+  };
+
+  const result = await DB.prepare(`
+    SELECT key, value
+    FROM site_settings
+    WHERE key IN (
+      'maintenance_enabled',
+      'maintenance_title',
+      'maintenance_message',
+      'maintenance_eta'
+    )
+  `).all();
+
+  const settings = { ...defaults };
+
+  for (const row of result.results || []) {
+    settings[row.key] = row.value;
+  }
+
+  return settings;
+}
+
+async function saveMaintenance(DB, body) {
+  const settings = {
+    maintenance_enabled: body.maintenance_enabled ? "true" : "false",
+    maintenance_title: clean(body.maintenance_title, 180) || "We’ll be back shortly.",
+    maintenance_message: clean(body.maintenance_message, 1000) || "JA Experiences & Discovery is temporarily unavailable while essential maintenance is carried out.",
+    maintenance_eta: clean(body.maintenance_eta, 180)
+  };
+
+  for (const [key, value] of Object.entries(settings)) {
+    await DB.prepare(`
+      INSERT INTO site_settings (key, value, updated_at)
+      VALUES (?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(key) DO UPDATE SET
+        value = excluded.value,
+        updated_at = CURRENT_TIMESTAMP
+    `).bind(key, value).run();
+  }
+
+  return getMaintenance(DB);
+}
+
 async function getStripe(env) {
   if (!env.STRIPE_SECRET_KEY) {
     return { configured: false, message: "STRIPE_SECRET_KEY is not configured." };
@@ -413,6 +484,7 @@ export async function onRequest(context) {
       if (section === "branding") return json({ admin: identity, branding: await env.DB.prepare(`SELECT * FROM company_branding WHERE id = 'main'`).first() });
       if (section === "support") return json({ admin: identity, support: await all(env.DB, `SELECT * FROM support_tickets ORDER BY updated_at DESC, created_at DESC LIMIT 500`) });
       if (section === "system") return json({ admin: identity, system: await all(env.DB, `SELECT * FROM system_events ORDER BY updated_at DESC, created_at DESC LIMIT 500`) });
+      if (section === "maintenance") return json({ admin: identity, maintenance: await getMaintenance(env.DB) });
       if (section === "stripe") return json({ admin: identity, stripe: await getStripe(env) });
     }
 
@@ -423,6 +495,7 @@ export async function onRequest(context) {
       if (section === "branding") return json({ branding: await saveBranding(env.DB, body), saved: true });
       if (section === "support") return json({ support: await saveSupport(env.DB, body), saved: true });
       if (section === "system") return json({ system: await saveSystemEvent(env.DB, body), saved: true });
+      if (section === "maintenance") return json({ maintenance: await saveMaintenance(env.DB, body), saved: true });
     }
 
     return json({ error: "Method or section not allowed." }, 405);
