@@ -430,3 +430,71 @@ grid-template-columns: 1fr;
 padding: 1.25rem;
 }
 }
+/* Cleaner pricing cards — keeps current page style */
+
+.service-pricing-grid,
+.price-grid.service-pricing-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(230px, 1fr)) !important;
+  gap: 1.5rem !important;
+  align-items: stretch !important;
+}
+
+.price-card {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 100% !important;
+  padding: 1.65rem !important;
+  border-radius: 22px !important;
+}
+
+.price-card h2 {
+  font-size: clamp(2rem, 2.4vw, 2.8rem) !important;
+  line-height: 1 !important;
+  letter-spacing: -0.04em !important;
+}
+
+.price-card p {
+  font-size: 0.96rem !important;
+  line-height: 1.6 !important;
+}
+
+.price-card .price {
+  margin-top: auto !important;
+  font-size: 2.2rem !important;
+}
+
+.price-card .price small {
+  display: inline-block !important;
+  margin-left: 0.35rem !important;
+  font-size: 0.8rem !important;
+  white-space: nowrap !important;
+}
+
+.price-card .feature-list {
+  margin-bottom: 1.25rem !important;
+}
+
+.price-card .button {
+  margin-top: auto !important;
+  width: 100% !important;
+  justify-content: center !important;
+}
+
+@media (max-width: 1180px) {
+  .service-pricing-grid,
+  .price-grid.service-pricing-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .service-pricing-grid,
+  .price-grid.service-pricing-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .price-card h2 {
+    font-size: 2.25rem !important;
+  }
+}
