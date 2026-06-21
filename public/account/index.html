@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Account | JA Experiences &amp; Discovery</title>
-  <meta name="description" content="Secure account area for JA Experiences & Discovery customers.">
+  <title>My Account | JA Experiences &amp; Discovery</title>
+  <meta name="description" content="Secure JA Experiences & Discovery account profile protected by JA Secure Access.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="/assets/css/ja-travel-rebuild.css?v=20260621-14">
-  <link rel="stylesheet" href="/assets/css/homepage-clean.css?v=20260621-14">
+  <link rel="stylesheet" href="/assets/css/ja-travel-rebuild.css?v=20260621-15">
+  <link rel="stylesheet" href="/assets/css/homepage-clean.css?v=20260621-15">
 
   <style>
     body {
@@ -21,10 +21,15 @@
       font-family: Inter, Arial, sans-serif;
     }
 
+    .account-page {
+      min-height: 100vh;
+      background: #fbf8f1;
+    }
+
     .account-hero {
-      padding: clamp(4rem, 7vw, 7rem) 1.5rem;
+      padding: clamp(4rem, 7vw, 6.5rem) 1.5rem;
       background:
-        linear-gradient(rgba(8, 35, 60, 0.84), rgba(8, 35, 60, 0.84)),
+        linear-gradient(rgba(8, 35, 60, 0.86), rgba(8, 35, 60, 0.86)),
         url("/assets/images/hero-travel.jpg");
       background-size: cover;
       background-position: center;
@@ -32,7 +37,7 @@
     }
 
     .account-wrap {
-      width: min(1120px, 100%);
+      width: min(1180px, 100%);
       margin: 0 auto;
     }
 
@@ -40,14 +45,21 @@
       display: inline-block;
       margin-bottom: 1rem;
       color: #ffb38e;
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       font-weight: 900;
       letter-spacing: 0.12em;
       text-transform: uppercase;
     }
 
+    .account-hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+      gap: clamp(2rem, 5vw, 4rem);
+      align-items: center;
+    }
+
     .account-hero h1 {
-      max-width: 900px;
+      max-width: 820px;
       margin: 0;
       font-family: "Playfair Display", Georgia, serif;
       font-size: clamp(3rem, 7vw, 5.8rem);
@@ -56,11 +68,107 @@
     }
 
     .account-hero p {
-      max-width: 760px;
-      margin: 1.5rem 0 0;
+      max-width: 740px;
+      margin: 1.4rem 0 0;
       color: rgba(255, 255, 255, 0.86);
-      font-size: clamp(1.05rem, 1.7vw, 1.3rem);
+      font-size: clamp(1.05rem, 1.7vw, 1.28rem);
       line-height: 1.65;
+    }
+
+    .profile-card {
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 28px;
+      padding: 1.5rem;
+      color: #08233c;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22);
+    }
+
+    .profile-top {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 1.2rem;
+    }
+
+    .profile-avatar {
+      width: 66px;
+      height: 66px;
+      border-radius: 22px;
+      background: #f26a2e;
+      color: #ffffff;
+      display: grid;
+      place-items: center;
+      font-size: 1.4rem;
+      font-weight: 900;
+      box-shadow: 0 14px 30px rgba(242, 106, 46, 0.3);
+    }
+
+    .profile-top h2 {
+      margin: 0;
+      color: #08233c;
+      font-size: 1.25rem;
+      font-weight: 900;
+    }
+
+    .profile-top p {
+      margin: 0.25rem 0 0;
+      color: #526276;
+      font-size: 0.92rem;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .profile-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      margin-top: 0.8rem;
+      border-radius: 999px;
+      background: #eaf7f1;
+      color: #007a53;
+      padding: 0.45rem 0.7rem;
+      font-size: 0.78rem;
+      font-weight: 900;
+    }
+
+    .profile-status::before {
+      content: "";
+      width: 0.55rem;
+      height: 0.55rem;
+      border-radius: 999px;
+      background: #00a86b;
+    }
+
+    .profile-details {
+      display: grid;
+      gap: 0.75rem;
+      margin-top: 1.1rem;
+    }
+
+    .profile-row {
+      background: #f7f9fb;
+      border: 1px solid #d8e2ea;
+      border-radius: 16px;
+      padding: 0.9rem;
+    }
+
+    .profile-row span {
+      display: block;
+      margin-bottom: 0.25rem;
+      color: #526276;
+      font-size: 0.74rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .profile-row strong {
+      display: block;
+      color: #08233c;
+      font-size: 0.98rem;
+      line-height: 1.35;
+      word-break: break-word;
     }
 
     .account-actions {
@@ -93,18 +201,27 @@
       color: #08233c;
     }
 
+    .account-button.outline {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      color: #ffffff;
+      box-shadow: none;
+    }
+
     .account-section {
       padding: clamp(4rem, 7vw, 6rem) 1.5rem;
     }
 
-    .account-grid {
-      width: min(1120px, 100%);
+    .account-dashboard {
+      width: min(1180px, 100%);
       margin: 0 auto;
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: 0.8fr 1.2fr;
       gap: 1.25rem;
+      align-items: start;
     }
 
+    .account-panel,
     .account-card {
       background: #ffffff;
       border: 1px solid #d8e2ea;
@@ -113,8 +230,9 @@
       box-shadow: 0 20px 50px rgba(8, 35, 60, 0.08);
     }
 
+    .account-panel h2,
     .account-card h2 {
-      margin: 0 0 0.8rem;
+      margin: 0 0 0.85rem;
       color: #08233c;
       font-family: "Playfair Display", Georgia, serif;
       font-size: clamp(1.9rem, 3vw, 2.7rem);
@@ -122,14 +240,45 @@
       letter-spacing: -0.045em;
     }
 
+    .account-panel p,
     .account-card p {
       margin: 0 0 1.1rem;
       color: #526276;
       line-height: 1.65;
     }
 
+    .account-mini-list {
+      display: grid;
+      gap: 0.85rem;
+      margin: 1.2rem 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .account-mini-list li {
+      border-radius: 18px;
+      background: #f7f9fb;
+      border: 1px solid #d8e2ea;
+      padding: 1rem;
+      color: #26384d;
+      line-height: 1.55;
+    }
+
+    .account-mini-list strong {
+      display: block;
+      margin-bottom: 0.25rem;
+      color: #08233c;
+      font-weight: 900;
+    }
+
+    .account-card-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.25rem;
+    }
+
     .account-note {
-      width: min(1120px, 100%);
+      width: min(1180px, 100%);
       margin: 1.25rem auto 0;
       background: #fff7ed;
       border: 1px solid #fed7aa;
@@ -139,66 +288,147 @@
       line-height: 1.6;
     }
 
-    @media (max-width: 900px) {
-      .account-grid {
+    .loading-pulse {
+      opacity: 0.7;
+    }
+
+    @media (max-width: 980px) {
+      .account-hero-grid,
+      .account-dashboard,
+      .account-card-grid {
         grid-template-columns: 1fr;
       }
     }
   </style>
 </head>
 
-<body data-page="account">
+<body data-page="account" class="account-page">
   <div id="siteShellHeader"></div>
 
   <main id="main">
     <section class="account-hero">
-      <div class="account-wrap">
-        <span class="account-kicker">JA Secure Access</span>
-        <h1>Your JA Experiences account.</h1>
-        <p>
-          Welcome to the secure account area for JA Experiences &amp; Discovery.
-          This page is protected by JA Secure Access and Microsoft Entra sign-in.
-        </p>
+      <div class="account-wrap account-hero-grid">
+        <div>
+          <span class="account-kicker">JA Secure Access</span>
+          <h1>My account.</h1>
+          <p>
+            Welcome to your secure JA Experiences &amp; Discovery profile.
+            This area is protected by JA Secure Access and Microsoft Entra sign-in.
+          </p>
 
-        <div class="account-actions">
-          <a class="account-button orange" href="/enquiry/">Start a new enquiry</a>
-          <a class="account-button light" href="/pricing/">View plans</a>
-          <a class="account-button" href="/cdn-cgi/access/logout">Sign out</a>
+          <div class="account-actions">
+            <a class="account-button orange" href="/enquiry/">Start a new enquiry</a>
+            <a class="account-button light" href="/pricing/">View plans</a>
+            <a class="account-button outline" href="/cdn-cgi/access/logout">Sign out</a>
+          </div>
         </div>
+
+        <aside class="profile-card" aria-label="Signed in profile">
+          <div class="profile-top">
+            <div class="profile-avatar" id="profileInitials">JA</div>
+            <div>
+              <h2 id="profileName" class="loading-pulse">Loading profile...</h2>
+              <p id="profileEmail">Checking secure access session...</p>
+              <span class="profile-status">Signed in securely</span>
+            </div>
+          </div>
+
+          <div class="profile-details">
+            <div class="profile-row">
+              <span>Name</span>
+              <strong id="profileNameDetail">Loading...</strong>
+            </div>
+
+            <div class="profile-row">
+              <span>Email address</span>
+              <strong id="profileEmailDetail">Loading...</strong>
+            </div>
+
+            <div class="profile-row">
+              <span>Access provider</span>
+              <strong id="profileProvider">JA Secure Access / Microsoft Entra</strong>
+            </div>
+
+            <div class="profile-row">
+              <span>Account status</span>
+              <strong>Protected access active</strong>
+            </div>
+          </div>
+        </aside>
       </div>
     </section>
 
     <section class="account-section">
-      <div class="account-grid">
-        <article class="account-card">
-          <span class="account-kicker">Requests</span>
-          <h2>Manage your support</h2>
+      <div class="account-dashboard">
+        <aside class="account-panel">
+          <span class="account-kicker">Profile</span>
+          <h2>Account details</h2>
           <p>
-            Use this secure area to return to JA Experiences &amp; Discovery support,
-            start a new enquiry, or request help with a planning service.
+            Your profile information is supplied by JA Secure Access after Microsoft sign-in.
+            If your name or email is incorrect, update it in your Microsoft account.
           </p>
-          <a class="account-button orange" href="/enquiry/">Open enquiry form</a>
-        </article>
 
-        <article class="account-card">
-          <span class="account-kicker">Payments</span>
-          <h2>Paid planning plans</h2>
-          <p>
-            If you have purchased a plan, keep your Stripe receipt and payment email.
-            These details help us match your request to your payment.
-          </p>
-          <a class="account-button" href="/pricing/">View plan options</a>
-        </article>
+          <ul class="account-mini-list">
+            <li>
+              <strong>Security</strong>
+              Access is protected before this page loads.
+            </li>
+            <li>
+              <strong>Session</strong>
+              Sign out when using a shared or public computer.
+            </li>
+            <li>
+              <strong>Support matching</strong>
+              Use your payment email when contacting support about paid plans.
+            </li>
+          </ul>
 
-        <article class="account-card">
-          <span class="account-kicker">Security</span>
-          <h2>Secure sign out</h2>
-          <p>
-            Your access is protected through Microsoft sign-in. Sign out when using
-            a shared device or public computer.
-          </p>
-          <a class="account-button" href="/cdn-cgi/access/logout">Sign out</a>
-        </article>
+          <div class="account-actions">
+            <a class="account-button" href="/cdn-cgi/access/logout">Sign out</a>
+          </div>
+        </aside>
+
+        <div class="account-card-grid">
+          <article class="account-card">
+            <span class="account-kicker">Requests</span>
+            <h2>Support requests</h2>
+            <p>
+              Start a new discovery enquiry or contact JA Experiences &amp; Discovery about
+              an existing planning request.
+            </p>
+            <a class="account-button orange" href="/enquiry/">Open enquiry form</a>
+          </article>
+
+          <article class="account-card">
+            <span class="account-kicker">Payments</span>
+            <h2>Planning plans</h2>
+            <p>
+              View paid planning options. If you have already paid, keep your Stripe receipt
+              and payment email for support matching.
+            </p>
+            <a class="account-button" href="/pricing/">View plans</a>
+          </article>
+
+          <article class="account-card">
+            <span class="account-kicker">Guidance</span>
+            <h2>Important information</h2>
+            <p>
+              Review how JA Experiences &amp; Discovery works, including service scope,
+              third-party provider boundaries and customer responsibilities.
+            </p>
+            <a class="account-button" href="/important-information/">Read guidance</a>
+          </article>
+
+          <article class="account-card">
+            <span class="account-kicker">Documents</span>
+            <h2>Travel support</h2>
+            <p>
+              Travel documentation support is guidance only and is not legal, immigration
+              or visa advice. We cannot guarantee application outcomes.
+            </p>
+            <a class="account-button" href="/travel-documentation-support/">View support</a>
+          </article>
+        </div>
       </div>
 
       <div class="account-note">
@@ -210,6 +440,80 @@
   </main>
 
   <div id="siteShellFooter"></div>
-  <script src="/assets/js/site-shell.js?v=20260621-14"></script>
+
+  <script>
+    async function loadAccessProfile() {
+      const fallbackName = "JA Secure Access user";
+      const fallbackEmail = "Signed in";
+
+      try {
+        const response = await fetch("/cdn-cgi/access/get-identity", {
+          credentials: "include",
+          cache: "no-store"
+        });
+
+        if (!response.ok) {
+          throw new Error("Identity response was not available.");
+        }
+
+        const identity = await response.json();
+
+        const email =
+          identity.email ||
+          identity.user_email ||
+          identity.username ||
+          fallbackEmail;
+
+        const name =
+          identity.name ||
+          identity.user_name ||
+          identity.preferred_username ||
+          email ||
+          fallbackName;
+
+        const provider =
+          identity.idp && identity.idp.name
+            ? identity.idp.name
+            : "JA Secure Access / Microsoft Entra";
+
+        updateProfile(name, email, provider);
+      } catch (error) {
+        updateProfile(fallbackName, fallbackEmail, "JA Secure Access / Microsoft Entra");
+      }
+    }
+
+    function updateProfile(name, email, provider) {
+      const displayName = name || "JA Secure Access user";
+      const displayEmail = email || "Signed in";
+
+      document.getElementById("profileName").textContent = displayName;
+      document.getElementById("profileName").classList.remove("loading-pulse");
+      document.getElementById("profileEmail").textContent = displayEmail;
+      document.getElementById("profileNameDetail").textContent = displayName;
+      document.getElementById("profileEmailDetail").textContent = displayEmail;
+      document.getElementById("profileProvider").textContent = provider;
+
+      document.getElementById("profileInitials").textContent = initials(displayName, displayEmail);
+    }
+
+    function initials(name, email) {
+      const source = name && name !== "JA Secure Access user" ? name : email;
+      const parts = String(source || "JA").replace(/@.*/, "").split(/[.\s_-]+/).filter(Boolean);
+
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+      }
+
+      if (parts.length === 1) {
+        return parts[0].slice(0, 2).toUpperCase();
+      }
+
+      return "JA";
+    }
+
+    loadAccessProfile();
+  </script>
+
+  <script src="/assets/js/site-shell.js?v=20260621-15"></script>
 </body>
 </html>
