@@ -218,6 +218,52 @@ async function ensureTables(DB, env) {
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `).run();
+
+  await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS data_protection_requests (
+      id TEXT PRIMARY KEY,
+      reference TEXT UNIQUE,
+      user_id TEXT,
+      customer_name TEXT,
+      customer_email TEXT,
+      request_type TEXT,
+      customer_message TEXT,
+      status TEXT DEFAULT 'New',
+      submitted_at TEXT,
+      due_at TEXT,
+      completed_at TEXT,
+      assigned_admin_id TEXT,
+      internal_notes TEXT,
+      attachments TEXT,
+      audit_log TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+
+  await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS system_reports (
+      id TEXT PRIMARY KEY,
+      reference TEXT UNIQUE,
+      user_id TEXT,
+      customer_name TEXT,
+      customer_email TEXT,
+      issue_type TEXT,
+      affected_url TEXT,
+      device_browser TEXT,
+      description TEXT,
+      status TEXT DEFAULT 'New',
+      priority TEXT DEFAULT 'Normal',
+      submitted_at TEXT,
+      resolved_at TEXT,
+      assigned_admin_id TEXT,
+      internal_notes TEXT,
+      attachments TEXT,
+      audit_log TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
 }
 
 async function isAllowedAdmin(DB, identity, env) {
@@ -316,14 +362,16 @@ async function seedDefaults(DB) {
 }
 
 async function getOverview(DB) {
-  const [customers, plans, activePlans, policies, tickets, openIssues, admins] = await Promise.all([
+  const [customers, plans, activePlans, policies, tickets, openIssues, admins, dpr, systemReports] = await Promise.all([
     DB.prepare(`SELECT COUNT(*) AS count FROM profiles`).first().catch(() => ({ count: 0 })),
     DB.prepare(`SELECT COUNT(*) AS count FROM service_plans`).first(),
     DB.prepare(`SELECT COUNT(*) AS count FROM service_plans WHERE is_active = 1`).first(),
     DB.prepare(`SELECT COUNT(*) AS count FROM policy_pages`).first(),
     DB.prepare(`SELECT COUNT(*) AS count FROM support_tickets`).first(),
     DB.prepare(`SELECT COUNT(*) AS count FROM system_events WHERE lower(status) NOT IN ('resolved', 'closed')`).first(),
-    DB.prepare(`SELECT COUNT(*) AS count FROM admin_users`).first()
+    DB.prepare(`SELECT COUNT(*) AS count FROM admin_users`).first(),
+    DB.prepare(`SELECT COUNT(*) AS count FROM data_protection_requests WHERE lower(status) NOT IN ('completed', 'closed', 'refused / not applicable')`).first(),
+    DB.prepare(`SELECT COUNT(*) AS count FROM system_reports WHERE lower(status) NOT IN ('fixed', 'closed', 'duplicate / not reproducible')`).first()
   ]);
 
   const comingsoon = await getComingSoon(DB);
@@ -336,6 +384,8 @@ async function getOverview(DB) {
     policies: policies?.count || 0,
     supportTickets: tickets?.count || 0,
     openIssues: openIssues?.count || 0,
+    dataProtectionRequests: dpr?.count || 0,
+    systemReports: systemReports?.count || 0,
     admins: admins?.count || 0,
     comingSoonStatus: comingsoon.comingsoon_enabled === "true" ? "On" : "Off",
     maintenanceStatus: maintenance.maintenance_enabled === "true" ? "On" : "Off"
@@ -548,6 +598,148 @@ async function saveSystemEvent(DB, body) {
   return all(DB, `SELECT * FROM system_events ORDER BY updated_at DESC, created_at DESC LIMIT 500`);
 }
 
+function parseAuditLog(value) {
+  try {
+    const parsed = JSON.parse(value || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function addAudit(existing, event) {
+  return JSON.stringify([
+    ...parseAuditLog(existing),
+    {
+      ...event,
+      timestamp: new Date().toISOString()
+    }
+  ]);
+}
+
+function auditActor(identity) {
+  return identity.email || identity.name || "admin";
+}
+
+async function getDataProtectionRequests(DB) {
+  return all(DB, `
+    SELECT id, reference, user_id, customer_name, customer_email, request_type, customer_message,
+      status, submitted_at, due_at, completed_at, assigned_admin_id, internal_notes,
+      attachments, audit_log, created_at, updated_at
+    FROM data_protection_requests
+    ORDER BY submitted_at DESC, created_at DESC
+    LIMIT 500
+  `);
+}
+
+async function getSystemReports(DB) {
+  return all(DB, `
+    SELECT id, reference, user_id, customer_name, customer_email, issue_type, affected_url,
+      device_browser, description, status, priority, submitted_at, resolved_at, assigned_admin_id,
+      internal_notes, attachments, audit_log, created_at, updated_at
+    FROM system_reports
+    ORDER BY submitted_at DESC, created_at DESC
+    LIMIT 500
+  `);
+}
+
+async function saveDataProtectionRequest(DB, body, identity) {
+  const current = await DB.prepare(`SELECT * FROM data_protection_requests WHERE id = ? OR reference = ?`).bind(clean(body.id, 120), clean(body.reference, 120)).first();
+  if (!current) throw new Error("Data protection request not found.");
+
+  const nextStatus = clean(body.status, 80) || current.status || "New";
+  const nextNotes = clean(body.internal_notes, 6000);
+  const nextAssigned = clean(body.assigned_admin_id, 254);
+  const events = [];
+
+  if (nextStatus !== current.status) {
+    events.push({ type: "Status changed", actor: auditActor(identity), previousValue: current.status || "", newValue: nextStatus });
+  }
+  if (nextAssigned !== (current.assigned_admin_id || "")) {
+    events.push({ type: "Assigned to admin", actor: auditActor(identity), previousValue: current.assigned_admin_id || "", newValue: nextAssigned });
+  }
+  if (nextNotes && nextNotes !== (current.internal_notes || "")) {
+    events.push({ type: "Admin note added", actor: auditActor(identity) });
+  }
+  if (nextStatus === "Completed" && current.status !== "Completed") {
+    events.push({ type: "Marked completed", actor: auditActor(identity) });
+  }
+  if (nextStatus === "Closed" && current.status !== "Closed") {
+    events.push({ type: "Closed", actor: auditActor(identity) });
+  }
+
+  let auditLog = current.audit_log || "[]";
+  for (const event of events) auditLog = addAudit(auditLog, event);
+
+  const completedAt = nextStatus === "Completed" || nextStatus === "Closed"
+    ? (current.completed_at || new Date().toISOString())
+    : current.completed_at;
+
+  await DB.prepare(`
+    UPDATE data_protection_requests SET
+      status = ?,
+      assigned_admin_id = ?,
+      internal_notes = ?,
+      completed_at = ?,
+      audit_log = ?,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).bind(nextStatus, nextAssigned, nextNotes, completedAt, auditLog, current.id).run();
+
+  return getDataProtectionRequests(DB);
+}
+
+async function saveSystemReport(DB, body, identity) {
+  const current = await DB.prepare(`SELECT * FROM system_reports WHERE id = ? OR reference = ?`).bind(clean(body.id, 120), clean(body.reference, 120)).first();
+  if (!current) throw new Error("System report not found.");
+
+  const nextStatus = clean(body.status, 80) || current.status || "New";
+  const nextPriority = clean(body.priority, 40) || current.priority || "Normal";
+  const nextNotes = clean(body.internal_notes, 6000);
+  const nextAssigned = clean(body.assigned_admin_id, 254);
+  const events = [];
+
+  if (nextStatus !== current.status) {
+    events.push({ type: "Status changed", actor: auditActor(identity), previousValue: current.status || "", newValue: nextStatus });
+  }
+  if (nextPriority !== current.priority) {
+    events.push({ type: "Priority changed", actor: auditActor(identity), previousValue: current.priority || "", newValue: nextPriority });
+  }
+  if (nextAssigned !== (current.assigned_admin_id || "")) {
+    events.push({ type: "Assigned to admin", actor: auditActor(identity), previousValue: current.assigned_admin_id || "", newValue: nextAssigned });
+  }
+  if (nextNotes && nextNotes !== (current.internal_notes || "")) {
+    events.push({ type: "Admin note added", actor: auditActor(identity) });
+  }
+  if (nextStatus === "Fixed" && current.status !== "Fixed") {
+    events.push({ type: "Marked fixed", actor: auditActor(identity) });
+  }
+  if (nextStatus === "Closed" && current.status !== "Closed") {
+    events.push({ type: "Closed", actor: auditActor(identity) });
+  }
+
+  let auditLog = current.audit_log || "[]";
+  for (const event of events) auditLog = addAudit(auditLog, event);
+
+  const resolvedAt = nextStatus === "Fixed" || nextStatus === "Closed"
+    ? (current.resolved_at || new Date().toISOString())
+    : current.resolved_at;
+
+  await DB.prepare(`
+    UPDATE system_reports SET
+      status = ?,
+      priority = ?,
+      assigned_admin_id = ?,
+      internal_notes = ?,
+      resolved_at = ?,
+      audit_log = ?,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).bind(nextStatus, nextPriority, nextAssigned, nextNotes, resolvedAt, auditLog, current.id).run();
+
+  return getSystemReports(DB);
+}
+
 async function getMaintenance(DB) {
   return settingMap(DB, [
     "maintenance_enabled",
@@ -725,6 +917,8 @@ export async function onRequest(context) {
       if (section === "branding") return json({ admin: identity, branding: await env.DB.prepare(`SELECT * FROM company_branding WHERE id = 'main'`).first() });
       if (section === "support") return json({ admin: identity, support: await all(env.DB, `SELECT * FROM support_tickets ORDER BY updated_at DESC, created_at DESC LIMIT 500`) });
       if (section === "system") return json({ admin: identity, system: await all(env.DB, `SELECT * FROM system_events ORDER BY updated_at DESC, created_at DESC LIMIT 500`) });
+      if (section === "datarequests") return json({ admin: identity, datarequests: await getDataProtectionRequests(env.DB) });
+      if (section === "systemreports") return json({ admin: identity, systemreports: await getSystemReports(env.DB) });
       if (section === "maintenance") return json({ admin: identity, maintenance: await getMaintenance(env.DB) });
       if (section === "comingsoon") return json({ admin: identity, comingsoon: await getComingSoon(env.DB) });
       if (section === "stripe") return json({ admin: identity, stripe: await getStripe(env.DB, env, url.searchParams.get("test") === "1") });
@@ -742,6 +936,8 @@ export async function onRequest(context) {
       if (section === "branding") return json({ branding: await saveBranding(env.DB, body), saved: true });
       if (section === "support") return json({ support: await saveSupport(env.DB, body), saved: true });
       if (section === "system") return json({ system: await saveSystemEvent(env.DB, body), saved: true });
+      if (section === "datarequests") return json({ datarequests: await saveDataProtectionRequest(env.DB, body, identity), saved: true });
+      if (section === "systemreports") return json({ systemreports: await saveSystemReport(env.DB, body, identity), saved: true });
       if (section === "maintenance") return json({ maintenance: await saveMaintenance(env.DB, body), saved: true });
       if (section === "comingsoon") return json({ comingsoon: await saveComingSoon(env.DB, body), saved: true });
       if (section === "stripe") return json({ stripe: await saveStripe(env.DB, body, env), saved: true });

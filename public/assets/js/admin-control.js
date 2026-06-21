@@ -14,6 +14,8 @@ const sectionTitles = {
   policies: "Legal Policies",
   support: "Support",
   system: "System / Issues",
+  datarequests: "Data Protection Requests",
+  systemreports: "System Reports",
   comingsoon: "Coming Soon Page",
   maintenance: "Maintenance Mode"
 };
@@ -30,6 +32,10 @@ const iconPaths = {
   clock: '<circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path>',
   file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8"></path><path d="M8 17h6"></path>'
 };
+
+const dprStatuses = ["New", "In Review", "Awaiting Customer Information", "Awaiting Identity Verification", "Action Required", "Completed", "Refused / Not Applicable", "Closed"];
+const systemReportStatuses = ["New", "Investigating", "In Progress", "Escalated", "Fixed", "Closed", "Duplicate / Not Reproducible"];
+const priorities = ["Low", "Normal", "High", "Urgent"];
 
 document.addEventListener("DOMContentLoaded", () => {
   decorateIcons();
@@ -117,6 +123,10 @@ function bindAdminActions() {
 
     if (type === "open-plan") {
       openPlanModal(action.dataset.id || "");
+    }
+
+    if (type === "open-admin-record") {
+      openAdminRecordModal(action.dataset.section, action.dataset.id);
     }
 
     if (type === "close-modal") {
@@ -219,6 +229,8 @@ function renderSection(section, data) {
   if (section === "comingsoon") renderComingSoon(data.comingsoon);
   if (section === "maintenance") renderMaintenance(data.maintenance);
   if (section === "system") renderSystem(data.system);
+  if (section === "datarequests") renderDataRequests(data.datarequests);
+  if (section === "systemreports") renderSystemReports(data.systemreports);
 }
 
 function renderOverview(overview) {
@@ -230,6 +242,8 @@ function renderOverview(overview) {
       ${stat("Policies", overview.policies)}
       ${stat("Support tickets", overview.supportTickets)}
       ${stat("Open issues", overview.openIssues)}
+      ${stat("Data requests", overview.dataProtectionRequests)}
+      ${stat("System reports", overview.systemReports)}
       ${stat("Coming Soon", overview.comingSoonStatus)}
       ${stat("Maintenance", overview.maintenanceStatus)}
       ${stat("Admins", overview.admins)}
@@ -245,6 +259,8 @@ function renderOverview(overview) {
       <div class="quick-grid">
         ${quick("admins", "shield", "Admin Users / Access", "Manage authorised admin accounts")}
         ${quick("customers", "users", "CRM / Customers", "Review customer records and Lifetime access")}
+        ${quick("datarequests", "file", "Data Protection Requests", "Review UK GDPR and data rights requests")}
+        ${quick("systemreports", "alert", "System Reports", "Track customer website and account issue reports")}
         ${quick("plans", "plans", "Plans & Prices", "Configure service plan cards and Stripe IDs")}
         ${quick("stripe", "card", "Stripe API Controls", "Store keys and test account status")}
         ${quick("comingsoon", "clock", "Coming Soon Page", "Control the public pre-launch page")}
@@ -788,6 +804,162 @@ async function updateRecordStatus(section, id, status) {
 
   await api(section, { method: "POST", body: JSON.stringify(body) });
   loadSection(section);
+}
+
+function renderDataRequests(items = []) {
+  renderAdminRecordSection({
+    section: "datarequests",
+    title: "Data Protection Requests",
+    description: "Review and manage formal UK GDPR and Data Protection Act 2018 customer requests.",
+    items,
+    statuses: dprStatuses,
+    columns: ["Reference", "Customer", "Type", "Status", "Due", "Updated"],
+    row: (item) => `
+      <tr>
+        <td><strong>${escapeHtml(item.reference)}</strong><span>${escapeHtml(formatDate(item.submitted_at || item.created_at))}</span></td>
+        <td><strong>${escapeHtml(item.customer_name || "Customer")}</strong><span>${escapeHtml(item.customer_email || item.user_id || "")}</span></td>
+        <td>${escapeHtml(item.request_type || "")}</td>
+        <td>${badge(item.status || "New", statusColour(item.status))}</td>
+        <td>${escapeHtml(formatDate(item.due_at))}</td>
+        <td><button class="mini-button" type="button" data-action="open-admin-record" data-section="datarequests" data-id="${escapeAttr(item.id)}">Open</button></td>
+      </tr>
+    `
+  });
+}
+
+function renderSystemReports(items = []) {
+  renderAdminRecordSection({
+    section: "systemreports",
+    title: "System Reports",
+    description: "Review customer technical, website, account and checkout issue reports.",
+    items,
+    statuses: systemReportStatuses,
+    columns: ["Reference", "Customer", "Issue", "Status", "Priority", "Updated"],
+    row: (item) => `
+      <tr>
+        <td><strong>${escapeHtml(item.reference)}</strong><span>${escapeHtml(formatDate(item.submitted_at || item.created_at))}</span></td>
+        <td><strong>${escapeHtml(item.customer_name || "Customer")}</strong><span>${escapeHtml(item.customer_email || item.user_id || "")}</span></td>
+        <td>${escapeHtml(item.issue_type || "")}</td>
+        <td>${badge(item.status || "New", statusColour(item.status))}</td>
+        <td>${badge(item.priority || "Normal", priorityColour(item.priority))}</td>
+        <td><button class="mini-button" type="button" data-action="open-admin-record" data-section="systemreports" data-id="${escapeAttr(item.id)}">Open</button></td>
+      </tr>
+    `
+  });
+}
+
+function renderAdminRecordSection(config) {
+  const rows = config.items.map(config.row).join("");
+  const statusOptions = ["", ...config.statuses].map((status) => `<option value="${escapeAttr(status)}">${escapeHtml(status || "All statuses")}</option>`).join("");
+
+  document.getElementById("adminPanel").innerHTML = `
+    <div class="admin-card">
+      <div class="section-head">
+        <div><h2>${escapeHtml(config.title)}</h2><p>${escapeHtml(config.description)}</p></div>
+      </div>
+      <div class="admin-form" style="margin-bottom:1rem;">
+        <label class="admin-label">Search<input id="${config.section}_search" type="search" placeholder="Search reference, customer or type"></label>
+        <label class="admin-label">Status<select id="${config.section}_status">${statusOptions}</select></label>
+      </div>
+      <div id="${config.section}_table">${table(config.columns, rows)}</div>
+    </div>
+  `;
+
+  const refresh = () => {
+    const search = getValue(`${config.section}_search`).toLowerCase();
+    const status = getValue(`${config.section}_status`);
+    const filtered = config.items.filter((item) => {
+      const text = JSON.stringify(item).toLowerCase();
+      return (!search || text.includes(search)) && (!status || item.status === status);
+    });
+    document.getElementById(`${config.section}_table`).innerHTML = table(config.columns, filtered.map(config.row).join(""));
+  };
+
+  document.getElementById(`${config.section}_search`).addEventListener("input", refresh);
+  document.getElementById(`${config.section}_status`).addEventListener("change", refresh);
+}
+
+function openAdminRecordModal(section, id) {
+  const collection = state.data[section]?.[section] || [];
+  const item = collection.find((record) => record.id === id);
+  if (!item) return;
+
+  const isDpr = section === "datarequests";
+  const statuses = isDpr ? dprStatuses : systemReportStatuses;
+  const title = isDpr ? item.request_type : item.issue_type;
+  const message = isDpr ? item.customer_message : item.description;
+  const audit = parseAudit(item.audit_log);
+
+  openModal(`
+    <div class="modal-head">
+      <div><h2>${escapeHtml(item.reference)}</h2><p>${escapeHtml(title || "")}</p></div>
+      <button class="drawer-close" type="button" data-action="close-modal">×</button>
+    </div>
+    <div class="drawer-grid">
+      <div class="drawer-field"><span>Customer</span><strong>${escapeHtml(item.customer_name || "Customer")}</strong></div>
+      <div class="drawer-field"><span>Email</span><strong>${escapeHtml(item.customer_email || item.user_id || "")}</strong></div>
+      <div class="drawer-field"><span>User ID</span><strong>${escapeHtml(item.user_id || "")}</strong></div>
+      <div class="drawer-field"><span>Submitted</span><strong>${escapeHtml(formatDate(item.submitted_at || item.created_at))}</strong></div>
+      ${isDpr ? `<div class="drawer-field"><span>Due date</span><strong>${escapeHtml(formatDate(item.due_at))}</strong></div>` : `<div class="drawer-field"><span>Affected URL/page</span><strong>${escapeHtml(item.affected_url || "Not supplied")}</strong></div>`}
+      ${isDpr ? "" : `<div class="drawer-field"><span>Device/browser</span><strong>${escapeHtml(item.device_browser || "Not supplied")}</strong></div>`}
+      <div class="drawer-field"><span>Attachments</span><strong>Not supported yet</strong></div>
+    </div>
+    <div class="admin-card" style="margin-top:1rem;"><h2>Customer message</h2><p style="white-space:pre-wrap;">${escapeHtml(message || "")}</p></div>
+    <form class="admin-form single" id="adminRecordForm">
+      <label class="admin-label">Status<select id="record_status">${statuses.map((status) => `<option value="${escapeAttr(status)}" ${status === item.status ? "selected" : ""}>${escapeHtml(status)}</option>`).join("")}</select></label>
+      ${isDpr ? "" : `<label class="admin-label">Priority<select id="record_priority">${priorities.map((priority) => `<option value="${escapeAttr(priority)}" ${priority === item.priority ? "selected" : ""}>${escapeHtml(priority)}</option>`).join("")}</select></label>`}
+      <label class="admin-label">Assigned admin<input id="record_assigned" type="email" value="${escapeAttr(item.assigned_admin_id || "")}"></label>
+      ${textarea("Internal admin notes", "record_notes")}
+      <button class="admin-button" type="submit">Save record</button>
+      <div id="recordSaved" class="admin-success" hidden></div>
+    </form>
+    <div class="admin-card" style="margin-top:1rem;">
+      <h2>Audit history</h2>
+      ${audit.length ? `<div class="audit-list">${audit.map((event) => `<div class="drawer-field"><span>${escapeHtml(formatDate(event.timestamp))} - ${escapeHtml(event.actor || "system")}</span><strong>${escapeHtml(event.type || "Event")}${event.previousValue || event.newValue ? `: ${escapeHtml(event.previousValue || "")} -> ${escapeHtml(event.newValue || "")}` : ""}</strong></div>`).join("")}</div>` : `<p>No audit events yet.</p>`}
+    </div>
+  `);
+
+  setValue("record_notes", item.internal_notes || "");
+  document.getElementById("adminRecordForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const body = {
+      id: item.id,
+      reference: item.reference,
+      status: getValue("record_status"),
+      assigned_admin_id: getValue("record_assigned"),
+      internal_notes: getValue("record_notes")
+    };
+    if (!isDpr) body.priority = getValue("record_priority");
+    const data = await api(section, { method: "POST", body: JSON.stringify(body) });
+    state.data[section] = data;
+    setSaved("recordSaved", "Record saved.");
+    renderSection(section, data);
+    closeModal();
+  });
+}
+
+function parseAudit(value) {
+  try {
+    const parsed = JSON.parse(value || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function statusColour(status = "") {
+  const text = String(status).toLowerCase();
+  if (text.includes("completed") || text.includes("fixed") || text.includes("closed")) return "green";
+  if (text.includes("awaiting") || text.includes("review") || text.includes("progress") || text.includes("investigating")) return "amber";
+  if (text.includes("refused") || text.includes("duplicate") || text.includes("escalated")) return "red";
+  return "";
+}
+
+function priorityColour(priority = "") {
+  const text = String(priority).toLowerCase();
+  if (text === "urgent" || text === "high") return "red";
+  if (text === "low") return "green";
+  return "amber";
 }
 
 function renderComingSoon(settings = {}) {

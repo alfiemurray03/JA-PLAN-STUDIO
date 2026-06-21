@@ -321,6 +321,50 @@
       gap: 1.25rem;
     }
 
+    .account-requests {
+      width: min(1180px, 100%);
+      margin: 1.25rem auto 0;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.25rem;
+    }
+
+    .account-record-list {
+      display: grid;
+      gap: 0.8rem;
+      margin-top: 1rem;
+    }
+
+    .account-record {
+      border: 1px solid #d8e2ea;
+      border-radius: 16px;
+      background: #f7f9fb;
+      padding: 1rem;
+    }
+
+    .account-record strong,
+    .account-record span {
+      display: block;
+    }
+
+    .account-record span {
+      color: #526276;
+      line-height: 1.5;
+      margin-top: 0.25rem;
+    }
+
+    .account-status {
+      display: inline-flex;
+      width: fit-content;
+      margin-top: 0.65rem;
+      border-radius: 999px;
+      background: #eaf7f1;
+      color: #007a53;
+      padding: 0.35rem 0.65rem;
+      font-size: 0.78rem;
+      font-weight: 900;
+    }
+
     .account-note {
       width: min(1180px, 100%);
       margin: 1.25rem auto 0;
@@ -339,7 +383,8 @@
     @media (max-width: 980px) {
       .account-hero-grid,
       .account-dashboard,
-      .account-card-grid {
+      .account-card-grid,
+      .account-requests {
         grid-template-columns: 1fr;
       }
     }
@@ -525,6 +570,84 @@
         </div>
       </div>
 
+      <div class="account-requests">
+        <article class="account-panel" id="dataProtectionPanel">
+          <span class="account-kicker">Data rights</span>
+          <h2>Data Protection Requests</h2>
+          <p>Use this form to make a formal request about your personal data under UK GDPR and the Data Protection Act 2018.</p>
+          <p>We will review your request and respond in accordance with applicable UK data protection law.</p>
+          <p>We may need to request further information from you to verify your identity before processing certain data protection requests.</p>
+          <form class="profile-form" id="dataProtectionForm">
+            <label>
+              Request type *
+              <select id="dprTypeInput" required>
+                <option value="">Please select</option>
+                <option>Access my personal data / Subject Access Request</option>
+                <option>Correct my personal data</option>
+                <option>Delete my personal data</option>
+                <option>Restrict the use of my personal data</option>
+                <option>Object to processing</option>
+                <option>Data portability</option>
+                <option>Withdraw consent</option>
+                <option>Other data protection request</option>
+              </select>
+            </label>
+            <label>
+              Request details *
+              <textarea id="dprMessageInput" required maxlength="4000" placeholder="Tell us what you are requesting and any relevant details."></textarea>
+            </label>
+            <small>Attachments are not connected yet. Please describe any relevant evidence in the message above.</small>
+            <label class="consent-label">
+              <input id="dprConfirmInput" type="checkbox" required>
+              <span>I confirm the information submitted is accurate. *</span>
+            </label>
+            <button class="account-button orange" type="submit">Submit data request</button>
+            <div class="saved-message" id="dprSavedMessage" hidden></div>
+          </form>
+          <div class="account-record-list" id="dprList"></div>
+        </article>
+
+        <article class="account-panel" id="systemReportsPanel">
+          <span class="account-kicker">Technical support</span>
+          <h2>System Reports</h2>
+          <p>Report technical, website, account, access, membership, booking widget or checkout issues from your signed-in account.</p>
+          <form class="profile-form" id="systemReportForm">
+            <label>
+              Issue type *
+              <select id="sysTypeInput" required>
+                <option value="">Please select</option>
+                <option>Website not loading</option>
+                <option>Page not responding</option>
+                <option>Booking widget not working</option>
+                <option>Broken link</option>
+                <option>Login or account issue</option>
+                <option>Access or membership issue</option>
+                <option>Incorrect destination, activity or tour information</option>
+                <option>Mobile display issue</option>
+                <option>Payment or checkout issue</option>
+                <option>Other technical issue</option>
+              </select>
+            </label>
+            <label>
+              Affected page URL or area
+              <input id="sysAffectedInput" type="text" maxlength="500" placeholder="https://experiences.jagroupservices.co.uk/...">
+            </label>
+            <label>
+              Device/browser details
+              <input id="sysDeviceInput" type="text" maxlength="500" placeholder="For example: Windows 11, Chrome, iPhone Safari">
+            </label>
+            <label>
+              Description of the issue *
+              <textarea id="sysDescriptionInput" required maxlength="4000" placeholder="Describe what happened and what you expected to happen."></textarea>
+            </label>
+            <small>Screenshot uploads are not connected yet. Please include the affected URL and details above.</small>
+            <button class="account-button orange" type="submit">Submit system report</button>
+            <div class="saved-message" id="sysSavedMessage" hidden></div>
+          </form>
+          <div class="account-record-list" id="sysList"></div>
+        </article>
+      </div>
+
       <div class="account-note">
         Profile edits are saved securely to the JA Experiences &amp; Discovery customer profile database.
         JA Experiences &amp; Discovery provides discovery, planning and guidance support only and is not a travel booking system.
@@ -534,7 +657,7 @@
 
   <div id="siteShellFooter"></div>
 
-  <script src="/assets/js/account-profile.js?v=20260621-19"></script>
+  <script src="/assets/js/account-profile.js?v=20260621-20"></script>
   <script src="/assets/js/access-header.js?v=20260621-18"></script>
   <script src="/assets/js/site-shell.js?v=20260621-18"></script>
 </body>
