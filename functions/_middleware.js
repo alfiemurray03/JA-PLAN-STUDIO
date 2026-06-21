@@ -66,6 +66,40 @@ async function isAdminRequest(request, env) {
   }
 }
 
+async function sha256(value) {
+  const bytes = new TextEncoder().encode(value);
+  const hash = await crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(hash)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function hasAdminBypass(request, env) {
+  if (!env.DB) return false;
+  const email = getAccessIdentity(request);
+  if (!email || !(await isAdminRequest(request, env))) return false;
+  const token = (request.headers.get("Cookie") || "")
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith("ja_admin_bypass="))
+    ?.split("=")[1] || "";
+  if (!token) return false;
+
+  try {
+    const tokenHash = await sha256(token);
+    const row = await env.DB.prepare(`
+      SELECT token_hash FROM admin_bypass_sessions
+      WHERE token_hash = ?
+        AND lower(admin_email) = lower(?)
+        AND revoked_at IS NULL
+        AND datetime(expires_at) > datetime('now')
+    `).bind(tokenHash, email).first();
+    if (!row) return false;
+    await env.DB.prepare(`UPDATE admin_bypass_sessions SET last_used_at = CURRENT_TIMESTAMP WHERE token_hash = ?`).bind(tokenHash).run();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function pageHtml(settings, mode) {
   const isComingSoon = mode === "coming-soon";
 
@@ -367,6 +401,12 @@ export async function onRequest(context) {
   }
 
   const settings = await getSiteSettings(env.DB);
+  const previewBlocked = url.searchParams.get("preview_public_block") === "1";
+  const adminBypass = !previewBlocked && await hasAdminBypass(request, env);
+
+  if (adminBypass) {
+    return next();
+  }
 
   if (settings.maintenance_enabled === "true") {
     return new Response(pageHtml(settings, "maintenance"), {

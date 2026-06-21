@@ -153,6 +153,18 @@ function bindAdminActions() {
       deleteAffiliateBlock(action.dataset.id);
     }
 
+    if (type === "import-affiliate-content") {
+      importAffiliateContent();
+    }
+
+    if (type === "create-bypass") {
+      createAdminBypass();
+    }
+
+    if (type === "remove-bypass") {
+      removeAdminBypass();
+    }
+
     if (type === "export-records") {
       exportRecords(action.dataset.section, action.dataset.format || "csv");
     }
@@ -364,6 +376,11 @@ function renderOverview(overview) {
         <div>
           <h2>Admin Control Centre</h2>
           <p>Manage CRM records, access control, service plans, Stripe checks, company details, policies, support, system issues and public site status.</p>
+        </div>
+        <div class="section-actions">
+          <button class="admin-button" type="button" data-action="create-bypass">Enter Website as Admin</button>
+          <a class="admin-button secondary" href="/?preview_public_block=1" target="_blank" rel="noopener">Preview Public View</a>
+          <button class="admin-button secondary" type="button" data-action="remove-bypass">Exit Admin Access</button>
         </div>
       </div>
       <div class="quick-grid">
@@ -712,7 +729,7 @@ function renderBranding(branding = {}) {
   document.getElementById("adminPanel").innerHTML = `
     <div class="admin-card">
       <div class="section-head">
-        <div><h2>Company Branding</h2><p>Edit business and service information stored in D1. Public branding is not changed by this screen unless wired separately.</p></div>
+        <div><h2>Company Branding</h2><p>Edit business and service information used by the public website, customer portal, admin portal and notification templates where supported.</p></div>
       </div>
       <form class="admin-form" id="brandingForm">
         ${input("Business name", "business_name")}
@@ -1035,6 +1052,7 @@ function renderAffiliate(items = []) {
       <td>${escapeHtml(formatDate(item.updated_at || item.created_at))}</td>
       <td>
         <button class="mini-button" type="button" data-action="open-affiliate-block" data-id="${escapeAttr(item.id)}">Edit</button>
+        <button class="mini-button" type="button" data-action="open-affiliate-block" data-id="${escapeAttr(item.id)}">Preview</button>
         <button class="mini-button" type="button" data-action="delete-affiliate-block" data-id="${escapeAttr(item.id)}">Delete</button>
       </td>
     </tr>
@@ -1045,6 +1063,7 @@ function renderAffiliate(items = []) {
       <div class="section-head">
         <div><h2>Affiliate Content</h2><p>Manage affiliate page headings, widgets, CTA buttons, disclaimers, referral notices, featured content and FAQs without hardcoding.</p></div>
         <div class="section-actions">
+          <button class="admin-button secondary" type="button" data-action="import-affiliate-content">Import Existing Affiliate Content</button>
           <button class="admin-button secondary" type="button" data-action="export-records" data-section="affiliate" data-format="csv">Export CSV</button>
           <button class="admin-button" type="button" data-action="open-affiliate-block">New block</button>
         </div>
@@ -1094,6 +1113,12 @@ function renderEmail(email = {}, test = null) {
         ${email.configured ? badge("Configured", "green") : badge("Incomplete", "amber")}
       </div>
       <form class="admin-form" id="emailForm">
+        <label class="admin-label">Cloudflare Email Provider
+          <select id="email_provider"><option value="resend">Resend</option><option value="sendgrid">SendGrid</option><option value="postmark">Postmark</option><option value="brevo">Brevo</option><option value="mailchannels">MailChannels</option></select>
+        </label>
+        ${input("Provider API Key", "email_api_key", "password")}
+        ${input("Provider API Endpoint", "email_api_endpoint")}
+        ${input("Admin Notification Email", "admin_notification_email", "email")}
         ${input("SMTP Host", "smtp_host")}
         ${input("SMTP Port", "smtp_port", "number")}
         ${input("SMTP Username", "smtp_username", "email")}
@@ -1103,7 +1128,7 @@ function renderEmail(email = {}, test = null) {
         <label class="admin-label">Encryption/Security
           <select id="smtp_security"><option>STARTTLS</option><option>TLS</option><option>None</option></select>
         </label>
-        <div class="admin-alert">Leave SMTP Password blank to keep the existing stored value. Passwords are masked and are never returned by the API.</div>
+        <div class="admin-alert">Cloudflare Pages Functions send mail through an HTTPS email provider. SMTP fields are still stored for service configuration, but raw SMTP sockets are not used by the edge runtime. Leave password/API key fields blank to keep existing values.</div>
         <button class="admin-button" type="submit">Save email settings</button>
       </form>
       <div id="emailSaved" class="admin-success" hidden></div>
@@ -1122,6 +1147,10 @@ function renderEmail(email = {}, test = null) {
   `;
 
   setValue("smtp_host", email.smtp_host || "smtp.jagroupservices.co.uk");
+  setValue("email_provider", email.email_provider || "resend");
+  setValue("email_api_key", email.email_api_key_masked || "");
+  setValue("email_api_endpoint", email.email_api_endpoint || "");
+  setValue("admin_notification_email", email.admin_notification_email || "");
   setValue("smtp_port", email.smtp_port || "587");
   setValue("smtp_username", email.smtp_username || "noreply@jagroupservices.co.uk");
   setValue("smtp_password", email.smtp_password_masked || "");
@@ -1132,7 +1161,12 @@ function renderEmail(email = {}, test = null) {
   document.getElementById("emailForm").addEventListener("submit", async (event) => {
     event.preventDefault();
     const password = getValue("smtp_password");
+    const apiKey = getValue("email_api_key");
     const data = await api("email", { method: "POST", body: JSON.stringify({
+      email_provider: getValue("email_provider"),
+      email_api_key: apiKey.includes("••") ? "" : apiKey,
+      email_api_endpoint: getValue("email_api_endpoint"),
+      admin_notification_email: getValue("admin_notification_email"),
       smtp_host: getValue("smtp_host"),
       smtp_port: getValue("smtp_port"),
       smtp_username: getValue("smtp_username"),
@@ -1274,18 +1308,22 @@ function openAdminRecordModal(section, id) {
   });
 
   document.getElementById("sendToDataSubjectButton")?.addEventListener("click", async () => {
-    const body = {
-      id: item.id,
-      reference: item.reference,
-      action: "mark_sent",
-      status: "Sent",
-      assigned_admin_id: getValue("record_assigned"),
-      internal_notes: getValue("record_notes")
-    };
-    const data = await api(section, { method: "POST", body: JSON.stringify(body) });
-    state.data[section] = data;
-    closeModal();
-    renderSection(section, data);
+    try {
+      const body = {
+        id: item.id,
+        reference: item.reference,
+        action: "mark_sent",
+        status: "Sent",
+        assigned_admin_id: getValue("record_assigned"),
+        internal_notes: getValue("record_notes")
+      };
+      const data = await api(section, { method: "POST", body: JSON.stringify(body) });
+      state.data[section] = data;
+      closeModal();
+      renderSection(section, data);
+    } catch (error) {
+      setSaved("recordSaved", error.message, true);
+    }
   });
 }
 
@@ -1397,6 +1435,22 @@ async function deleteAffiliateBlock(id) {
   renderAffiliate(data.affiliate);
 }
 
+async function importAffiliateContent() {
+  const data = await api("affiliate", { method: "POST", body: JSON.stringify({ action: "import_existing" }) });
+  state.data.affiliate = data;
+  renderAffiliate(data.affiliate);
+}
+
+async function createAdminBypass() {
+  const data = await api("bypass", { method: "POST", body: JSON.stringify({ action: "create" }) });
+  window.alert(`Admin website access enabled until ${formatDate(data.bypass?.expires)}.`);
+}
+
+async function removeAdminBypass() {
+  await api("bypass", { method: "POST", body: JSON.stringify({ action: "remove" }) });
+  window.alert("Admin website access has been removed.");
+}
+
 async function exportCustomerData(email, format = "json") {
   if (!email) return window.alert("Customer email is missing.");
   const data = await api("datarequests", { method: "POST", body: JSON.stringify({ action: "export_customer_data", customer_email: email, format }) });
@@ -1499,7 +1553,12 @@ function renderStatusForm(section, settings, labels) {
     <div class="admin-card">
       <div class="section-head">
         <div><h2>${escapeHtml(labels.title)}</h2><p>${escapeHtml(labels.description)}</p></div>
-        ${badge(settings[labels.enabledKey] === "true" ? "On" : "Off", settings[labels.enabledKey] === "true" ? "green" : "")}
+        <div class="section-actions">
+          ${badge(settings[labels.enabledKey] === "true" ? "On" : "Off", settings[labels.enabledKey] === "true" ? "green" : "")}
+          <button class="admin-button" type="button" data-action="create-bypass">Enter Website as Admin</button>
+          <a class="admin-button secondary" href="/?preview_public_block=1" target="_blank" rel="noopener">Preview Public View</a>
+          <button class="admin-button secondary" type="button" data-action="remove-bypass">Exit Admin Access</button>
+        </div>
       </div>
       <form class="admin-form" id="${section}Form">
         <label class="check">

@@ -14,6 +14,17 @@ function json(data, status = 200) {
   });
 }
 
+function jsonWithHeaders(data, headers, status = 200) {
+  return new Response(JSON.stringify(data, null, 2), {
+    status,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+      ...headers
+    }
+  });
+}
+
 function decodeJwtPayload(jwt) {
   try {
     if (!jwt || !jwt.includes(".")) return {};
@@ -322,6 +333,7 @@ async function ensureTables(DB, env) {
   await DB.prepare(`
     CREATE TABLE IF NOT EXISTS affiliate_content_blocks (
       id TEXT PRIMARY KEY,
+      source_key TEXT,
       block_type TEXT,
       title TEXT,
       body TEXT,
@@ -337,6 +349,8 @@ async function ensureTables(DB, env) {
     )
   `).run();
 
+  await safeAlter(DB, `ALTER TABLE affiliate_content_blocks ADD COLUMN source_key TEXT`);
+
   await DB.prepare(`
     CREATE TABLE IF NOT EXISTS admin_audit_log (
       id TEXT PRIMARY KEY,
@@ -347,6 +361,17 @@ async function ensureTables(DB, env) {
       summary TEXT,
       metadata TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+
+  await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS admin_bypass_sessions (
+      token_hash TEXT PRIMARY KEY,
+      admin_email TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      expires_at TEXT,
+      revoked_at TEXT,
+      last_used_at TEXT
     )
   `).run();
 }
@@ -398,6 +423,41 @@ async function writeAudit(DB, identity, action, entityType, entityId, summary, m
     clean(summary, 1000),
     JSON.stringify(metadata)
   ).run();
+}
+
+async function sha256(value) {
+  const bytes = new TextEncoder().encode(value);
+  const hash = await crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(hash)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function createBypass(DB, identity) {
+  const token = crypto.randomUUID() + crypto.randomUUID();
+  const tokenHash = await sha256(token);
+  const expires = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+  await DB.prepare(`
+    INSERT INTO admin_bypass_sessions (token_hash, admin_email, expires_at)
+    VALUES (?, ?, ?)
+  `).bind(tokenHash, identity.email, expires).run();
+  await writeAudit(DB, identity, "admin_bypass_created", "admin_bypass_sessions", tokenHash.slice(0, 12), "Created admin live-site bypass session.", { expires });
+  return {
+    token,
+    expires,
+    cookie: `ja_admin_bypass=${token}; Path=/; Max-Age=7200; HttpOnly; Secure; SameSite=Lax`
+  };
+}
+
+async function revokeBypass(DB, request, identity) {
+  const cookie = request.headers.get("Cookie") || "";
+  const token = cookie.split(";").map((part) => part.trim()).find((part) => part.startsWith("ja_admin_bypass="))?.split("=")[1] || "";
+  if (token) {
+    await DB.prepare(`UPDATE admin_bypass_sessions SET revoked_at = CURRENT_TIMESTAMP WHERE token_hash = ?`).bind(await sha256(token)).run();
+  }
+  await writeAudit(DB, identity, "admin_bypass_removed", "admin_bypass_sessions", token ? "current" : "none", "Removed admin live-site bypass session.", {});
+  return {
+    removed: true,
+    cookie: "ja_admin_bypass=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax"
+  };
 }
 
 async function seedDefaults(DB) {
@@ -824,7 +884,7 @@ async function getSystemReports(DB) {
   `);
 }
 
-async function saveDataProtectionRequest(DB, body, identity) {
+async function saveDataProtectionRequest(DB, body, identity, env = {}) {
   const current = await DB.prepare(`SELECT * FROM data_protection_requests WHERE id = ? OR reference = ?`).bind(clean(body.id, 120), clean(body.reference, 120)).first();
   if (!current) throw new Error("Data protection request not found.");
 
@@ -857,6 +917,21 @@ async function saveDataProtectionRequest(DB, body, identity) {
 
   let auditLog = current.audit_log || "[]";
   for (const event of events) auditLog = addAudit(auditLog, event);
+
+  if (body.action === "mark_sent") {
+    const exportPayload = await exportCustomerData(DB, current.customer_email || current.user_id, "json");
+    try {
+      await sendProviderEmail(DB, env, {
+        to: current.customer_email || current.user_id,
+        subject: `Your JA Experiences & Discovery data request ${current.reference}`,
+        text: `Please find below the exported customer data for request ${current.reference}.\n\n${exportPayload.content}`
+      });
+      auditLog = addAudit(auditLog, { type: "Data sent to subject", actor: auditActor(identity), newValue: "Sent by email provider" });
+    } catch (error) {
+      auditLog = addAudit(auditLog, { type: "Data send failed", actor: auditActor(identity), newValue: error.message || "Email failed" });
+      throw new Error(`Data export generated, but email sending failed: ${error.message || "Email provider error"}`);
+    }
+  }
 
   const completedAt = nextStatus === "Completed" || nextStatus === "Closed"
     ? (current.completed_at || new Date().toISOString())
@@ -1018,6 +1093,96 @@ async function getAffiliateContent(DB) {
   return all(DB, `SELECT * FROM affiliate_content_blocks ORDER BY sort_order ASC, updated_at DESC LIMIT 500`);
 }
 
+function existingAffiliateBlocks() {
+  return [
+    {
+      source_key: "headout-page-heading",
+      block_type: "Page heading",
+      title: "Headout Experiences",
+      body: "Explore selected tours, attractions and activities by country, then choose a destination to view current Headout options.",
+      cta_label: "Browse countries",
+      cta_url: "/headout/#countries",
+      legal_notice: "Headout is currently presented as the Primary Affiliate Partner for activities and experiences.",
+      sort_order: 10
+    },
+    {
+      source_key: "headout-affiliate-disclosure",
+      block_type: "Disclaimer",
+      title: "Headout affiliate disclosure",
+      body: "Bookings made through Headout are made with Headout or the relevant third-party provider. JA Group Services Ltd may receive a commission where eligible. JA Group Services Ltd does not supply, control or guarantee third-party tours, activities, tickets or experiences.",
+      cta_label: "Browse Headout experiences",
+      cta_url: "/headout/",
+      legal_notice: "Prices, availability, booking terms, cancellation rules and customer support are provided by the relevant provider.",
+      sort_order: 20
+    },
+    {
+      source_key: "getyourguide-page-heading",
+      block_type: "Page heading",
+      title: "GetYourGuide Activities",
+      body: "Choose a country, select a city or area, then browse current GetYourGuide options for the destination you are interested in.",
+      cta_label: "Browse countries",
+      cta_url: "/getyourguide/#countries",
+      legal_notice: "GetYourGuide is currently presented as the Secondary Affiliate Partner for activities and experiences.",
+      sort_order: 30
+    },
+    {
+      source_key: "getyourguide-affiliate-disclosure",
+      block_type: "Disclaimer",
+      title: "GetYourGuide affiliate disclosure",
+      body: "Activities, attractions, tours, tickets, experiences, availability, prices, booking terms, cancellation rules and customer support are provided by GetYourGuide and/or the relevant third-party provider. JA Group Services Ltd may receive a commission for qualifying bookings made through links on this page.",
+      cta_label: "Browse GetYourGuide activities",
+      cta_url: "/getyourguide/",
+      legal_notice: "JA Group Services Ltd does not supply, control or guarantee third-party tours, activities, tickets or experiences.",
+      sort_order: 40
+    },
+    {
+      source_key: "experiences-provider-disclosure",
+      block_type: "Referral notice",
+      title: "Before booking",
+      body: "The relevant third-party provider supplies the activity, price, availability, booking terms, cancellation rules and customer support. JA Group Services Ltd may receive commission from qualifying bookings.",
+      cta_label: "Read the affiliate disclosure",
+      cta_url: "/affiliate-disclosure/",
+      sort_order: 50
+    },
+    {
+      source_key: "affiliate-independent-providers",
+      block_type: "Legal notice",
+      title: "Affiliate links and independent providers",
+      body: "Some activity links, partner content or referral links may earn JA Group Services Ltd a commission after a qualifying booking.",
+      legal_notice: "Affiliate bookings are made with the relevant third-party provider. The third-party provider is responsible for its own service, booking terms, pricing, refunds, cancellations and service delivery.",
+      sort_order: 60
+    }
+  ];
+}
+
+async function importAffiliateContent(DB, identity) {
+  let imported = 0;
+  for (const block of existingAffiliateBlocks()) {
+    const existing = await DB.prepare(`SELECT id FROM affiliate_content_blocks WHERE source_key = ?`).bind(block.source_key).first();
+    if (existing) continue;
+    await DB.prepare(`
+      INSERT INTO affiliate_content_blocks (
+        id, source_key, block_type, title, body, widget_code, cta_label, cta_url, legal_notice,
+        is_enabled, is_published, sort_order, updated_at
+      ) VALUES (?, ?, ?, ?, ?, '', ?, ?, ?, 1, 1, ?, CURRENT_TIMESTAMP)
+    `).bind(
+      crypto.randomUUID(),
+      block.source_key,
+      block.block_type,
+      block.title,
+      block.body,
+      block.cta_label || "",
+      block.cta_url || "",
+      block.legal_notice || "",
+      block.sort_order
+    ).run();
+    imported += 1;
+  }
+
+  await writeAudit(DB, identity, "affiliate_content_import", "affiliate_content_blocks", "existing-content", `Imported ${imported} existing affiliate content records.`, { imported });
+  return { imported, records: await getAffiliateContent(DB) };
+}
+
 function sanitiseWidgetCode(value) {
   const code = clean(value, 8000);
   if (!code) return "";
@@ -1030,6 +1195,11 @@ function sanitiseWidgetCode(value) {
 
 async function saveAffiliateContent(DB, body, identity) {
   const id = clean(body.id, 120) || crypto.randomUUID();
+  if (body.action === "import_existing") {
+    const imported = await importAffiliateContent(DB, identity);
+    return imported.records;
+  }
+
   if (body.action === "delete") {
     await DB.prepare(`DELETE FROM affiliate_content_blocks WHERE id = ?`).bind(id).run();
     await writeAudit(DB, identity, "affiliate_content_delete", "affiliate_content_blocks", id, "Deleted affiliate content block.", {});
@@ -1041,10 +1211,11 @@ async function saveAffiliateContent(DB, body, identity) {
 
   await DB.prepare(`
     INSERT INTO affiliate_content_blocks (
-      id, block_type, title, body, widget_code, cta_label, cta_url, legal_notice,
+      id, source_key, block_type, title, body, widget_code, cta_label, cta_url, legal_notice,
       is_enabled, is_published, sort_order, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     ON CONFLICT(id) DO UPDATE SET
+      source_key = excluded.source_key,
       block_type = excluded.block_type,
       title = excluded.title,
       body = excluded.body,
@@ -1058,6 +1229,7 @@ async function saveAffiliateContent(DB, body, identity) {
       updated_at = CURRENT_TIMESTAMP
   `).bind(
     id,
+    clean(body.source_key, 180),
     clean(body.block_type, 80) || "Content",
     title,
     clean(body.body, 12000),
@@ -1087,14 +1259,16 @@ async function saveAppearance(DB, body, identity) {
 
 async function getEmailSettings(DB, env) {
   const settings = await settingMap(DB, [
-    "smtp_host", "smtp_port", "smtp_username", "smtp_password", "smtp_from_name", "smtp_from_email", "smtp_security"
+    "smtp_host", "smtp_port", "smtp_username", "smtp_password", "smtp_from_name", "smtp_from_email", "smtp_security",
+    "email_provider", "email_api_key", "email_api_endpoint", "admin_notification_email"
   ], {
     smtp_host: "smtp.jagroupservices.co.uk",
     smtp_port: "587",
     smtp_username: "noreply@jagroupservices.co.uk",
     smtp_from_name: "JA Smart Profile",
     smtp_from_email: "noreply@jagroupservices.co.uk",
-    smtp_security: "STARTTLS"
+    smtp_security: "STARTTLS",
+    email_provider: "resend"
   });
 
   return {
@@ -1105,13 +1279,16 @@ async function getEmailSettings(DB, env) {
     smtp_from_name: settings.smtp_from_name,
     smtp_from_email: settings.smtp_from_email,
     smtp_security: settings.smtp_security,
-    admin_notification_email: env.ADMIN_NOTIFICATION_EMAIL || "",
-    configured: Boolean(settings.smtp_host && settings.smtp_username && (settings.smtp_password || env.SMTP_PASSWORD))
+    email_provider: settings.email_provider || "resend",
+    email_api_endpoint: settings.email_api_endpoint || "",
+    email_api_key_masked: maskSecret(settings.email_api_key || env.EMAIL_API_TOKEN || env.RESEND_API_KEY || env.SENDGRID_API_KEY || env.POSTMARK_API_KEY || env.BREVO_API_KEY || ""),
+    admin_notification_email: settings.admin_notification_email || env.ADMIN_NOTIFICATION_EMAIL || "",
+    configured: Boolean((settings.email_api_key || env.EMAIL_API_TOKEN || env.RESEND_API_KEY || env.SENDGRID_API_KEY || env.POSTMARK_API_KEY || env.BREVO_API_KEY) && (settings.admin_notification_email || env.ADMIN_NOTIFICATION_EMAIL))
   };
 }
 
 async function saveEmailSettings(DB, body, env, identity) {
-  const current = await settingMap(DB, ["smtp_password"], {});
+  const current = await settingMap(DB, ["smtp_password", "email_api_key"], {});
   await saveSettings(DB, {
     smtp_host: clean(body.smtp_host, 250) || "smtp.jagroupservices.co.uk",
     smtp_port: clean(body.smtp_port, 10) || "587",
@@ -1119,48 +1296,92 @@ async function saveEmailSettings(DB, body, env, identity) {
     smtp_password: clean(body.smtp_password, 500) || current.smtp_password || env.SMTP_PASSWORD || "",
     smtp_from_name: clean(body.smtp_from_name, 180) || "JA Smart Profile",
     smtp_from_email: clean(body.smtp_from_email, 254) || "noreply@jagroupservices.co.uk",
-    smtp_security: clean(body.smtp_security, 40) || "STARTTLS"
+    smtp_security: clean(body.smtp_security, 40) || "STARTTLS",
+    email_provider: clean(body.email_provider, 40) || "resend",
+    email_api_endpoint: clean(body.email_api_endpoint, 500),
+    email_api_key: clean(body.email_api_key, 800) || current.email_api_key || env.EMAIL_API_TOKEN || "",
+    admin_notification_email: cleanEmail(body.admin_notification_email) || env.ADMIN_NOTIFICATION_EMAIL || ""
   });
-  await writeAudit(DB, identity, "smtp_settings_update", "site_settings", "email", "Updated Email (SMTP) settings.", { host: clean(body.smtp_host, 250), username: clean(body.smtp_username, 254) });
+  await writeAudit(DB, identity, "smtp_settings_update", "site_settings", "email", "Updated Email (SMTP) and provider settings.", { host: clean(body.smtp_host, 250), username: clean(body.smtp_username, 254), provider: clean(body.email_provider, 40) });
   return getEmailSettings(DB, env);
 }
 
-async function testNotification(DB, body, env, identity) {
-  const settings = await getEmailSettings(DB, env);
-  const notificationType = clean(body.notification_type, 80) || "New Signup";
-  const target = env.ADMIN_NOTIFICATION_EMAIL || "";
-  const canSend = Boolean(env.EMAIL_API_ENDPOINT && env.EMAIL_API_TOKEN && target);
-  let result = {
-    sent: false,
-    message: "Test notification was logged, but no HTTP email provider is configured for Cloudflare Pages Functions. Raw SMTP cannot be sent directly from this runtime.",
-    to: target,
-    notificationType
+async function providerSettings(DB, env) {
+  const stored = await settingMap(DB, ["email_provider", "email_api_key", "email_api_endpoint", "smtp_from_name", "smtp_from_email", "admin_notification_email"], {});
+  const provider = (stored.email_provider || env.EMAIL_PROVIDER || "resend").toLowerCase();
+  const apiKey = stored.email_api_key || env.EMAIL_API_TOKEN || env.RESEND_API_KEY || env.SENDGRID_API_KEY || env.POSTMARK_API_KEY || env.BREVO_API_KEY || "";
+  return {
+    provider,
+    apiKey,
+    endpoint: stored.email_api_endpoint || env.EMAIL_API_ENDPOINT || "",
+    fromName: stored.smtp_from_name || "JA Smart Profile",
+    fromEmail: stored.smtp_from_email || "noreply@jagroupservices.co.uk",
+    to: stored.admin_notification_email || env.ADMIN_NOTIFICATION_EMAIL || ""
   };
+}
 
-  if (canSend) {
-    const response = await fetch(env.EMAIL_API_ENDPOINT, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${env.EMAIL_API_TOKEN}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        to: target,
-        from: settings.smtp_from_email,
-        fromName: settings.smtp_from_name,
-        subject: `JA Experiences test notification: ${notificationType}`,
-        text: `This is a ${notificationType} test notification from the JA Experiences admin centre.`
-      })
+async function sendProviderEmail(DB, env, message) {
+  const settings = await providerSettings(DB, env);
+  const to = message.to || settings.to;
+  if (!to) throw new Error("Recipient email is not configured.");
+  if (!settings.apiKey && settings.provider !== "mailchannels") throw new Error("Email API key is not configured.");
+
+  const from = settings.fromName ? `${settings.fromName} <${settings.fromEmail}>` : settings.fromEmail;
+  let endpoint = settings.endpoint;
+  let headers = { "Content-Type": "application/json" };
+  let body;
+
+  if (settings.provider === "sendgrid") {
+    endpoint ||= "https://api.sendgrid.com/v3/mail/send";
+    headers.Authorization = `Bearer ${settings.apiKey}`;
+    body = { personalizations: [{ to: [{ email: to }] }], from: { email: settings.fromEmail, name: settings.fromName }, subject: message.subject, content: [{ type: "text/plain", value: message.text }] };
+  } else if (settings.provider === "postmark") {
+    endpoint ||= "https://api.postmarkapp.com/email";
+    headers["X-Postmark-Server-Token"] = settings.apiKey;
+    body = { From: from, To: to, Subject: message.subject, TextBody: message.text };
+  } else if (settings.provider === "brevo") {
+    endpoint ||= "https://api.brevo.com/v3/smtp/email";
+    headers["api-key"] = settings.apiKey;
+    body = { sender: { name: settings.fromName, email: settings.fromEmail }, to: [{ email: to }], subject: message.subject, textContent: message.text };
+  } else if (settings.provider === "mailchannels") {
+    endpoint ||= "https://api.mailchannels.net/tx/v1/send";
+    body = { personalizations: [{ to: [{ email: to }] }], from: { email: settings.fromEmail, name: settings.fromName }, subject: message.subject, content: [{ type: "text/plain", value: message.text }] };
+  } else {
+    endpoint ||= "https://api.resend.com/emails";
+    headers.Authorization = `Bearer ${settings.apiKey}`;
+    body = { from, to, subject: message.subject, text: message.text };
+  }
+
+  const response = await fetch(endpoint, { method: "POST", headers, body: JSON.stringify(body) });
+  const responseText = await response.text().catch(() => "");
+  if (!response.ok) throw new Error(`Email provider returned ${response.status}: ${responseText.slice(0, 240)}`);
+  return { provider: settings.provider, to, status: response.status };
+}
+
+async function testNotification(DB, body, env, identity) {
+  const notificationType = clean(body.notification_type, 80) || "New Signup";
+  let result;
+  try {
+    const sent = await sendProviderEmail(DB, env, {
+      subject: `JA Experiences test notification: ${notificationType}`,
+      text: `This is a ${notificationType} test notification from the JA Experiences admin centre.`
     });
     result = {
-      sent: response.ok,
-      message: response.ok ? "Test notification sent successfully." : `Email provider returned ${response.status}.`,
-      to: target,
+      sent: true,
+      message: `Test notification sent successfully using ${sent.provider}.`,
+      to: sent.to,
+      notificationType
+    };
+  } catch (error) {
+    result = {
+      sent: false,
+      message: error.message || "Test notification failed.",
+      to: (await providerSettings(DB, env)).to,
       notificationType
     };
   }
 
-  await writeAudit(DB, identity, "test_notification", "email", notificationType, result.message, { sent: result.sent, to: target, notificationType });
+  await writeAudit(DB, identity, "test_notification", "email", notificationType, result.message, { sent: result.sent, to: result.to, notificationType });
   return result;
 }
 
@@ -1383,6 +1604,14 @@ export async function onRequest(context) {
     if (request.method === "POST") {
       const body = await request.json().catch(() => ({}));
       if (section === "prefs") return json({ preferences: await saveAdminPreferences(env.DB, body, identity), saved: true });
+      if (section === "bypass") {
+        if (body.action === "remove") {
+          const removed = await revokeBypass(env.DB, request, identity);
+          return jsonWithHeaders({ bypass: { active: false }, saved: true }, { "Set-Cookie": removed.cookie });
+        }
+        const bypass = await createBypass(env.DB, identity);
+        return jsonWithHeaders({ bypass: { active: true, expires: bypass.expires }, saved: true }, { "Set-Cookie": bypass.cookie });
+      }
       if (body.action === "export_customer_data") {
         const exported = await exportCustomerData(env.DB, body.customer_email || body.user_id, clean(body.format, 20) || "json");
         await writeAudit(env.DB, identity, "customer_data_export", "profiles", cleanEmail(body.customer_email || body.user_id), "Exported customer CRM data.", { format: exported.format });
@@ -1419,7 +1648,7 @@ export async function onRequest(context) {
         await writeAudit(env.DB, identity, "system_issue_update", "system_events", clean(body.id, 120), `Updated system issue ${clean(body.title, 250)}.`, { status: clean(body.status, 80), severity: clean(body.severity, 80) });
         return json({ system, saved: true });
       }
-      if (section === "datarequests") return json({ datarequests: await saveDataProtectionRequest(env.DB, body, identity), saved: true });
+      if (section === "datarequests") return json({ datarequests: await saveDataProtectionRequest(env.DB, body, identity, env), saved: true });
       if (section === "systemreports") return json({ systemreports: await saveSystemReport(env.DB, body, identity), saved: true });
       if (section === "closures") return json({ closures: await saveClosureRequest(env.DB, body, identity), saved: true });
       if (section === "affiliate") return json({ affiliate: await saveAffiliateContent(env.DB, body, identity), saved: true });

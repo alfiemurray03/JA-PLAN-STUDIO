@@ -54,12 +54,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const branding = siteSettings.branding || {};
   const serviceName = branding.service_name || branding.trading_name || "JA Experiences & Discovery";
-  document.querySelectorAll(".brand-name, [data-brand-name]").forEach((element) => {
+  const businessName = branding.business_name || "JA Group Services Ltd";
+  document.querySelectorAll(".brand-name, [data-brand-name], .service-brand-text strong, .footer-service-brand-text strong").forEach((element) => {
     element.textContent = serviceName;
+  });
+  document.querySelectorAll(".service-brand-text small, .footer-service-brand-text small").forEach((element) => {
+    element.textContent = `by ${businessName}`;
   });
   document.querySelectorAll("[data-footer-notice]").forEach((element) => {
     element.textContent = branding.footer_notice || "JA Experiences & Discovery is operated by JA Group Services Ltd.";
   });
+  const footerParagraphs = document.querySelectorAll(".footer-bottom p");
+  if (footerParagraphs[1]) footerParagraphs[1].textContent = branding.footer_notice || `${serviceName} is operated by ${businessName}.`;
 
   const toggle = document.querySelector(".menu-toggle");
   const nav = document.querySelector("#siteNav");
