@@ -70,6 +70,7 @@ function renderSection(section, data) {
   if (section === "branding") renderBranding(data.branding);
   if (section === "policies") renderPolicies(data.policies);
   if (section === "support") renderSupport(data.support);
+  if (section === "comingsoon") renderComingSoon(data.comingsoon);
   if (section === "maintenance") renderMaintenance(data.maintenance);
   if (section === "system") renderSystem(data.system);
 }
@@ -470,6 +471,62 @@ function renderSystem(items) {
 }
 
 
+
+function renderComingSoon(settings) {
+  const enabled = settings && settings.comingsoon_enabled === "true";
+
+  document.getElementById("adminPanel").innerHTML = `
+    <div class="admin-card">
+      <h2>Coming Soon Page</h2>
+      <p>Switch the public website into a polished pre-launch page while keeping the admin portal available.</p>
+
+      <form class="admin-form" id="comingSoonForm">
+        <label class="check">
+          <input id="comingsoon_enabled" type="checkbox">
+          Coming soon page enabled
+        </label>
+
+        ${input("Public coming soon title", "comingsoon_title")}
+        ${textarea("Public coming soon message", "comingsoon_message")}
+        ${input("Estimated launch time", "comingsoon_eta")}
+
+        <button class="admin-button orange" type="submit">Save coming soon settings</button>
+      </form>
+
+      <div id="comingSoonSaved" class="admin-success" hidden></div>
+
+      <div class="admin-alert" style="margin-top: 1rem;">
+        Maintenance Mode takes priority. If Maintenance Mode is also enabled, visitors will see the maintenance page instead.
+      </div>
+    </div>
+  `;
+
+  document.getElementById("comingsoon_enabled").checked = enabled;
+  setValue("comingsoon_title", settings?.comingsoon_title || "JA Experiences & Discovery is coming soon.");
+  setValue("comingsoon_message", settings?.comingsoon_message || "Our new experiences and discovery service is being prepared. Please check back soon.");
+  setValue("comingsoon_eta", settings?.comingsoon_eta || "");
+
+  document.getElementById("comingSoonForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const data = await api("comingsoon", {
+      method: "POST",
+      body: JSON.stringify({
+        comingsoon_enabled: document.getElementById("comingsoon_enabled").checked,
+        comingsoon_title: getValue("comingsoon_title"),
+        comingsoon_message: getValue("comingsoon_message"),
+        comingsoon_eta: getValue("comingsoon_eta")
+      })
+    });
+
+    document.getElementById("comingSoonSaved").hidden = false;
+    document.getElementById("comingSoonSaved").textContent = data.comingsoon.comingsoon_enabled === "true"
+      ? "Coming soon page is ON. Public visitors will now see the pre-launch page."
+      : "Coming soon page is OFF. The normal public website is live again.";
+
+    renderComingSoon(data.comingsoon);
+  });
+}
 function renderMaintenance(settings) {
   const enabled = settings && settings.maintenance_enabled === "true";
 
@@ -597,4 +654,5 @@ function formatMoney(amount, currency) {
     currency: (currency || "gbp").toUpperCase()
   }).format(Number(amount) / 100);
 }
+
 

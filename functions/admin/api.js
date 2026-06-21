@@ -428,6 +428,55 @@ async function saveMaintenance(DB, body) {
   return getMaintenance(DB);
 }
 
+
+async function getComingSoon(DB) {
+  const defaults = {
+    comingsoon_enabled: "false",
+    comingsoon_title: "JA Experiences & Discovery is coming soon.",
+    comingsoon_message: "Our new experiences and discovery service is being prepared. Please check back soon.",
+    comingsoon_eta: ""
+  };
+
+  const result = await DB.prepare(`
+    SELECT key, value
+    FROM site_settings
+    WHERE key IN (
+      'comingsoon_enabled',
+      'comingsoon_title',
+      'comingsoon_message',
+      'comingsoon_eta'
+    )
+  `).all();
+
+  const settings = { ...defaults };
+
+  for (const row of result.results || []) {
+    settings[row.key] = row.value;
+  }
+
+  return settings;
+}
+
+async function saveComingSoon(DB, body) {
+  const settings = {
+    comingsoon_enabled: body.comingsoon_enabled ? "true" : "false",
+    comingsoon_title: clean(body.comingsoon_title, 180) || "JA Experiences & Discovery is coming soon.",
+    comingsoon_message: clean(body.comingsoon_message, 1000) || "Our new experiences and discovery service is being prepared. Please check back soon.",
+    comingsoon_eta: clean(body.comingsoon_eta, 180)
+  };
+
+  for (const [key, value] of Object.entries(settings)) {
+    await DB.prepare(`
+      INSERT INTO site_settings (key, value, updated_at)
+      VALUES (?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(key) DO UPDATE SET
+        value = excluded.value,
+        updated_at = CURRENT_TIMESTAMP
+    `).bind(key, value).run();
+  }
+
+  return getComingSoon(DB);
+}
 async function getStripe(env) {
   if (!env.STRIPE_SECRET_KEY) {
     return { configured: false, message: "STRIPE_SECRET_KEY is not configured." };
@@ -485,6 +534,7 @@ export async function onRequest(context) {
       if (section === "support") return json({ admin: identity, support: await all(env.DB, `SELECT * FROM support_tickets ORDER BY updated_at DESC, created_at DESC LIMIT 500`) });
       if (section === "system") return json({ admin: identity, system: await all(env.DB, `SELECT * FROM system_events ORDER BY updated_at DESC, created_at DESC LIMIT 500`) });
       if (section === "maintenance") return json({ admin: identity, maintenance: await getMaintenance(env.DB) });
+      if (section === "comingsoon") return json({ admin: identity, comingsoon: await getComingSoon(env.DB) });
       if (section === "stripe") return json({ admin: identity, stripe: await getStripe(env) });
     }
 
@@ -496,6 +546,7 @@ export async function onRequest(context) {
       if (section === "support") return json({ support: await saveSupport(env.DB, body), saved: true });
       if (section === "system") return json({ system: await saveSystemEvent(env.DB, body), saved: true });
       if (section === "maintenance") return json({ maintenance: await saveMaintenance(env.DB, body), saved: true });
+      if (section === "comingsoon") return json({ comingsoon: await saveComingSoon(env.DB, body), saved: true });
     }
 
     return json({ error: "Method or section not allowed." }, 405);
@@ -503,3 +554,4 @@ export async function onRequest(context) {
     return json({ error: error.message || "Admin API error." }, 500);
   }
 }
+
