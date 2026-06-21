@@ -74,8 +74,7 @@ if (!selectedPlan) {
   return jsonResponse({ error: "Invalid plan selected." }, 400);
 }
 
-const siteUrl =
-  env.SITE_URL || "https://experiences.jagroupservices.co.uk";
+const siteUrl = env.SITE_URL || "https://experiences.jagroupservices.co.uk";
 
 const params = new URLSearchParams();
 
@@ -89,9 +88,10 @@ params.set("allow_promotion_codes", "false");
 
 params.set(
   "success_url",
-  `${siteUrl}/payment-success/?session_id={CHECKOUT_SESSION_ID}`
+  siteUrl + "/payment-success/?session_id={CHECKOUT_SESSION_ID}"
 );
-params.set("cancel_url", `${siteUrl}/pricing/?payment=cancelled`);
+
+params.set("cancel_url", siteUrl + "/pricing/?payment=cancelled");
 
 params.set("metadata[service_line]", "JA Experiences & Discovery");
 params.set("metadata[plan_code]", planCode);
@@ -112,7 +112,7 @@ const stripeResponse = await fetch(
   {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${env.STRIPE_SECRET_KEY}`,
+      Authorization: "Bearer " + env.STRIPE_SECRET_KEY,
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: params,
@@ -127,7 +127,9 @@ if (!stripeResponse.ok) {
   return jsonResponse(
     {
       error: "Stripe checkout could not be created.",
-      details: session.error?.message || "Unknown Stripe error.",
+      details: session.error && session.error.message
+        ? session.error.message
+        : "Unknown Stripe error.",
     },
     500
   );
@@ -156,9 +158,9 @@ return jsonResponse(
 }
 }
 
-function jsonResponse(data, status = 200) {
+function jsonResponse(data, status) {
 return new Response(JSON.stringify(data), {
-status,
+status: status || 200,
 headers: {
 "Content-Type": "application/json; charset=utf-8",
 },
