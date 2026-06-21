@@ -18,12 +18,42 @@ const sectionTitles = {
   maintenance: "Maintenance Mode"
 };
 
+const iconPaths = {
+  dashboard: '<rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect>',
+  shield: '<path d="M12 3l7 3v5c0 4.5-2.9 8.4-7 10-4.1-1.6-7-5.5-7-10V6l7-3z"></path><path d="M12 8v5"></path><path d="M12 17h.01"></path>',
+  users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>',
+  mail: '<rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 7l9 6 9-6"></path>',
+  alert: '<path d="M10.3 4.3L2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path>',
+  plans: '<rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M7 8h10"></path><path d="M7 12h10"></path><path d="M7 16h6"></path>',
+  card: '<rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 10h18"></path><path d="M7 15h3"></path>',
+  settings: '<path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"></path><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1A2 2 0 1 1 4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1A2 2 0 1 1 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3h.1A1.7 1.7 0 0 0 10 3V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1A2 2 0 1 1 19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1A1.7 1.7 0 0 0 21 10h.1a2 2 0 1 1 0 4H21a1.7 1.7 0 0 0-1.6 1z"></path>',
+  clock: '<circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path>',
+  file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8"></path><path d="M8 17h6"></path>'
+};
+
 document.addEventListener("DOMContentLoaded", () => {
+  decorateIcons();
   bindNav();
   bindAccountMenu();
   bindAdminActions();
   loadSection("overview");
 });
+
+function iconSvg(name) {
+  const paths = iconPaths[name] || iconPaths.dashboard;
+  return `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">${paths}</svg>`;
+}
+
+function decorateIcons() {
+  document.querySelectorAll(".admin-nav button[data-icon]").forEach((button) => {
+    if (button.querySelector(".nav-icon")) return;
+    button.insertAdjacentHTML("afterbegin", `<span class="nav-icon" aria-hidden="true">${iconSvg(button.dataset.icon)}</span>`);
+  });
+
+  document.querySelectorAll(".hero-icon[data-icon]").forEach((icon) => {
+    icon.innerHTML = iconSvg(icon.dataset.icon);
+  });
+}
 
 function bindNav() {
   document.querySelectorAll("[data-section]").forEach((button) => {
@@ -213,14 +243,14 @@ function renderOverview(overview) {
         </div>
       </div>
       <div class="quick-grid">
-        ${quick("admins", "⛨", "Admin Users / Access", "Manage authorised admin accounts")}
-        ${quick("customers", "👥", "CRM / Customers", "Review customer records and Lifetime access")}
-        ${quick("plans", "▣", "Plans & Prices", "Configure service plan cards and Stripe IDs")}
-        ${quick("stripe", "▤", "Stripe API Controls", "Store keys and test account status")}
-        ${quick("comingsoon", "◌", "Coming Soon Page", "Control the public pre-launch page")}
-        ${quick("maintenance", "⛨", "Maintenance Mode", "Control public maintenance mode")}
-        ${quick("policies", "▧", "Legal Policies", "Edit draft and published policy records")}
-        ${quick("system", "⚠", "System / Issues", "Track operational issues")}
+        ${quick("admins", "shield", "Admin Users / Access", "Manage authorised admin accounts")}
+        ${quick("customers", "users", "CRM / Customers", "Review customer records and Lifetime access")}
+        ${quick("plans", "plans", "Plans & Prices", "Configure service plan cards and Stripe IDs")}
+        ${quick("stripe", "card", "Stripe API Controls", "Store keys and test account status")}
+        ${quick("comingsoon", "clock", "Coming Soon Page", "Control the public pre-launch page")}
+        ${quick("maintenance", "shield", "Maintenance Mode", "Control public maintenance mode")}
+        ${quick("policies", "file", "Legal Policies", "Edit draft and published policy records")}
+        ${quick("system", "alert", "System / Issues", "Track operational issues")}
       </div>
     </div>
   `;
@@ -229,7 +259,7 @@ function renderOverview(overview) {
 function quick(section, icon, title, text) {
   return `
     <button class="quick-card" type="button" data-action="load-section" data-section="${escapeAttr(section)}">
-      <span class="quick-icon">${icon}</span>
+      <span class="quick-icon">${iconSvg(icon)}</span>
       <span><strong>${escapeHtml(title)}</strong><span>${escapeHtml(text)}</span></span>
     </button>
   `;

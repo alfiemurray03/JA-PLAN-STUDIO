@@ -152,13 +152,19 @@
     }
 
     .role-pill {
+      display: inline-flex;
+      align-items: center;
       margin-left: auto;
+      margin-top: 0;
       border-radius: 8px;
       background: var(--red-soft);
       color: var(--red);
       font-size: 0.73rem;
       font-weight: 800;
       padding: 0.28rem 0.48rem;
+      max-width: none;
+      white-space: nowrap;
+      overflow: visible;
     }
 
     .admin-nav-wrap {
@@ -202,11 +208,36 @@
     }
 
     .admin-nav button::before {
-      content: attr(data-icon);
+      content: none;
+    }
+
+    .nav-icon,
+    .quick-icon,
+    .small-icon,
+    .hero-icon {
+      display: grid;
+      place-items: center;
+    }
+
+    .nav-icon {
       width: 20px;
-      text-align: center;
+      height: 20px;
       color: #91a7c4;
-      font-weight: 700;
+      flex: 0 0 auto;
+    }
+
+    .nav-icon svg,
+    .quick-icon svg,
+    .small-icon svg,
+    .hero-icon svg {
+      width: 18px;
+      height: 18px;
+      display: block;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
     .admin-nav button:hover {
@@ -221,6 +252,11 @@
     }
 
     .admin-nav button.active::before {
+      color: #fff;
+    }
+
+    .admin-nav button.active .nav-icon,
+    .admin-nav button:hover .nav-icon {
       color: #fff;
     }
 
@@ -304,15 +340,20 @@
 
     .admin-user-text strong {
       font-size: 0.86rem;
-      max-width: 360px;
+      max-width: 300px;
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .admin-user-text span {
       color: var(--muted);
       font-size: 0.78rem;
       margin-top: 0.1rem;
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .status-pill {
@@ -382,8 +423,6 @@
       width: 44px;
       height: 44px;
       border-radius: 14px;
-      display: grid;
-      place-items: center;
       background: var(--blue-soft);
       color: var(--blue);
       font-weight: 900;
@@ -751,8 +790,6 @@
       width: 36px;
       height: 36px;
       border-radius: 11px;
-      display: grid;
-      place-items: center;
       background: var(--blue-soft);
       color: #60a5fa;
       font-weight: 900;
@@ -1150,41 +1187,41 @@
         <div class="nav-group">
           <div class="nav-heading">Overview</div>
           <nav class="admin-nav" aria-label="Overview">
-            <button data-section="overview" data-icon="▦" class="active">Dashboard</button>
+            <button data-section="overview" data-icon="dashboard" class="active">Dashboard</button>
           </nav>
         </div>
 
         <div class="nav-group">
           <div class="nav-heading">Platform</div>
           <nav class="admin-nav" aria-label="Platform">
-            <button data-section="admins" data-icon="⛨">Admin Users / Access</button>
-            <button data-section="customers" data-icon="👥">CRM / Customers</button>
-            <button data-section="support" data-icon="✉">Support</button>
-            <button data-section="system" data-icon="⚠">System / Issues</button>
+            <button data-section="admins" data-icon="shield">Admin Users / Access</button>
+            <button data-section="customers" data-icon="users">CRM / Customers</button>
+            <button data-section="support" data-icon="mail">Support</button>
+            <button data-section="system" data-icon="alert">System / Issues</button>
           </nav>
         </div>
 
         <div class="nav-group">
           <div class="nav-heading">Configuration</div>
           <nav class="admin-nav" aria-label="Configuration">
-            <button data-section="plans" data-icon="▣">Plans &amp; Prices</button>
-            <button data-section="stripe" data-icon="▤">Stripe API Controls</button>
-            <button data-section="branding" data-icon="⚙">Company Branding</button>
+            <button data-section="plans" data-icon="plans">Plans &amp; Prices</button>
+            <button data-section="stripe" data-icon="card">Stripe API Controls</button>
+            <button data-section="branding" data-icon="settings">Company Branding</button>
           </nav>
         </div>
 
         <div class="nav-group">
           <div class="nav-heading">Site Status</div>
           <nav class="admin-nav" aria-label="Site status">
-            <button data-section="comingsoon" data-icon="◌">Coming Soon Page</button>
-            <button data-section="maintenance" data-icon="⛨">Maintenance Mode</button>
+            <button data-section="comingsoon" data-icon="clock">Coming Soon Page</button>
+            <button data-section="maintenance" data-icon="shield">Maintenance Mode</button>
           </nav>
         </div>
 
         <div class="nav-group">
           <div class="nav-heading">Legal &amp; Compliance</div>
           <nav class="admin-nav" aria-label="Legal">
-            <button data-section="policies" data-icon="▧">Policies</button>
+            <button data-section="policies" data-icon="file">Policies</button>
           </nav>
         </div>
       </div>
@@ -1209,15 +1246,15 @@
           </div>
           <div class="avatar">A</div>
           <div class="account-menu" id="accountMenu" hidden>
-            <button type="button" id="accountSettingsButton">⚙ Account settings</button>
-            <a href="/cdn-cgi/access/logout">↩ Sign out</a>
+            <button type="button" id="accountSettingsButton">Account settings</button>
+            <a href="/cdn-cgi/access/logout">Sign out</a>
           </div>
         </div>
       </header>
 
       <section class="admin-content">
         <div class="admin-hero">
-          <div class="hero-icon">⛨</div>
+          <div class="hero-icon" data-icon="shield"></div>
           <div>
             <h1>Good afternoon, Alfie</h1>
             <p>Manage JA Experiences &amp; Discovery from one secure control centre.</p>
