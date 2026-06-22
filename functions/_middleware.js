@@ -318,7 +318,7 @@ function pageHtml(settings, mode) {
       <div class="kicker">${escapeHtml(kicker)}</div>
       <h1>${escapeHtml(title)}</h1>
       <p>${escapeHtml(message)}</p>
-      ${eta ? `<div class="eta">Estimated launch / return: ${escapeHtml(eta)}</div>` : ""}
+      ${eta ? `<div class="eta">${escapeHtml(eta)}</div>` : ""}
     </section>
 
     <aside class="side">
