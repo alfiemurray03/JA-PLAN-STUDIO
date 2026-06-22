@@ -30,7 +30,8 @@ function getAccessIdentity(request) {
     request.headers.get("CF-Access-Jwt-Assertion") ||
     "";
   const tokenIdentity = decodeJwtPayload(jwt);
-  const email = emailHeader || tokenIdentity.email || tokenIdentity.user_email || tokenIdentity.username || "";
+  const emails = Array.isArray(tokenIdentity.emails) ? tokenIdentity.emails : [];
+  const email = emailHeader || tokenIdentity.email || emails[0] || tokenIdentity.preferred_username || tokenIdentity.upn || tokenIdentity.user_email || tokenIdentity.username || "";
   const name = tokenIdentity.name || tokenIdentity.common_name || tokenIdentity.user_name || tokenIdentity.preferred_username || email || "";
   return {
     email: String(email || "").trim().toLowerCase(),
@@ -44,6 +45,15 @@ function clean(value, max = 2000) {
 
 function cleanEmail(value) {
   return clean(value, 254).toLowerCase();
+}
+
+function hasEligibleAccess(profile = {}) {
+  const status = String(profile.admin_customer_status || "").trim().toLowerCase();
+  return Boolean(
+    Number(profile.admin_lifetime || 0) === 1 ||
+    profile.admin_lifetime_plan_id ||
+    (status && !["standard", "free", "secure", "secure account"].includes(status))
+  );
 }
 
 const DPR_TYPES = new Set([
@@ -293,7 +303,11 @@ async function notifyCustomerSignup(DB, env, identity, profile) {
 }
 
 async function ensureProfile(DB, identity, env = {}) {
-  const existing = await DB.prepare(`SELECT email, verified_name, display_name, contact_email FROM profiles WHERE lower(email) = lower(?)`).bind(identity.email).first();
+  const existing = await DB.prepare(`
+    SELECT email, verified_name, display_name, contact_email, admin_lifetime, admin_lifetime_plan_id, admin_customer_status
+    FROM profiles
+    WHERE lower(email) = lower(?)
+  `).bind(identity.email).first();
   if (existing) return existing;
 
   await DB.prepare(`
@@ -301,7 +315,11 @@ async function ensureProfile(DB, identity, env = {}) {
     VALUES (?, ?, ?, ?)
   `).bind(identity.email, identity.name, identity.name || identity.email, identity.email).run();
 
-  const profile = await DB.prepare(`SELECT email, verified_name, display_name, contact_email FROM profiles WHERE lower(email) = lower(?)`).bind(identity.email).first();
+  const profile = await DB.prepare(`
+    SELECT email, verified_name, display_name, contact_email, admin_lifetime, admin_lifetime_plan_id, admin_customer_status
+    FROM profiles
+    WHERE lower(email) = lower(?)
+  `).bind(identity.email).first();
   await notifyCustomerSignup(DB, env, identity, profile).catch(() => {});
   return profile;
 }
@@ -474,6 +492,12 @@ export async function onRequest(context) {
 
   await ensureTables(env.DB);
   const profile = await ensureProfile(env.DB, identity, env);
+
+  if (!hasEligibleAccess(profile)) {
+    return json({
+      error: "Your account is signed in, but no active service or eligible plan is currently assigned to this profile."
+    }, 403);
+  }
 
   if (request.method === "GET") {
     return json(await listOwnRecords(env.DB, identity.email));

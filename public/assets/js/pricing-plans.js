@@ -65,7 +65,6 @@
 
   async function hydratePricing() {
     const links = Array.from(document.querySelectorAll(".stripe-direct-link"));
-    if (!links.length) return;
 
     try {
       const response = await fetch("/plans-data", {
@@ -75,6 +74,7 @@
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Plan data could not be loaded.");
 
+      applyFreePlanVisibility(data.show_free_plan !== false);
       const plans = new Map((data.plans || []).map((plan) => [plan.id, plan]));
       links.forEach((link) => {
         const plan = plans.get(getPlanId(link));
@@ -89,6 +89,25 @@
         link.textContent = "Not connected yet";
       });
     }
+  }
+
+  function applyFreePlanVisibility(showFreePlan) {
+    const freeCard = Array.from(document.querySelectorAll(".pricing-card")).find((card) => {
+      const title = card.querySelector("h3");
+      return title && /free/i.test(title.textContent || "");
+    });
+
+    if (freeCard) {
+      freeCard.hidden = !showFreePlan;
+    }
+
+    document.querySelectorAll(".pricing-strip-item").forEach((item) => {
+      if (/free/i.test(item.textContent || "")) item.hidden = !showFreePlan;
+    });
+
+    document.querySelectorAll('a[href="/enquiry/"]').forEach((link) => {
+      if (/free enquiry/i.test(link.textContent || "")) link.hidden = !showFreePlan;
+    });
   }
 
   document.addEventListener("click", function (event) {

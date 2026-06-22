@@ -43,14 +43,24 @@ async function createCheckoutSession(planCode, env) {
 
   await ensureServicePlans(env.DB);
 
+  const settings = await settingMap(env.DB, ["show_free_plan"], { show_free_plan: "true" });
+
   const selectedPlan = await env.DB.prepare(`
-    SELECT id, plan_name, plan_type, price_label, stripe_price_id, is_active
+    SELECT id, plan_name, plan_type, price_label, price_pence, stripe_price_id, is_active
     FROM service_plans
     WHERE id = ?
   `).bind(planCode).first();
 
   if (!selectedPlan) {
     return jsonResponse({ error: "Invalid plan selected.", planCode }, 404);
+  }
+
+  if (settings.show_free_plan === "false" && isFreePlan(selectedPlan)) {
+    return jsonResponse({
+      error: "This plan is currently unavailable.",
+      planCode,
+      planName: selectedPlan.plan_name
+    }, 403);
   }
 
   if (Number(selectedPlan.is_active || 0) !== 1) {
@@ -164,6 +174,30 @@ async function safeAlter(DB, sql) {
   } catch {
     // Column already exists.
   }
+}
+
+async function settingMap(DB, keys, defaults = {}) {
+  try {
+    await DB.prepare(`
+      CREATE TABLE IF NOT EXISTS site_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `).run();
+    const placeholders = keys.map(() => "?").join(", ");
+    const result = await DB.prepare(`SELECT key, value FROM site_settings WHERE key IN (${placeholders})`).bind(...keys).all();
+    const settings = { ...defaults };
+    for (const row of result.results || []) settings[row.key] = row.value;
+    return settings;
+  } catch {
+    return { ...defaults };
+  }
+}
+
+function isFreePlan(plan = {}) {
+  const text = `${plan.id || ""} ${plan.plan_name || ""} ${plan.plan_type || ""} ${plan.price_label || ""}`.toLowerCase();
+  return text.includes("free") || Number(plan.price_pence || 0) === 0;
 }
 
 function getSiteUrl(env) {

@@ -20,9 +20,13 @@ async function loadAccessProfile() {
     updateProfile(profile);
     populateForm(profile);
     populateConsent(data.consent || {});
-    bindProfileForm(profile);
-    await loadAccountRequests();
-    bindAccountRequestForms();
+    if (hasEligibleAccess(profile)) {
+      bindProfileForm(profile);
+      await loadAccountRequests();
+      bindAccountRequestForms();
+    } else {
+      renderRestrictedLists();
+    }
   } catch (error) {
     showProfileError(error);
   }
@@ -92,7 +96,13 @@ async function applyAccountBranding() {
 }
 
 function updateProfile(profile) {
-  setAccountSignedInState(true);
+  const eligible = hasEligibleAccess(profile);
+  setAccountSignedInState(true, eligible);
+  setText("accountHeroTitle", eligible ? `Welcome back, ${firstName(profile.displayName, profile.email)}` : "Account access signed in");
+  setText("accountHeroText", eligible
+    ? "Manage your account, plan, data rights, messages and website reports from one secure dashboard."
+    : "Your secure sign-in is active, but no eligible JA Experiences service or plan is currently assigned to this profile.");
+  setText("secureAccountBadge", eligible ? "Secure account" : "Restricted access");
   setText("profileName", profile.displayName);
   setText("profileEmail", profile.email);
   setText("sidebarName", profile.displayName);
@@ -132,7 +142,25 @@ function updateProfile(profile) {
   window.dispatchEvent(new Event("ja-profile-updated"));
 }
 
-function setAccountSignedInState(isSignedIn) {
+function hasEligibleAccess(profile = {}) {
+  const status = String(profile.customerStatus || "").toLowerCase();
+  const planId = String(profile.currentPlanId || "").trim();
+  return Boolean(
+    profile.hasEligibleAccess ||
+    profile.lifetimeAccess ||
+    planId ||
+    (status && !["standard", "free", "secure account", "secure"].includes(status))
+  );
+}
+
+function setBodyAccountState(state) {
+  document.body.classList.remove("account-state-loading", "account-state-signed-out", "account-state-restricted", "account-state-eligible");
+  document.body.classList.add(`account-state-${state}`);
+}
+
+function setAccountSignedInState(isSignedIn, isEligible = false) {
+  setBodyAccountState(isSignedIn ? (isEligible ? "eligible" : "restricted") : "signed-out");
+
   const actionRow = document.getElementById("accessActionRow");
   if (actionRow) actionRow.hidden = Boolean(isSignedIn);
 
@@ -395,11 +423,14 @@ function renderSystemReports(records) {
 }
 
 function showProfileError(error) {
-  setAccountSignedInState(false);
-  setText("profileName", "Sign in or create an account");
+  setAccountSignedInState(false, false);
+  setText("accountHeroTitle", "Customer account access");
+  setText("accountHeroText", "Sign in with JA Group Services CIAM to access eligible customer account services.");
+  setText("secureAccountBadge", "Secure access");
+  setText("profileName", "Sign in required");
   setText("profileEmail", "Use JA Group Services CIAM to access your customer dashboard.");
   setText("sidebarName", "Customer access");
-  setText("sidebarEmail", "Sign in or create account");
+  setText("sidebarEmail", "Sign in required");
   setText("welcomeName", "there");
   setText("profileNameDetail", "Unavailable");
   setText("profileLegalName", "Unavailable");
@@ -407,16 +438,21 @@ function showProfileError(error) {
   setText("profileContactEmail", "Unavailable");
   setText("profilePhone", "Unavailable");
   setText("profileComms", "Unavailable");
-  setText("dprList", "Sign in or create an account to view your data protection requests.");
-  setText("sysList", "Sign in or create an account to view your system reports.");
+  setText("dprList", "Sign in to view your data protection requests.");
+  setText("sysList", "Sign in to view your system reports.");
   setBadge("profilePlanBadge", "Sign-in required", "amber");
   setBadge("planStatusBadge", "Sign-in required", "amber");
 
   const savedMessage = document.getElementById("profileSavedMessage");
   if (savedMessage) {
-    savedMessage.textContent = error?.message || "Please sign in or create an account to continue.";
+    savedMessage.textContent = error?.message || "Please sign in with JA Group Services CIAM to continue.";
     savedMessage.hidden = false;
   }
+}
+
+function renderRestrictedLists() {
+  setText("dprList", "Data protection requests are available once eligible account access is assigned.");
+  setText("sysList", "System reports are available once eligible account access is assigned.");
 }
 
 function setText(id, value) {

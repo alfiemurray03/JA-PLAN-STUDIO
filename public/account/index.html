@@ -584,6 +584,40 @@
 
     .loading-pulse { opacity: 0.7; }
 
+    .signed-out-only,
+    .signed-in-only,
+    .eligible-only,
+    .restricted-only {
+      display: none !important;
+    }
+
+    body.account-state-signed-out .signed-out-card {
+      display: flex !important;
+    }
+
+    body.account-state-signed-out .signed-out-block,
+    body.account-state-restricted .restricted-block {
+      display: block !important;
+    }
+
+    body.account-state-eligible .signed-in-only,
+    body.account-state-restricted .signed-in-only {
+      display: inline-flex !important;
+    }
+
+    body.account-state-eligible .stats-grid.eligible-only {
+      display: grid !important;
+    }
+
+    body.account-state-eligible .dashboard-grid.eligible-only {
+      display: grid !important;
+    }
+
+    body.account-state-restricted .restricted-only .account-button,
+    body.account-state-signed-out .signed-out-only .account-button {
+      display: inline-flex !important;
+    }
+
     @media (max-width: 1180px) {
       .account-shell { grid-template-columns: 280px minmax(0, 1fr); }
       .stats-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -623,7 +657,7 @@
   </style>
 </head>
 
-<body data-page="account" class="account-page">
+<body data-page="account" class="account-page account-state-loading">
   <div class="account-shell">
     <aside class="account-sidebar" id="accountSidebar">
       <div class="brand">
@@ -655,7 +689,7 @@
       </nav>
 
       <div class="sidebar-footer">
-        <a class="account-button" href="/cdn-cgi/access/logout">Sign out</a>
+        <a class="account-button signed-in-only" href="/cdn-cgi/access/logout">Sign out</a>
       </div>
     </aside>
 
@@ -669,16 +703,41 @@
         <section class="dashboard-hero" id="overview">
           <div>
             <span class="eyebrow">Customer dashboard</span>
-            <h1>Welcome back, <span id="welcomeName">there</span></h1>
-            <p>Manage your account, plan, data rights, messages and website reports from one secure dashboard.</p>
+            <h1 id="accountHeroTitle">Customer account access</h1>
+            <p id="accountHeroText">Sign in with JA Group Services CIAM to access eligible customer account services.</p>
           </div>
           <div class="badge-row">
-            <span class="badge green">Secure account</span>
+            <span class="badge green" id="secureAccountBadge">Secure access</span>
             <span class="badge amber" id="lifetimeBadge" hidden>Lifetime</span>
           </div>
         </section>
 
-        <section class="stats-grid" aria-label="Account statistics">
+        <section class="dashboard-grid signed-out-only signed-out-block" aria-label="Sign in">
+          <article class="dashboard-card wide">
+            <span class="eyebrow">Secure customer access</span>
+            <h2>Sign in to your JA Experiences account</h2>
+            <p>Account creation and sign-in are handled by JA Group Services CIAM through Microsoft Entra External ID. Use the secure sign-in button below, then choose the account creation option on the Microsoft page if you do not already have an account.</p>
+            <p>Your dashboard is only shown after successful authentication and eligible account access has been confirmed.</p>
+            <div class="button-row">
+              <a class="account-button primary" href="/account/profile">Sign in with JA Group Services CIAM</a>
+              <a class="account-button" href="/pricing/">View plans and benefits</a>
+            </div>
+          </article>
+        </section>
+
+        <section class="dashboard-grid restricted-only restricted-block" aria-label="Restricted account access">
+          <article class="dashboard-card wide">
+            <span class="eyebrow">Account access restricted</span>
+            <h2>Your account is signed in, but no active service or eligible plan is currently assigned to this profile.</h2>
+            <p>You can view plans or contact support if you believe access should already be available.</p>
+            <div class="button-row">
+              <a class="account-button primary" href="/pricing/">View plans</a>
+              <a class="account-button" href="/contact/">Contact support</a>
+            </div>
+          </article>
+        </section>
+
+        <section class="stats-grid eligible-only" aria-label="Account statistics">
           <article class="stat-card"><span>Bookings</span><strong id="statBookings">0</strong><span>Managed outside this account</span></article>
           <article class="stat-card"><span>Saved experiences</span><strong id="statSaved">0</strong><span>Saved items</span></article>
           <article class="stat-card"><span>Messages</span><strong id="statMessages">0</strong><span>Unread items</span></article>
@@ -686,7 +745,7 @@
           <article class="stat-card"><span>Active benefits</span><strong id="statBenefits">1</strong><span id="statBenefitsText">Secure access</span></article>
         </section>
 
-        <section class="dashboard-grid">
+        <section class="dashboard-grid eligible-only">
           <article class="dashboard-card">
             <div class="section-head">
               <div><h2>Quick Actions</h2><p>Common account tasks and support options.</p></div>
@@ -700,24 +759,23 @@
             </div>
           </article>
 
-          <aside class="profile-card" aria-label="Signed in profile">
+          <aside class="profile-card signed-out-card" aria-label="Signed in profile">
             <div class="profile-avatar" id="profileInitials">JA</div>
             <div class="profile-top">
               <h2 id="profileName" class="loading-pulse">Loading profile...</h2>
               <p id="profileEmail">Checking secure access session...</p>
               <div class="badge-row">
-                <span class="badge green">Signed in securely</span>
+                <span class="badge green signed-in-only">Signed in securely</span>
                 <span class="badge amber" id="profilePlanBadge">Standard</span>
               </div>
               <div class="button-row" id="accessActionRow" hidden>
                 <a class="account-button primary" href="/account/profile?start=signin">Sign in</a>
-                <a class="account-button" href="/account/profile?start=create">Create account</a>
               </div>
             </div>
           </aside>
         </section>
 
-        <section class="dashboard-grid" id="profile">
+        <section class="dashboard-grid eligible-only" id="profile">
           <article class="account-panel">
             <div class="section-head">
               <div><h2>My account</h2><p>Your verified sign-in details and preferred contact information.</p></div>
@@ -755,7 +813,7 @@
           </article>
         </section>
 
-        <section class="dashboard-grid" id="plans">
+        <section class="dashboard-grid eligible-only" id="plans">
           <article class="account-panel">
             <div class="section-head">
               <div><h2>Plans, billing and lifetime access</h2><p>Your current membership status and planning support access.</p></div>
@@ -785,7 +843,7 @@
           </article>
         </section>
 
-        <section class="dashboard-grid" id="privacy">
+        <section class="dashboard-grid eligible-only" id="privacy">
           <article class="account-panel">
             <span class="eyebrow">Data &amp; privacy</span>
             <h2>Data Protection Requests</h2>
@@ -808,7 +866,7 @@
           </article>
         </section>
 
-        <section class="dashboard-grid" id="support">
+        <section class="dashboard-grid eligible-only" id="support">
           <article class="account-panel">
             <span class="eyebrow">Messages &amp; reports</span>
             <h2>System Reports</h2>
@@ -837,6 +895,6 @@
     </main>
   </div>
 
-  <script src="/assets/js/account-profile.js?v=20260622-account-signup"></script>
+  <script src="/assets/js/account-profile.js?v=20260622-account-state"></script>
 </body>
 </html>

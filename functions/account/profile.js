@@ -36,9 +36,13 @@ function getAccessIdentity(request) {
 
   const tokenIdentity = decodeJwtPayload(jwt);
 
+  const emails = Array.isArray(tokenIdentity.emails) ? tokenIdentity.emails : [];
   const email =
     emailHeader ||
     tokenIdentity.email ||
+    emails[0] ||
+    tokenIdentity.preferred_username ||
+    tokenIdentity.upn ||
     tokenIdentity.user_email ||
     tokenIdentity.username ||
     "";
@@ -78,6 +82,16 @@ function clean(value, maxLength = 500) {
 
 function cleanEmail(value) {
   return clean(value, 254).toLowerCase();
+}
+
+function profileHasEligibleAccess(row, plan) {
+  const status = String(row?.admin_customer_status || "").trim().toLowerCase();
+  return Boolean(
+    Number(row?.admin_lifetime || 0) === 1 ||
+    row?.admin_lifetime_plan_id ||
+    plan?.id ||
+    (status && !["standard", "free", "secure", "secure account"].includes(status))
+  );
 }
 
 async function ensureProfileTable(DB) {
@@ -329,6 +343,7 @@ async function getProfile(DB, identity, env = {}) {
 
   if (existing) {
     const plan = await getProfilePlan(DB, existing.admin_lifetime_plan_id);
+    const eligibleAccess = profileHasEligibleAccess(existing, plan);
     return {
       email: existing.email,
       verifiedName: existing.verified_name || identity.verifiedName,
@@ -339,8 +354,10 @@ async function getProfile(DB, identity, env = {}) {
       supportNotes: existing.support_notes || "",
       lifetimeAccess: Number(existing.admin_lifetime || 0) === 1,
       customerStatus: existing.admin_customer_status || "Standard",
+      currentPlanId: plan?.id || existing.admin_lifetime_plan_id || "",
       currentPlan: plan?.plan_name || existing.admin_customer_status || "Standard",
       currentPlanType: plan?.plan_type || existing.admin_customer_status || "Standard",
+      hasEligibleAccess: eligibleAccess,
       createdAt: existing.created_at,
       updatedAt: existing.updated_at
     };
@@ -356,8 +373,10 @@ async function getProfile(DB, identity, env = {}) {
     supportNotes: "",
     lifetimeAccess: false,
     customerStatus: "Standard",
+    currentPlanId: "",
     currentPlan: "Standard",
     currentPlanType: "Standard",
+    hasEligibleAccess: false,
     createdAt: null,
     updatedAt: null
   };

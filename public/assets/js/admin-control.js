@@ -597,6 +597,8 @@ function renderCustomers(customers = []) {
 }
 
 function renderPlans(plans = []) {
+  const planSettings = state.data.plans?.settings || {};
+  const showFreePlan = planSettings.show_free_plan !== false;
   const cards = plans.map((plan) => `
     <article class="plan-card">
       <div class="plan-top">
@@ -632,8 +634,42 @@ function renderPlans(plans = []) {
       </div>
       <button class="admin-button" type="button" data-action="open-plan">New plan</button>
     </div>
+    <div class="admin-card" style="margin-bottom:1rem;">
+      <div class="section-head">
+        <div>
+          <h2>Free Plan Visibility</h2>
+          <p>Controls whether the Free plan appears publicly. Existing Free users remain visible to admins.</p>
+        </div>
+        ${badge(showFreePlan ? "Enabled" : "Disabled", showFreePlan ? "green" : "amber")}
+      </div>
+      <form class="admin-form" id="freePlanVisibilityForm">
+        <label class="check">
+          <span class="switch"><input id="show_free_plan" type="checkbox" ${showFreePlan ? "checked" : ""}><span></span></span>
+          Show Free Plan publicly
+        </label>
+        <button class="admin-button" type="submit">Save Free plan visibility</button>
+      </form>
+      <div id="freePlanVisibilitySaved" class="admin-success" hidden></div>
+    </div>
     <div class="plan-grid">${cards || emptyCard("No plans yet.")}</div>
   `;
+
+  const freePlanForm = document.getElementById("freePlanVisibilityForm");
+  if (freePlanForm) {
+    freePlanForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const data = await api("plans", {
+        method: "POST",
+        body: JSON.stringify({
+          action: "save_free_plan_visibility",
+          show_free_plan: document.getElementById("show_free_plan").checked
+        })
+      });
+      state.data.plans = data;
+      renderPlans(data.plans || []);
+      setSaved("freePlanVisibilitySaved", "Free plan visibility saved.");
+    });
+  }
 }
 
 async function togglePlan(id, isActive) {
