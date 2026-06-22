@@ -1616,13 +1616,26 @@ function renderComingSoon(settings = {}) {
     title: "Coming Soon Page",
     description: "Switch the public website into a pre-launch page while keeping the admin portal available.",
     enabledKey: "comingsoon_enabled",
+    modeKey: "comingsoon_content_mode",
     titleKey: "comingsoon_title",
     messageKey: "comingsoon_message",
     etaKey: "comingsoon_eta",
+    leftLabelKey: "comingsoon_left_label",
+    leftHeadingKey: "comingsoon_left_heading",
+    leftBodyKey: "comingsoon_left_body",
+    leftStatusKey: "comingsoon_left_status",
+    rightLabelKey: "comingsoon_right_label",
+    rightHeadingKey: "comingsoon_right_heading",
+    rightBodyKey: "comingsoon_right_body",
+    rightStatusKey: "comingsoon_right_status",
+    footerTextKey: "comingsoon_footer_text",
+    domainTextKey: "comingsoon_domain_text",
+    supportTextKey: "comingsoon_support_text",
     enabledLabel: "Coming soon page enabled",
     titleLabel: "Public coming soon title",
     messageLabel: "Public coming soon message",
-    etaLabel: "Estimated launch time"
+    etaLabel: "Estimated launch time",
+    notice: ""
   });
 }
 
@@ -1631,13 +1644,26 @@ function renderMaintenance(settings = {}) {
     title: "Maintenance Mode",
     description: "Bring the public website down for maintenance while keeping the admin portal available.",
     enabledKey: "maintenance_enabled",
+    modeKey: "maintenance_content_mode",
     titleKey: "maintenance_title",
     messageKey: "maintenance_message",
     etaKey: "maintenance_eta",
+    leftLabelKey: "maintenance_left_label",
+    leftHeadingKey: "maintenance_left_heading",
+    leftBodyKey: "maintenance_left_body",
+    leftStatusKey: "maintenance_left_status",
+    rightLabelKey: "maintenance_right_label",
+    rightHeadingKey: "maintenance_right_heading",
+    rightBodyKey: "maintenance_right_body",
+    rightStatusKey: "maintenance_right_status",
+    footerTextKey: "maintenance_footer_text",
+    domainTextKey: "maintenance_domain_text",
+    supportTextKey: "maintenance_support_text",
     enabledLabel: "Maintenance mode enabled",
     titleLabel: "Public maintenance title",
     messageLabel: "Public maintenance message",
-    etaLabel: "Estimated return time"
+    etaLabel: "Estimated return time",
+    notice: "The live maintenance page will always display the hardcoded label: MAINTENANCE NOTICE:"
   });
 }
 
@@ -1658,9 +1684,30 @@ function renderStatusForm(section, settings, labels) {
           <span class="switch"><input id="${labels.enabledKey}" type="checkbox"><span></span></span>
           ${escapeHtml(labels.enabledLabel)}
         </label>
+        <label class="admin-label">Content mode
+          <select id="${labels.modeKey}">
+            <option value="plain">Plain text</option>
+            <option value="html">HTML (sanitised)</option>
+          </select>
+        </label>
         ${input(labels.titleLabel, labels.titleKey)}
         ${textarea(labels.messageLabel, labels.messageKey)}
         ${input(labels.etaLabel, labels.etaKey)}
+        <div class="admin-alert">The fields above remain for compatibility. The detailed editable live page content is below.</div>
+        <div class="admin-grid two">
+          ${input("Left card label", labels.leftLabelKey)}
+          ${input("Right card label", labels.rightLabelKey)}
+          ${input("Left card heading", labels.leftHeadingKey)}
+          ${input("Right card heading", labels.rightHeadingKey)}
+          ${textarea("Left card body", labels.leftBodyKey)}
+          ${textarea("Right card body", labels.rightBodyKey)}
+          ${textarea("Left status message", labels.leftStatusKey)}
+          ${textarea("Right status message", labels.rightStatusKey)}
+          ${input("Domain text", labels.domainTextKey)}
+          ${input("Footer text", labels.footerTextKey)}
+          ${textarea("Support information", labels.supportTextKey)}
+        </div>
+        ${labels.notice ? `<div class="admin-alert">${escapeHtml(labels.notice)}</div>` : ""}
         <button class="admin-button" type="submit">Save ${escapeHtml(labels.title.toLowerCase())} settings</button>
       </form>
       <div id="${section}Saved" class="admin-success" hidden></div>
@@ -1669,17 +1716,43 @@ function renderStatusForm(section, settings, labels) {
   `;
 
   document.getElementById(labels.enabledKey).checked = settings[labels.enabledKey] === "true";
+  setValue(labels.modeKey, settings[labels.modeKey] || "plain");
   setValue(labels.titleKey, settings[labels.titleKey] || "");
   setValue(labels.messageKey, settings[labels.messageKey] || "");
   setValue(labels.etaKey, settings[labels.etaKey] || "");
+  [
+    labels.leftLabelKey,
+    labels.leftHeadingKey,
+    labels.leftBodyKey,
+    labels.leftStatusKey,
+    labels.rightLabelKey,
+    labels.rightHeadingKey,
+    labels.rightBodyKey,
+    labels.rightStatusKey,
+    labels.footerTextKey,
+    labels.domainTextKey,
+    labels.supportTextKey
+  ].forEach((key) => setValue(key, settings[key] || ""));
 
   document.getElementById(`${section}Form`).addEventListener("submit", async (event) => {
     event.preventDefault();
     const body = {
       [labels.enabledKey]: document.getElementById(labels.enabledKey).checked,
+      [labels.modeKey]: getValue(labels.modeKey),
       [labels.titleKey]: getValue(labels.titleKey),
       [labels.messageKey]: getValue(labels.messageKey),
-      [labels.etaKey]: getValue(labels.etaKey)
+      [labels.etaKey]: getValue(labels.etaKey),
+      [labels.leftLabelKey]: getValue(labels.leftLabelKey),
+      [labels.leftHeadingKey]: getValue(labels.leftHeadingKey),
+      [labels.leftBodyKey]: getValue(labels.leftBodyKey),
+      [labels.leftStatusKey]: getValue(labels.leftStatusKey),
+      [labels.rightLabelKey]: getValue(labels.rightLabelKey),
+      [labels.rightHeadingKey]: getValue(labels.rightHeadingKey),
+      [labels.rightBodyKey]: getValue(labels.rightBodyKey),
+      [labels.rightStatusKey]: getValue(labels.rightStatusKey),
+      [labels.footerTextKey]: getValue(labels.footerTextKey),
+      [labels.domainTextKey]: getValue(labels.domainTextKey),
+      [labels.supportTextKey]: getValue(labels.supportTextKey)
     };
     const data = await api(section, { method: "POST", body: JSON.stringify(body) });
     renderSection(section, data);

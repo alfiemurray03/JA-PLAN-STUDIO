@@ -7,6 +7,50 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function escapeAttr(value) {
+  return escapeHtml(value).replaceAll("`", "&#096;");
+}
+
+function safeUrl(value) {
+  const url = String(value || "").trim();
+  if (!url) return "";
+  if (/^(https?:|mailto:|tel:|\/|#)/i.test(url) && !/javascript:/i.test(url)) return url;
+  return "";
+}
+
+function sanitiseHtml(value) {
+  const allowed = new Set(["a", "b", "br", "em", "h2", "h3", "h4", "i", "li", "ol", "p", "span", "strong", "u", "ul"]);
+  return String(value || "")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<\s*(script|style|iframe|object|embed|svg|math|link|meta|form|input|button|textarea|select)[\s\S]*?<\s*\/\s*\1\s*>/gi, "")
+    .replace(/<\s*(script|style|iframe|object|embed|svg|math|link|meta|form|input|button|textarea|select)[^>]*\/?\s*>/gi, "")
+    .replace(/<\/?([a-z0-9-]+)([^>]*)>/gi, (tag, name, attrs = "") => {
+      const tagName = String(name || "").toLowerCase();
+      if (!allowed.has(tagName)) return "";
+      if (tag.startsWith("</")) return `</${tagName}>`;
+      if (tagName === "br") return "<br>";
+      let safeAttrs = "";
+      if (tagName === "a") {
+        const href = attrs.match(/\shref\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))/i);
+        const target = attrs.match(/\starget\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))/i);
+        const hrefValue = safeUrl(href?.[2] || href?.[3] || href?.[4] || "");
+        if (hrefValue) safeAttrs += ` href="${escapeAttr(hrefValue)}"`;
+        if ((target?.[2] || target?.[3] || target?.[4]) === "_blank") safeAttrs += ` target="_blank" rel="noopener noreferrer"`;
+      }
+      return `<${tagName}${safeAttrs}>`;
+    });
+}
+
+function contentHtml(value, mode, fallback = "") {
+  const source = String(value || fallback || "");
+  if (mode === "html") return sanitiseHtml(source);
+  return escapeHtml(source).replace(/\n/g, "<br>");
+}
+
+function setting(settings, key, fallback = "") {
+  return Object.prototype.hasOwnProperty.call(settings, key) && settings[key] !== undefined ? settings[key] : fallback;
+}
+
 function decodeJwtPayload(jwt) {
   try {
     if (!jwt || !jwt.includes(".")) return {};
@@ -133,26 +177,40 @@ async function hasAdminBypass(request, env) {
 
 function pageHtml(settings, mode) {
   const isComingSoon = mode === "coming-soon";
+  const prefix = isComingSoon ? "comingsoon" : "maintenance";
   const serviceName = settings.service_name || settings.trading_name || "JA Experiences & Discovery";
   const businessName = settings.business_name || "JA Group Services Ltd";
   const publicBrandText = settings.public_brand_text || "Curated discovery, planning and experience guidance.";
   const logoUrl = settings.logo_url || "";
   const faviconUrl = settings.favicon_url || "";
+  const contentMode = settings[`${prefix}_content_mode`] === "html" ? "html" : "plain";
 
   const title = isComingSoon
-    ? settings.comingsoon_title || "JA Experiences & Discovery is coming soon."
-    : settings.maintenance_title || "We’ll be back shortly.";
+    ? setting(settings, "comingsoon_title", "JA Experiences & Discovery is coming soon.")
+    : setting(settings, "maintenance_title", "We'll be back shortly.");
 
   const message = isComingSoon
-    ? settings.comingsoon_message || "Our new experiences and discovery service is being prepared. Please check back soon."
-    : settings.maintenance_message || "JA Experiences & Discovery is temporarily unavailable while essential maintenance is carried out.";
+    ? setting(settings, "comingsoon_message", "Our new experiences and discovery service is being prepared. Please check back soon.")
+    : setting(settings, "maintenance_message", "JA Experiences & Discovery is temporarily unavailable while essential maintenance is carried out.");
 
   const eta = isComingSoon
-    ? settings.comingsoon_eta || ""
-    : settings.maintenance_eta || "";
+    ? setting(settings, "comingsoon_eta", "")
+    : setting(settings, "maintenance_eta", "");
 
   const kicker = isComingSoon ? "Pre-launch" : "Maintenance";
   const status = isComingSoon ? "Coming soon" : "Maintenance mode";
+  const leftLabel = setting(settings, `${prefix}_left_label`, kicker);
+  const leftHeading = setting(settings, `${prefix}_left_heading`, title);
+  const leftBody = setting(settings, `${prefix}_left_body`, message);
+  const leftStatus = setting(settings, `${prefix}_left_status`, eta);
+  const rightLabel = setting(settings, `${prefix}_right_label`, serviceName);
+  const rightHeading = setting(settings, `${prefix}_right_heading`, publicBrandText);
+  const rightBody = setting(settings, `${prefix}_right_body`, settings.footer_notice || `Part of ${businessName}.`);
+  const rightStatus = setting(settings, `${prefix}_right_status`, status);
+  const footerText = setting(settings, `${prefix}_footer_text`, settings.footer_notice || `Part of ${businessName}.`);
+  const domainText = setting(settings, `${prefix}_domain_text`, "experiences.jagroupservices.co.uk");
+  const supportText = setting(settings, `${prefix}_support_text`, "For urgent support, please contact JA Group Services.");
+  const maintenanceNotice = isComingSoon ? "" : `<div class="notice"><strong>MAINTENANCE NOTICE:</strong> ${contentHtml(leftStatus || message, contentMode)}</div>`;
 
   return `<!doctype html>
 <html lang="en-GB">
@@ -168,8 +226,8 @@ function pageHtml(settings, mode) {
       --ink: #08233c;
       --muted: #526276;
       --orange: #f26a2e;
-      --cream: #f7f4ed;
       --line: #dde7f0;
+      --panel: rgba(255,255,255,0.10);
     }
 
     * {
@@ -309,23 +367,52 @@ function pageHtml(settings, mode) {
         min-height: auto;
       }
     }
+
+    .managed-content :first-child {
+      margin-top: 0;
+    }
+
+    .managed-content :last-child {
+      margin-bottom: 0;
+    }
+
+    .notice,
+    .meta {
+      margin-top: 1.2rem;
+      padding: 1rem;
+      border-radius: 18px;
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,0.16);
+      color: #ffffff;
+      line-height: 1.6;
+    }
+
+    .card .notice {
+      background: #fff7ed;
+      color: #7c2d12;
+      border-color: #fed7aa;
+    }
   </style>
 </head>
 <body>
   <main class="wrap">
     <section class="card">
-      <div class="logo">${logoUrl ? `<img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(serviceName)} logo">` : "JA"}</div>
-      <div class="kicker">${escapeHtml(kicker)}</div>
-      <h1>${escapeHtml(title)}</h1>
-      <p>${escapeHtml(message)}</p>
-      ${eta ? `<div class="eta">${escapeHtml(eta)}</div>` : ""}
+      <div class="logo">${logoUrl ? `<img src="${escapeAttr(logoUrl)}" alt="${escapeAttr(serviceName)} logo">` : "JA"}</div>
+      <div class="kicker">${contentHtml(leftLabel, contentMode, kicker)}</div>
+      <h1>${contentHtml(leftHeading, contentMode, title)}</h1>
+      <div class="managed-content"><p>${contentHtml(leftBody, contentMode, message)}</p></div>
+      ${maintenanceNotice || (leftStatus ? `<div class="eta">${contentHtml(leftStatus, contentMode)}</div>` : "")}
     </section>
 
     <aside class="side">
       <div>
-        <span class="pill">${escapeHtml(serviceName)}</span>
-        <h2>${escapeHtml(publicBrandText)}</h2>
-        <p>${escapeHtml(settings.footer_notice || `Part of ${businessName}.`)}</p>
+        <span class="pill">${contentHtml(rightLabel, contentMode, serviceName)}</span>
+        <h2>${contentHtml(rightHeading, contentMode, publicBrandText)}</h2>
+        <div class="managed-content"><p>${contentHtml(rightBody, contentMode, settings.footer_notice || `Part of ${businessName}.`)}</p></div>
+        ${rightStatus ? `<div class="meta">${contentHtml(rightStatus, contentMode, status)}</div>` : ""}
+        ${supportText ? `<p>${contentHtml(supportText, contentMode)}</p>` : ""}
+        <p>${contentHtml(domainText, contentMode)}</p>
+        <p>${contentHtml(footerText, contentMode)}</p>
       </div>
     </aside>
   </main>
@@ -344,10 +431,34 @@ async function getSiteSettings(DB) {
         'maintenance_title',
         'maintenance_message',
         'maintenance_eta',
+        'maintenance_content_mode',
+        'maintenance_left_label',
+        'maintenance_left_heading',
+        'maintenance_left_body',
+        'maintenance_left_status',
+        'maintenance_right_label',
+        'maintenance_right_heading',
+        'maintenance_right_body',
+        'maintenance_right_status',
+        'maintenance_footer_text',
+        'maintenance_domain_text',
+        'maintenance_support_text',
         'comingsoon_enabled',
         'comingsoon_title',
         'comingsoon_message',
         'comingsoon_eta',
+        'comingsoon_content_mode',
+        'comingsoon_left_label',
+        'comingsoon_left_heading',
+        'comingsoon_left_body',
+        'comingsoon_left_status',
+        'comingsoon_right_label',
+        'comingsoon_right_heading',
+        'comingsoon_right_body',
+        'comingsoon_right_status',
+        'comingsoon_footer_text',
+        'comingsoon_domain_text',
+        'comingsoon_support_text',
         'site_theme_mode'
       )
     `).all(),

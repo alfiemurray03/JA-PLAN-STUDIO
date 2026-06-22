@@ -67,6 +67,40 @@ function clean(value, max = 2000) {
   return String(value || "").trim().slice(0, max);
 }
 
+function safeUrl(value) {
+  const url = clean(value, 1200);
+  if (!url) return "";
+  if (/^(https?:|mailto:|tel:|\/|#)/i.test(url) && !/javascript:/i.test(url)) return url;
+  return "";
+}
+
+function sanitiseHtml(value, max = 5000) {
+  const allowed = new Set(["a", "b", "br", "em", "h2", "h3", "h4", "i", "li", "ol", "p", "span", "strong", "u", "ul"]);
+  return clean(value, max)
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<\s*(script|style|iframe|object|embed|svg|math|link|meta|form|input|button|textarea|select)[\s\S]*?<\s*\/\s*\1\s*>/gi, "")
+    .replace(/<\s*(script|style|iframe|object|embed|svg|math|link|meta|form|input|button|textarea|select)[^>]*\/?\s*>/gi, "")
+    .replace(/<\/?([a-z0-9-]+)([^>]*)>/gi, (tag, name, attrs = "") => {
+      const tagName = String(name || "").toLowerCase();
+      if (!allowed.has(tagName)) return "";
+      if (tag.startsWith("</")) return `</${tagName}>`;
+      if (tagName === "br") return "<br>";
+      let safeAttrs = "";
+      if (tagName === "a") {
+        const href = attrs.match(/\shref\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))/i);
+        const target = attrs.match(/\starget\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))/i);
+        const hrefValue = safeUrl(href?.[2] || href?.[3] || href?.[4] || "");
+        if (hrefValue) safeAttrs += ` href="${hrefValue.replace(/"/g, "&quot;")}"`;
+        if ((target?.[2] || target?.[3] || target?.[4]) === "_blank") safeAttrs += ` target="_blank" rel="noopener noreferrer"`;
+      }
+      return `<${tagName}${safeAttrs}>`;
+    });
+}
+
+function cleanContent(value, mode, max = 5000) {
+  return mode === "html" ? sanitiseHtml(value, max) : clean(value, max);
+}
+
 function cleanEmail(value) {
   return clean(value, 254).toLowerCase();
 }
@@ -1495,21 +1529,58 @@ async function getMaintenance(DB) {
     "maintenance_enabled",
     "maintenance_title",
     "maintenance_message",
-    "maintenance_eta"
+    "maintenance_eta",
+    "maintenance_content_mode",
+    "maintenance_left_label",
+    "maintenance_left_heading",
+    "maintenance_left_body",
+    "maintenance_left_status",
+    "maintenance_right_label",
+    "maintenance_right_heading",
+    "maintenance_right_body",
+    "maintenance_right_status",
+    "maintenance_footer_text",
+    "maintenance_domain_text",
+    "maintenance_support_text"
   ], {
     maintenance_enabled: "false",
     maintenance_title: "We'll be back shortly.",
     maintenance_message: "JA Experiences & Discovery is temporarily unavailable while essential maintenance is carried out.",
-    maintenance_eta: ""
+    maintenance_eta: "",
+    maintenance_content_mode: "plain",
+    maintenance_left_label: "Maintenance",
+    maintenance_left_heading: "We'll be back shortly.",
+    maintenance_left_body: "JA Experiences & Discovery is temporarily unavailable while essential maintenance is carried out.",
+    maintenance_left_status: "Essential platform maintenance is in progress.",
+    maintenance_right_label: "JA Experiences & Discovery",
+    maintenance_right_heading: "Curated discovery, planning and experience guidance.",
+    maintenance_right_body: "Part of JA Group Services Ltd.",
+    maintenance_right_status: "Maintenance mode",
+    maintenance_footer_text: "Thank you for your patience.",
+    maintenance_domain_text: "experiences.jagroupservices.co.uk",
+    maintenance_support_text: "For urgent support, please contact JA Group Services."
   });
 }
 
 async function saveMaintenance(DB, body) {
+  const mode = body.maintenance_content_mode === "html" ? "html" : "plain";
   await saveSettings(DB, {
     maintenance_enabled: body.maintenance_enabled ? "true" : "false",
-    maintenance_title: clean(body.maintenance_title, 180) || "We'll be back shortly.",
-    maintenance_message: clean(body.maintenance_message, 1000) || "JA Experiences & Discovery is temporarily unavailable while essential maintenance is carried out.",
-    maintenance_eta: clean(body.maintenance_eta, 180)
+    maintenance_title: cleanContent(body.maintenance_title, mode, 180),
+    maintenance_message: cleanContent(body.maintenance_message, mode, 1000),
+    maintenance_eta: cleanContent(body.maintenance_eta, mode, 180),
+    maintenance_content_mode: mode,
+    maintenance_left_label: cleanContent(body.maintenance_left_label, mode, 180),
+    maintenance_left_heading: cleanContent(body.maintenance_left_heading, mode, 240),
+    maintenance_left_body: cleanContent(body.maintenance_left_body, mode, 3000),
+    maintenance_left_status: cleanContent(body.maintenance_left_status, mode, 1000),
+    maintenance_right_label: cleanContent(body.maintenance_right_label, mode, 180),
+    maintenance_right_heading: cleanContent(body.maintenance_right_heading, mode, 300),
+    maintenance_right_body: cleanContent(body.maintenance_right_body, mode, 3000),
+    maintenance_right_status: cleanContent(body.maintenance_right_status, mode, 600),
+    maintenance_footer_text: cleanContent(body.maintenance_footer_text, mode, 1000),
+    maintenance_domain_text: cleanContent(body.maintenance_domain_text, mode, 300),
+    maintenance_support_text: cleanContent(body.maintenance_support_text, mode, 1000)
   });
 
   return getMaintenance(DB);
@@ -1520,21 +1591,58 @@ async function getComingSoon(DB) {
     "comingsoon_enabled",
     "comingsoon_title",
     "comingsoon_message",
-    "comingsoon_eta"
+    "comingsoon_eta",
+    "comingsoon_content_mode",
+    "comingsoon_left_label",
+    "comingsoon_left_heading",
+    "comingsoon_left_body",
+    "comingsoon_left_status",
+    "comingsoon_right_label",
+    "comingsoon_right_heading",
+    "comingsoon_right_body",
+    "comingsoon_right_status",
+    "comingsoon_footer_text",
+    "comingsoon_domain_text",
+    "comingsoon_support_text"
   ], {
     comingsoon_enabled: "false",
     comingsoon_title: "JA Experiences & Discovery is coming soon.",
     comingsoon_message: "Our new experiences and discovery service is being prepared. Please check back soon.",
-    comingsoon_eta: ""
+    comingsoon_eta: "",
+    comingsoon_content_mode: "plain",
+    comingsoon_left_label: "Pre-launch",
+    comingsoon_left_heading: "JA Experiences & Discovery is coming soon.",
+    comingsoon_left_body: "Our new experiences and discovery service is being prepared. Please check back soon.",
+    comingsoon_left_status: "",
+    comingsoon_right_label: "JA Experiences & Discovery",
+    comingsoon_right_heading: "Curated discovery, planning and experience guidance.",
+    comingsoon_right_body: "Part of JA Group Services Ltd.",
+    comingsoon_right_status: "Coming soon",
+    comingsoon_footer_text: "Launching soon.",
+    comingsoon_domain_text: "experiences.jagroupservices.co.uk",
+    comingsoon_support_text: "For enquiries, please contact JA Group Services."
   });
 }
 
 async function saveComingSoon(DB, body) {
+  const mode = body.comingsoon_content_mode === "html" ? "html" : "plain";
   await saveSettings(DB, {
     comingsoon_enabled: body.comingsoon_enabled ? "true" : "false",
-    comingsoon_title: clean(body.comingsoon_title, 180) || "JA Experiences & Discovery is coming soon.",
-    comingsoon_message: clean(body.comingsoon_message, 1000) || "Our new experiences and discovery service is being prepared. Please check back soon.",
-    comingsoon_eta: clean(body.comingsoon_eta, 180)
+    comingsoon_title: cleanContent(body.comingsoon_title, mode, 180),
+    comingsoon_message: cleanContent(body.comingsoon_message, mode, 1000),
+    comingsoon_eta: cleanContent(body.comingsoon_eta, mode, 180),
+    comingsoon_content_mode: mode,
+    comingsoon_left_label: cleanContent(body.comingsoon_left_label, mode, 180),
+    comingsoon_left_heading: cleanContent(body.comingsoon_left_heading, mode, 240),
+    comingsoon_left_body: cleanContent(body.comingsoon_left_body, mode, 3000),
+    comingsoon_left_status: cleanContent(body.comingsoon_left_status, mode, 1000),
+    comingsoon_right_label: cleanContent(body.comingsoon_right_label, mode, 180),
+    comingsoon_right_heading: cleanContent(body.comingsoon_right_heading, mode, 300),
+    comingsoon_right_body: cleanContent(body.comingsoon_right_body, mode, 3000),
+    comingsoon_right_status: cleanContent(body.comingsoon_right_status, mode, 600),
+    comingsoon_footer_text: cleanContent(body.comingsoon_footer_text, mode, 1000),
+    comingsoon_domain_text: cleanContent(body.comingsoon_domain_text, mode, 300),
+    comingsoon_support_text: cleanContent(body.comingsoon_support_text, mode, 1000)
   });
 
   return getComingSoon(DB);
@@ -1762,13 +1870,21 @@ export async function onRequest(context) {
         return json({ email: await saveEmailSettings(env.DB, body, env, identity), saved: true });
       }
       if (section === "maintenance") {
+        const previous = await getMaintenance(env.DB);
         const maintenance = await saveMaintenance(env.DB, body);
-        await writeAudit(env.DB, identity, "maintenance_update", "site_settings", "maintenance", `Maintenance mode ${body.maintenance_enabled ? "enabled" : "disabled"}.`, { enabled: Boolean(body.maintenance_enabled) });
+        await writeAudit(env.DB, identity, "maintenance_update", "site_settings", "maintenance", `Maintenance mode ${body.maintenance_enabled ? "enabled" : "disabled"}.`, {
+          previousValue: previous,
+          newValue: maintenance
+        });
         return json({ maintenance, saved: true });
       }
       if (section === "comingsoon") {
+        const previous = await getComingSoon(env.DB);
         const comingsoon = await saveComingSoon(env.DB, body);
-        await writeAudit(env.DB, identity, "comingsoon_update", "site_settings", "comingsoon", `Coming Soon page ${body.comingsoon_enabled ? "enabled" : "disabled"}.`, { enabled: Boolean(body.comingsoon_enabled) });
+        await writeAudit(env.DB, identity, "comingsoon_update", "site_settings", "comingsoon", `Coming Soon page ${body.comingsoon_enabled ? "enabled" : "disabled"}.`, {
+          previousValue: previous,
+          newValue: comingsoon
+        });
         return json({ comingsoon, saved: true });
       }
       if (section === "stripe") {
