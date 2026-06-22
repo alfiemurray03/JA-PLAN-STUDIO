@@ -532,7 +532,7 @@ export async function onRequest(context) {
   if (request.method === "GET") {
     const profile = await getProfile(env.DB, identity, env);
     if (!wantsJson(request)) {
-      return redirect("/account/");
+      return redirect("/account/?signedin=1");
     }
     const consent = await getLatestConsent(env.DB, identity.email);
     return json({ profile, consent });

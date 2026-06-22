@@ -1,6 +1,14 @@
 async function loadAccessProfile() {
   bindDashboardShell();
   await applyAccountBranding();
+
+  const params = new URLSearchParams(window.location.search);
+  const shouldHydrateProfile = params.get("signedin") === "1" || params.get("hydrate") === "1";
+  if (!shouldHydrateProfile) {
+    showSignedOutLanding();
+    return;
+  }
+
   try {
     const response = await fetch("/account/profile", {
       credentials: "include",
@@ -30,6 +38,13 @@ async function loadAccessProfile() {
   } catch (error) {
     showProfileError(error);
   }
+}
+
+function showSignedOutLanding() {
+  setAccountSignedInState(false, false);
+  setText("accountHeroTitle", "Customer account access");
+  setText("accountHeroText", "Sign in with JA Group Services CIAM to access eligible customer services, data requests and support reports.");
+  setText("secureAccountBadge", "Secure access");
 }
 
 async function applyAccountBranding() {
@@ -137,6 +152,10 @@ function updateProfile(profile) {
   const profileName = document.getElementById("profileName");
   if (profileName) {
     profileName.classList.remove("loading-pulse");
+  }
+
+  if (new URLSearchParams(window.location.search).has("signedin")) {
+    window.history.replaceState({}, document.title, window.location.pathname);
   }
 
   window.dispatchEvent(new Event("ja-profile-updated"));

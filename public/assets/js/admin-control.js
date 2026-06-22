@@ -1693,19 +1693,20 @@ function renderStatusForm(section, settings, labels) {
         ${input(labels.titleLabel, labels.titleKey)}
         ${textarea(labels.messageLabel, labels.messageKey)}
         ${input(labels.etaLabel, labels.etaKey)}
+        <div class="admin-alert" id="${section}ModeHelp">Plain text mode is active. Text is rendered safely with line breaks preserved.</div>
         <div class="admin-alert">The fields above remain for compatibility. The detailed editable live page content is below.</div>
         <div class="admin-grid two">
           ${input("Left card label", labels.leftLabelKey)}
           ${input("Right card label", labels.rightLabelKey)}
           ${input("Left card heading", labels.leftHeadingKey)}
           ${input("Right card heading", labels.rightHeadingKey)}
-          ${textarea("Left card body", labels.leftBodyKey)}
-          ${textarea("Right card body", labels.rightBodyKey)}
-          ${textarea("Left status message", labels.leftStatusKey)}
-          ${textarea("Right status message", labels.rightStatusKey)}
+          ${statusTextarea("Left card body", labels.leftBodyKey)}
+          ${statusTextarea("Right card body", labels.rightBodyKey)}
+          ${statusTextarea("Left status message", labels.leftStatusKey)}
+          ${statusTextarea("Right status message", labels.rightStatusKey)}
           ${input("Domain text", labels.domainTextKey)}
           ${input("Footer text", labels.footerTextKey)}
-          ${textarea("Support information", labels.supportTextKey)}
+          ${statusTextarea("Support information", labels.supportTextKey)}
         </div>
         ${labels.notice ? `<div class="admin-alert">${escapeHtml(labels.notice)}</div>` : ""}
         <button class="admin-button" type="submit">Save ${escapeHtml(labels.title.toLowerCase())} settings</button>
@@ -1734,6 +1735,9 @@ function renderStatusForm(section, settings, labels) {
     labels.supportTextKey
   ].forEach((key) => setValue(key, settings[key] || ""));
 
+  applyStatusEditorMode(section, labels);
+  document.getElementById(labels.modeKey).addEventListener("change", () => applyStatusEditorMode(section, labels));
+
   document.getElementById(`${section}Form`).addEventListener("submit", async (event) => {
     event.preventDefault();
     const body = {
@@ -1756,6 +1760,43 @@ function renderStatusForm(section, settings, labels) {
     };
     const data = await api(section, { method: "POST", body: JSON.stringify(body) });
     renderSection(section, data);
+  });
+}
+
+function applyStatusEditorMode(section, labels) {
+  const mode = getValue(labels.modeKey) === "html" ? "html" : "plain";
+  const isHtml = mode === "html";
+  const help = document.getElementById(`${section}ModeHelp`);
+  if (help) {
+    help.textContent = isHtml
+      ? "HTML mode is active. Use the HTML editor textareas below; saved HTML is sanitised before rendering."
+      : "Plain text mode is active. Text is rendered safely with line breaks preserved.";
+  }
+
+  [
+    labels.leftBodyKey,
+    labels.rightBodyKey,
+    labels.leftStatusKey,
+    labels.rightStatusKey,
+    labels.supportTextKey
+  ].forEach((key) => {
+    const field = document.getElementById(key);
+    const label = document.querySelector(`[data-status-editor-label="${key}"]`);
+    const note = document.querySelector(`[data-status-editor-note="${key}"]`);
+    if (field) {
+      field.placeholder = isHtml ? "<p>Enter safe HTML for this content block...</p>" : "Enter plain text for this content block...";
+      field.dataset.editorMode = mode;
+    }
+    if (label) {
+      const baseLabel = label.dataset.baseLabel || label.textContent.replace(/\s+HTML$/, "");
+      label.dataset.baseLabel = baseLabel;
+      label.textContent = isHtml ? `${baseLabel} HTML` : baseLabel;
+    }
+    if (note) {
+      note.textContent = isHtml
+        ? "HTML editor. Scripts, event handlers, dangerous URLs and unsafe embeds are removed before publishing."
+        : "Plain text editor. Content is escaped before publishing.";
+    }
   });
 }
 
@@ -1919,6 +1960,16 @@ function input(label, id, type = "text") {
 
 function textarea(label, id) {
   return `<label class="admin-label">${escapeHtml(label)}<textarea id="${escapeHtml(id)}"></textarea></label>`;
+}
+
+function statusTextarea(label, id) {
+  return `
+    <label class="admin-label">
+      <span data-status-editor-label="${escapeAttr(id)}" data-base-label="${escapeAttr(label)}">${escapeHtml(label)}</span>
+      <textarea id="${escapeAttr(id)}" data-status-editor="true"></textarea>
+      <small data-status-editor-note="${escapeAttr(id)}">Plain text editor. Content is escaped before publishing.</small>
+    </label>
+  `;
 }
 
 function table(headers, rows) {
