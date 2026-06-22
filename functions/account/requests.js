@@ -42,6 +42,10 @@ function clean(value, max = 2000) {
   return String(value || "").trim().slice(0, max);
 }
 
+function cleanEmail(value) {
+  return clean(value, 254).toLowerCase();
+}
+
 const DPR_TYPES = new Set([
   "Access my personal data / Subject Access Request",
   "Correct my personal data",
@@ -66,6 +70,14 @@ const SYS_TYPES = new Set([
   "Other technical issue"
 ]);
 
+async function safeAlter(DB, sql) {
+  try {
+    await DB.prepare(sql).run();
+  } catch {
+    // D1 throws if the column already exists. That is expected during safe migrations.
+  }
+}
+
 async function ensureTables(DB) {
   await DB.prepare(`
     CREATE TABLE IF NOT EXISTS profiles (
@@ -78,6 +90,35 @@ async function ensureTables(DB) {
       support_notes TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN admin_lifetime INTEGER DEFAULT 0`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN admin_lifetime_plan_id TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN admin_customer_status TEXT DEFAULT 'Standard'`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN signup_notification_attempted_at TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN signup_notification_status TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN signup_notification_provider TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN signup_notification_to TEXT`);
+
+  await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS site_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+
+  await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS admin_audit_log (
+      id TEXT PRIMARY KEY,
+      actor_email TEXT,
+      action TEXT,
+      entity_type TEXT,
+      entity_id TEXT,
+      summary TEXT,
+      metadata TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `).run();
 
@@ -128,7 +169,130 @@ async function ensureTables(DB) {
   `).run();
 }
 
-async function ensureProfile(DB, identity) {
+async function settingMap(DB, keys, defaults = {}) {
+  try {
+    const placeholders = keys.map(() => "?").join(", ");
+    const result = await DB.prepare(`SELECT key, value FROM site_settings WHERE key IN (${placeholders})`).bind(...keys).all();
+    const settings = { ...defaults };
+    for (const row of result.results || []) settings[row.key] = row.value;
+    return settings;
+  } catch {
+    return { ...defaults };
+  }
+}
+
+async function providerSettings(DB, env) {
+  const stored = await settingMap(DB, ["email_provider", "email_api_key", "email_api_endpoint", "smtp_from_name", "smtp_from_email", "admin_notification_email"], {});
+  const provider = (stored.email_provider || env.EMAIL_PROVIDER || "resend").toLowerCase();
+  const apiKey = stored.email_api_key || env.EMAIL_API_TOKEN || env.RESEND_API_KEY || env.SENDGRID_API_KEY || env.POSTMARK_API_KEY || env.BREVO_API_KEY || "";
+
+  return {
+    provider,
+    apiKey,
+    endpoint: stored.email_api_endpoint || env.EMAIL_API_ENDPOINT || "",
+    fromName: stored.smtp_from_name || "JA Experiences & Discovery",
+    fromEmail: stored.smtp_from_email || env.ENQUIRY_FROM_EMAIL || "noreply@jagroupservices.co.uk",
+    to: stored.admin_notification_email || env.ADMIN_NOTIFICATION_EMAIL || env.ENQUIRY_TO_EMAIL || ""
+  };
+}
+
+async function sendProviderEmail(DB, env, message) {
+  const settings = await providerSettings(DB, env);
+  const to = cleanEmail(message.to || settings.to);
+  if (!to) throw new Error("Recipient email is not configured.");
+  if (!settings.apiKey && settings.provider !== "mailchannels") throw new Error("Email API key is not configured.");
+
+  const from = settings.fromName ? `${settings.fromName} <${settings.fromEmail}>` : settings.fromEmail;
+  let endpoint = settings.endpoint;
+  const headers = { "Content-Type": "application/json" };
+  let body;
+
+  if (settings.provider === "sendgrid") {
+    endpoint ||= "https://api.sendgrid.com/v3/mail/send";
+    headers.Authorization = `Bearer ${settings.apiKey}`;
+    body = { personalizations: [{ to: [{ email: to }] }], from: { email: settings.fromEmail, name: settings.fromName }, subject: message.subject, content: [{ type: "text/plain", value: message.text }] };
+  } else if (settings.provider === "postmark") {
+    endpoint ||= "https://api.postmarkapp.com/email";
+    headers["X-Postmark-Server-Token"] = settings.apiKey;
+    body = { From: from, To: to, Subject: message.subject, TextBody: message.text };
+  } else if (settings.provider === "brevo") {
+    endpoint ||= "https://api.brevo.com/v3/smtp/email";
+    headers["api-key"] = settings.apiKey;
+    body = { sender: { name: settings.fromName, email: settings.fromEmail }, to: [{ email: to }], subject: message.subject, textContent: message.text };
+  } else if (settings.provider === "mailchannels") {
+    endpoint ||= "https://api.mailchannels.net/tx/v1/send";
+    body = { personalizations: [{ to: [{ email: to }] }], from: { email: settings.fromEmail, name: settings.fromName }, subject: message.subject, content: [{ type: "text/plain", value: message.text }] };
+  } else {
+    endpoint ||= "https://api.resend.com/emails";
+    headers.Authorization = `Bearer ${settings.apiKey}`;
+    body = { from, to, subject: message.subject, text: message.text };
+  }
+
+  const response = await fetch(endpoint, { method: "POST", headers, body: JSON.stringify(body) });
+  const responseText = await response.text().catch(() => "");
+  if (!response.ok) throw new Error(`Email provider returned ${response.status}: ${responseText.slice(0, 240)}`);
+
+  return { provider: settings.provider, to, status: response.status };
+}
+
+async function recordSignupNotification(DB, email, result) {
+  await DB.prepare(`
+    UPDATE profiles
+    SET signup_notification_attempted_at = CURRENT_TIMESTAMP,
+      signup_notification_status = ?,
+      signup_notification_provider = ?,
+      signup_notification_to = ?
+    WHERE lower(email) = lower(?)
+  `).bind(
+    clean(result.status, 500),
+    clean(result.provider, 80),
+    cleanEmail(result.to),
+    cleanEmail(email)
+  ).run();
+}
+
+async function writeCustomerAudit(DB, identity, action, summary, metadata = {}) {
+  await DB.prepare(`
+    INSERT INTO admin_audit_log (id, actor_email, action, entity_type, entity_id, summary, metadata)
+    VALUES (?, ?, ?, 'profiles', ?, ?, ?)
+  `).bind(
+    crypto.randomUUID(),
+    cleanEmail(identity.email) || "system-account",
+    clean(action, 120),
+    cleanEmail(identity.email),
+    clean(summary, 1000),
+    JSON.stringify(metadata)
+  ).run();
+}
+
+async function notifyCustomerSignup(DB, env, identity, profile) {
+  const createdAt = new Date().toISOString();
+  const customerName = profile.display_name || profile.verified_name || identity.name || identity.email;
+
+  try {
+    const sent = await sendProviderEmail(DB, env, {
+      subject: "New JA Experiences & Discovery customer signup",
+      text: [
+        "A new customer account has been created or first detected by JA Experiences & Discovery.",
+        "",
+        `Customer name: ${customerName || "Not provided"}`,
+        `Customer email: ${identity.email}`,
+        `Signup date/time: ${createdAt}`,
+        `Account/customer ID: ${identity.email}`,
+        "Source/provider: Cloudflare Access / JA customer CIAM"
+      ].join("\n")
+    });
+
+    await recordSignupNotification(DB, identity.email, { status: "sent", provider: sent.provider, to: sent.to });
+    await writeCustomerAudit(DB, identity, "customer_signup_notification_sent", "Sent new customer signup notification email.", { sent: true, provider: sent.provider, to: sent.to });
+  } catch (error) {
+    const settings = await providerSettings(DB, env);
+    await recordSignupNotification(DB, identity.email, { status: `failed: ${error.message || "Unknown email error"}`, provider: settings.provider, to: settings.to });
+    await writeCustomerAudit(DB, identity, "customer_signup_notification_failed", "Customer signup notification email failed.", { sent: false, provider: settings.provider, to: settings.to, error: error.message || "Unknown email error" });
+  }
+}
+
+async function ensureProfile(DB, identity, env = {}) {
   const existing = await DB.prepare(`SELECT email, verified_name, display_name, contact_email FROM profiles WHERE lower(email) = lower(?)`).bind(identity.email).first();
   if (existing) return existing;
 
@@ -137,7 +301,9 @@ async function ensureProfile(DB, identity) {
     VALUES (?, ?, ?, ?)
   `).bind(identity.email, identity.name, identity.name || identity.email, identity.email).run();
 
-  return DB.prepare(`SELECT email, verified_name, display_name, contact_email FROM profiles WHERE lower(email) = lower(?)`).bind(identity.email).first();
+  const profile = await DB.prepare(`SELECT email, verified_name, display_name, contact_email FROM profiles WHERE lower(email) = lower(?)`).bind(identity.email).first();
+  await notifyCustomerSignup(DB, env, identity, profile).catch(() => {});
+  return profile;
 }
 
 async function nextReference(DB, table, prefix) {
@@ -307,7 +473,7 @@ export async function onRequest(context) {
   if (!identity.email) return json({ error: "Not signed in." }, 401);
 
   await ensureTables(env.DB);
-  const profile = await ensureProfile(env.DB, identity);
+  const profile = await ensureProfile(env.DB, identity, env);
 
   if (request.method === "GET") {
     return json(await listOwnRecords(env.DB, identity.email));

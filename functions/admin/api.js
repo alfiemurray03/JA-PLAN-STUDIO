@@ -141,6 +141,10 @@ async function ensureTables(DB, env) {
   await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN admin_customer_status TEXT DEFAULT 'Standard'`);
   await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN admin_notes TEXT`);
   await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN admin_updated_at TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN signup_notification_attempted_at TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN signup_notification_status TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN signup_notification_provider TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN signup_notification_to TEXT`);
 
   await DB.prepare(`
     CREATE TABLE IF NOT EXISTS admin_users (
@@ -1342,7 +1346,7 @@ async function getEmailSettings(DB, env) {
     smtp_host: "smtp.jagroupservices.co.uk",
     smtp_port: "587",
     smtp_username: "noreply@jagroupservices.co.uk",
-    smtp_from_name: "JA Smart Profile",
+    smtp_from_name: "JA Experiences & Discovery",
     smtp_from_email: "noreply@jagroupservices.co.uk",
     smtp_security: "STARTTLS",
     email_provider: "resend"
@@ -1371,7 +1375,7 @@ async function saveEmailSettings(DB, body, env, identity) {
     smtp_port: clean(body.smtp_port, 10) || "587",
     smtp_username: clean(body.smtp_username, 254) || "noreply@jagroupservices.co.uk",
     smtp_password: clean(body.smtp_password, 500) || current.smtp_password || env.SMTP_PASSWORD || "",
-    smtp_from_name: clean(body.smtp_from_name, 180) || "JA Smart Profile",
+    smtp_from_name: clean(body.smtp_from_name, 180) || "JA Experiences & Discovery",
     smtp_from_email: clean(body.smtp_from_email, 254) || "noreply@jagroupservices.co.uk",
     smtp_security: clean(body.smtp_security, 40) || "STARTTLS",
     email_provider: clean(body.email_provider, 40) || "resend",
@@ -1391,7 +1395,7 @@ async function providerSettings(DB, env) {
     provider,
     apiKey,
     endpoint: stored.email_api_endpoint || env.EMAIL_API_ENDPOINT || "",
-    fromName: stored.smtp_from_name || "JA Smart Profile",
+    fromName: stored.smtp_from_name || "JA Experiences & Discovery",
     fromEmail: stored.smtp_from_email || "noreply@jagroupservices.co.uk",
     to: stored.admin_notification_email || env.ADMIN_NOTIFICATION_EMAIL || ""
   };
