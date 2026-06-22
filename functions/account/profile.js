@@ -8,6 +8,21 @@ function json(data, status = 200) {
   });
 }
 
+function redirect(location, status = 302) {
+  return new Response(null, {
+    status,
+    headers: {
+      "Location": location,
+      "Cache-Control": "no-store"
+    }
+  });
+}
+
+function wantsJson(request) {
+  const accept = request.headers.get("Accept") || "";
+  return accept.includes("application/json");
+}
+
 function getAccessIdentity(request) {
   const emailHeader =
     request.headers.get("cf-access-authenticated-user-email") ||
@@ -497,6 +512,9 @@ export async function onRequest(context) {
 
   if (request.method === "GET") {
     const profile = await getProfile(env.DB, identity, env);
+    if (!wantsJson(request)) {
+      return redirect("/account/");
+    }
     const consent = await getLatestConsent(env.DB, identity.email);
     return json({ profile, consent });
   }

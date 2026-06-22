@@ -24,7 +24,7 @@ async function loadAccessProfile() {
     await loadAccountRequests();
     bindAccountRequestForms();
   } catch (error) {
-    showProfileError();
+    showProfileError(error);
   }
 }
 
@@ -92,6 +92,7 @@ async function applyAccountBranding() {
 }
 
 function updateProfile(profile) {
+  setAccountSignedInState(true);
   setText("profileName", profile.displayName);
   setText("profileEmail", profile.email);
   setText("sidebarName", profile.displayName);
@@ -129,6 +130,16 @@ function updateProfile(profile) {
   }
 
   window.dispatchEvent(new Event("ja-profile-updated"));
+}
+
+function setAccountSignedInState(isSignedIn) {
+  const actionRow = document.getElementById("accessActionRow");
+  if (actionRow) actionRow.hidden = Boolean(isSignedIn);
+
+  document.querySelectorAll("#profileForm input, #profileForm select, #profileForm textarea, #profileForm button, #dataProtectionForm input, #dataProtectionForm select, #dataProtectionForm textarea, #dataProtectionForm button, #systemReportForm input, #systemReportForm select, #systemReportForm textarea, #systemReportForm button")
+    .forEach((element) => {
+      element.disabled = !isSignedIn;
+    });
 }
 
 function bindDashboardShell() {
@@ -383,15 +394,29 @@ function renderSystemReports(records) {
   `).join("") : `<article class="account-record"><strong>No system reports yet.</strong><span>Your submitted reports will appear here.</span></article>`;
 }
 
-function showProfileError() {
-  setText("profileName", "Sign-in details unavailable");
-  setText("profileEmail", "Please sign out and sign back in.");
+function showProfileError(error) {
+  setAccountSignedInState(false);
+  setText("profileName", "Sign in or create an account");
+  setText("profileEmail", "Use JA Group Services CIAM to access your customer dashboard.");
+  setText("sidebarName", "Customer access");
+  setText("sidebarEmail", "Sign in or create account");
+  setText("welcomeName", "there");
   setText("profileNameDetail", "Unavailable");
   setText("profileLegalName", "Unavailable");
   setText("profileEmailDetail", "Unavailable");
   setText("profileContactEmail", "Unavailable");
   setText("profilePhone", "Unavailable");
   setText("profileComms", "Unavailable");
+  setText("dprList", "Sign in or create an account to view your data protection requests.");
+  setText("sysList", "Sign in or create an account to view your system reports.");
+  setBadge("profilePlanBadge", "Sign-in required", "amber");
+  setBadge("planStatusBadge", "Sign-in required", "amber");
+
+  const savedMessage = document.getElementById("profileSavedMessage");
+  if (savedMessage) {
+    savedMessage.textContent = error?.message || "Please sign in or create an account to continue.";
+    savedMessage.hidden = false;
+  }
 }
 
 function setText(id, value) {
