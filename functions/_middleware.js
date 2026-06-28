@@ -7,50 +7,6 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-function escapeAttr(value) {
-  return escapeHtml(value).replaceAll("`", "&#096;");
-}
-
-function safeUrl(value) {
-  const url = String(value || "").trim();
-  if (!url) return "";
-  if (/^(https?:|mailto:|tel:|\/|#)/i.test(url) && !/javascript:/i.test(url)) return url;
-  return "";
-}
-
-function sanitiseHtml(value) {
-  const allowed = new Set(["a", "b", "br", "em", "h2", "h3", "h4", "i", "li", "ol", "p", "span", "strong", "u", "ul"]);
-  return String(value || "")
-    .replace(/<!--[\s\S]*?-->/g, "")
-    .replace(/<\s*(script|style|iframe|object|embed|svg|math|link|meta|form|input|button|textarea|select)[\s\S]*?<\s*\/\s*\1\s*>/gi, "")
-    .replace(/<\s*(script|style|iframe|object|embed|svg|math|link|meta|form|input|button|textarea|select)[^>]*\/?\s*>/gi, "")
-    .replace(/<\/?([a-z0-9-]+)([^>]*)>/gi, (tag, name, attrs = "") => {
-      const tagName = String(name || "").toLowerCase();
-      if (!allowed.has(tagName)) return "";
-      if (tag.startsWith("</")) return `</${tagName}>`;
-      if (tagName === "br") return "<br>";
-      let safeAttrs = "";
-      if (tagName === "a") {
-        const href = attrs.match(/\shref\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))/i);
-        const target = attrs.match(/\starget\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))/i);
-        const hrefValue = safeUrl(href?.[2] || href?.[3] || href?.[4] || "");
-        if (hrefValue) safeAttrs += ` href="${escapeAttr(hrefValue)}"`;
-        if ((target?.[2] || target?.[3] || target?.[4]) === "_blank") safeAttrs += ` target="_blank" rel="noopener noreferrer"`;
-      }
-      return `<${tagName}${safeAttrs}>`;
-    });
-}
-
-function contentHtml(value, mode, fallback = "") {
-  const source = String(value || fallback || "");
-  if (mode === "html") return sanitiseHtml(source);
-  return escapeHtml(source).replace(/\n/g, "<br>");
-}
-
-function setting(settings, key, fallback = "") {
-  return Object.prototype.hasOwnProperty.call(settings, key) && settings[key] !== undefined ? settings[key] : fallback;
-}
-
 function decodeJwtPayload(jwt) {
   try {
     if (!jwt || !jwt.includes(".")) return {};
@@ -175,297 +131,85 @@ async function hasAdminBypass(request, env) {
   }
 }
 
-function pageHtml(settings, mode) {
-  const isComingSoon = mode === "coming-soon";
-  const prefix = isComingSoon ? "comingsoon" : "maintenance";
-  const serviceName = settings.service_name || settings.trading_name || "JA Experiences & Discovery";
-  const businessName = settings.business_name || "JA Group Services Ltd";
-  const publicBrandText = settings.public_brand_text || "Curated discovery, planning and experience guidance.";
-  const logoUrl = settings.logo_url || "";
-  const faviconUrl = settings.favicon_url || "";
-  const contentMode = settings[`${prefix}_content_mode`] === "html" ? "html" : "plain";
+function pageHtml(settings, page) {
+  const prefix = page === "coming-soon" ? "comingsoon" : "maintenance";
+  const mode = settings[`${prefix}_content_mode`] === "html" ? "html" : "plain";
+  const content = String(settings[`${prefix}_content`] ?? "");
 
-  const title = isComingSoon
-    ? setting(settings, "comingsoon_title", "JA Experiences & Discovery is coming soon.")
-    : setting(settings, "maintenance_title", "We'll be back shortly.");
+  if (mode === "html") return content;
 
-  const message = isComingSoon
-    ? setting(settings, "comingsoon_message", "Our new experiences and discovery service is being prepared. Please check back soon.")
-    : setting(settings, "maintenance_message", "JA Experiences & Discovery is temporarily unavailable while essential maintenance is carried out.");
-
-  const eta = isComingSoon
-    ? setting(settings, "comingsoon_eta", "")
-    : setting(settings, "maintenance_eta", "");
-
-  const kicker = isComingSoon ? "Pre-launch" : "Maintenance";
-  const status = isComingSoon ? "Coming soon" : "Maintenance mode";
-  const leftLabel = setting(settings, `${prefix}_left_label`, kicker);
-  const leftHeading = setting(settings, `${prefix}_left_heading`, title);
-  const leftBody = setting(settings, `${prefix}_left_body`, message);
-  const leftStatus = setting(settings, `${prefix}_left_status`, eta);
-  const rightLabel = setting(settings, `${prefix}_right_label`, serviceName);
-  const rightHeading = setting(settings, `${prefix}_right_heading`, publicBrandText);
-  const rightBody = setting(settings, `${prefix}_right_body`, settings.footer_notice || `Part of ${businessName}.`);
-  const rightStatus = setting(settings, `${prefix}_right_status`, status);
-  const footerText = setting(settings, `${prefix}_footer_text`, settings.footer_notice || `Part of ${businessName}.`);
-  const domainText = setting(settings, `${prefix}_domain_text`, "experiences.jagroupservices.co.uk");
-  const supportText = setting(settings, `${prefix}_support_text`, "For urgent support, please contact JA Group Services.");
-  const maintenanceNotice = isComingSoon ? "" : `<div class="notice"><strong>MAINTENANCE NOTICE:</strong> ${contentHtml(leftStatus || message, contentMode)}</div>`;
+  const title = prefix === "comingsoon" ? "Coming Soon" : "Maintenance";
+  const plainContent = escapeHtml(content).replace(/\r?\n/g, "<br>");
 
   return `<!doctype html>
 <html lang="en-GB">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>${escapeHtml(status)} | ${escapeHtml(serviceName)}</title>
-  ${faviconUrl ? `<link rel="icon" href="${escapeHtml(faviconUrl)}">` : ""}
+  <title>${title}</title>
   <meta name="robots" content="noindex,nofollow">
   <style>
-    :root {
-      --navy: #071f36;
-      --ink: #08233c;
-      --muted: #526276;
-      --orange: #f26a2e;
-      --line: #dde7f0;
-      --panel: rgba(255,255,255,0.10);
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
+    * { box-sizing: border-box; }
     body {
       margin: 0;
       min-height: 100vh;
       display: grid;
       place-items: center;
-      background:
-        radial-gradient(circle at 20% 15%, rgba(242,106,46,0.22), transparent 34%),
-        radial-gradient(circle at 80% 80%, rgba(255,255,255,0.12), transparent 32%),
-        linear-gradient(135deg, #071f36, #041424);
-      color: #ffffff;
-      font-family: Inter, Arial, sans-serif;
-      padding: 1.5rem;
+      padding: clamp(1.25rem, 5vw, 4rem);
+      background: #f6f7f9;
+      color: #111827;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
-
-    .wrap {
-      width: min(1040px, 100%);
-      display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
-      gap: 1.2rem;
-      align-items: stretch;
-    }
-
-    .card,
-    .side {
-      border-radius: 34px;
-      box-shadow: 0 30px 90px rgba(0,0,0,0.32);
-    }
-
-    .card {
+    main {
+      width: min(760px, 100%);
+      border: 1px solid #e2e6eb;
+      border-radius: 14px;
       background: #ffffff;
-      color: var(--ink);
-      padding: clamp(2rem, 6vw, 4.4rem);
-    }
-
-    .side {
-      background: rgba(255,255,255,0.10);
-      border: 1px solid rgba(255,255,255,0.16);
-      backdrop-filter: blur(18px);
-      padding: clamp(1.4rem, 4vw, 2rem);
-      display: grid;
-      align-content: end;
-      min-height: 420px;
-    }
-
-    .logo {
-      width: 62px;
-      height: 62px;
-      border-radius: 20px;
-      background: linear-gradient(135deg, var(--orange), #ff8f5d);
-      display: grid;
-      place-items: center;
-      color: #ffffff;
-      font-weight: 950;
-      margin-bottom: 1.5rem;
-      box-shadow: 0 18px 38px rgba(242,106,46,0.28);
-    }
-
-    .logo img {
-      width: 100%;
-      height: 100%;
-      border-radius: inherit;
-      object-fit: contain;
-      background: #ffffff;
-      padding: 0.35rem;
-    }
-
-    .kicker {
-      color: var(--orange);
-      font-size: 0.78rem;
-      font-weight: 950;
-      letter-spacing: 0.13em;
-      text-transform: uppercase;
-      margin-bottom: 0.85rem;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: clamp(2.6rem, 7vw, 5.2rem);
-      line-height: 0.9;
-      letter-spacing: -0.075em;
-    }
-
-    p {
-      margin: 1.2rem 0 0;
-      color: var(--muted);
-      font-size: 1.08rem;
-      line-height: 1.7;
-      max-width: 680px;
-    }
-
-    .eta {
-      margin-top: 1.45rem;
-      padding: 1rem;
-      border-radius: 18px;
-      background: #fff7ed;
-      color: #7c2d12;
-      font-weight: 850;
-    }
-
-    .side h2 {
-      margin: 0;
-      font-size: clamp(1.9rem, 4vw, 3rem);
-      line-height: 0.95;
-      letter-spacing: -0.06em;
-    }
-
-    .side p {
-      color: rgba(255,255,255,0.72);
-    }
-
-    .pill {
-      display: inline-flex;
-      width: fit-content;
-      margin-bottom: 1rem;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.14);
-      color: #ffffff;
-      padding: 0.55rem 0.8rem;
-      font-size: 0.78rem;
-      font-weight: 900;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    @media (max-width: 850px) {
-      .wrap {
-        grid-template-columns: 1fr;
-      }
-
-      .side {
-        min-height: auto;
-      }
-    }
-
-    .managed-content :first-child {
-      margin-top: 0;
-    }
-
-    .managed-content :last-child {
-      margin-bottom: 0;
-    }
-
-    .notice,
-    .meta {
-      margin-top: 1.2rem;
-      padding: 1rem;
-      border-radius: 18px;
-      background: var(--panel);
-      border: 1px solid rgba(255,255,255,0.16);
-      color: #ffffff;
-      line-height: 1.6;
-    }
-
-    .card .notice {
-      background: #fff7ed;
-      color: #7c2d12;
-      border-color: #fed7aa;
+      padding: clamp(1.5rem, 5vw, 3.5rem);
+      box-shadow: 0 18px 50px rgba(16, 24, 40, .08);
+      font-size: clamp(1rem, 2.5vw, 1.125rem);
+      line-height: 1.75;
+      overflow-wrap: anywhere;
     }
   </style>
 </head>
 <body>
-  <main class="wrap">
-    <section class="card">
-      <div class="logo">${logoUrl ? `<img src="${escapeAttr(logoUrl)}" alt="${escapeAttr(serviceName)} logo">` : "JA"}</div>
-      <div class="kicker">${contentHtml(leftLabel, contentMode, kicker)}</div>
-      <h1>${contentHtml(leftHeading, contentMode, title)}</h1>
-      <div class="managed-content"><p>${contentHtml(leftBody, contentMode, message)}</p></div>
-      ${maintenanceNotice || (leftStatus ? `<div class="eta">${contentHtml(leftStatus, contentMode)}</div>` : "")}
-    </section>
-
-    <aside class="side">
-      <div>
-        <span class="pill">${contentHtml(rightLabel, contentMode, serviceName)}</span>
-        <h2>${contentHtml(rightHeading, contentMode, publicBrandText)}</h2>
-        <div class="managed-content"><p>${contentHtml(rightBody, contentMode, settings.footer_notice || `Part of ${businessName}.`)}</p></div>
-        ${rightStatus ? `<div class="meta">${contentHtml(rightStatus, contentMode, status)}</div>` : ""}
-        ${supportText ? `<p>${contentHtml(supportText, contentMode)}</p>` : ""}
-        <p>${contentHtml(domainText, contentMode)}</p>
-        <p>${contentHtml(footerText, contentMode)}</p>
-      </div>
-    </aside>
-  </main>
+  <main>${plainContent}</main>
 </body>
 </html>`;
 }
 
+async function migrateStatusPageContent(DB) {
+  for (const prefix of ["comingsoon", "maintenance"]) {
+    await DB.prepare(`
+      INSERT OR IGNORE INTO site_settings (key, value, updated_at)
+      VALUES (
+        ?,
+        COALESCE((SELECT value FROM site_settings WHERE key = ?), ''),
+        CURRENT_TIMESTAMP
+      )
+    `).bind(`${prefix}_content`, `${prefix}_message`).run();
+  }
+}
+
 async function getSiteSettings(DB) {
   try {
-    const [result, branding] = await Promise.all([
-      DB.prepare(`
+    await migrateStatusPageContent(DB);
+    const result = await DB.prepare(`
       SELECT key, value
       FROM site_settings
       WHERE key IN (
         'maintenance_enabled',
-        'maintenance_title',
-        'maintenance_message',
-        'maintenance_eta',
         'maintenance_content_mode',
-        'maintenance_left_label',
-        'maintenance_left_heading',
-        'maintenance_left_body',
-        'maintenance_left_status',
-        'maintenance_right_label',
-        'maintenance_right_heading',
-        'maintenance_right_body',
-        'maintenance_right_status',
-        'maintenance_footer_text',
-        'maintenance_domain_text',
-        'maintenance_support_text',
+        'maintenance_content',
         'comingsoon_enabled',
-        'comingsoon_title',
-        'comingsoon_message',
-        'comingsoon_eta',
         'comingsoon_content_mode',
-        'comingsoon_left_label',
-        'comingsoon_left_heading',
-        'comingsoon_left_body',
-        'comingsoon_left_status',
-        'comingsoon_right_label',
-        'comingsoon_right_heading',
-        'comingsoon_right_body',
-        'comingsoon_right_status',
-        'comingsoon_footer_text',
-        'comingsoon_domain_text',
-        'comingsoon_support_text',
+        'comingsoon_content',
         'site_theme_mode'
       )
-    `).all(),
-      DB.prepare(`SELECT * FROM company_branding WHERE id = 'main'`).first().catch(() => null)
-    ]);
+    `).all();
 
-    const settings = { ...(branding || {}) };
+    const settings = {};
 
     for (const row of result.results || []) {
       settings[row.key] = row.value;
@@ -475,7 +219,11 @@ async function getSiteSettings(DB) {
   } catch {
     return {
       maintenance_enabled: "false",
+      maintenance_content_mode: "plain",
+      maintenance_content: "",
       comingsoon_enabled: "false",
+      comingsoon_content_mode: "plain",
+      comingsoon_content: "",
       site_theme_mode: "dark"
     };
   }
