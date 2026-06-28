@@ -22,8 +22,23 @@ async function settingMap(DB, keys, defaults = {}) {
   return settings;
 }
 
+async function migrateStatusPageContent(DB) {
+  for (const prefix of ["comingsoon", "maintenance"]) {
+    await DB.prepare(`
+      INSERT OR IGNORE INTO site_settings (key, value, updated_at)
+      VALUES (
+        ?,
+        COALESCE((SELECT value FROM site_settings WHERE key = ?), ''),
+        CURRENT_TIMESTAMP
+      )
+    `).bind(`${prefix}_content`, `${prefix}_message`).run();
+  }
+}
+
 export async function onRequestGet({ env }) {
   if (!env.DB) return json({ theme: "dark", branding: {}, affiliate: [] });
+
+  await migrateStatusPageContent(env.DB).catch(() => {});
 
   const [theme, branding, affiliate] = await Promise.all([
     settingMap(env.DB, ["site_theme_mode"], { site_theme_mode: "dark" }).catch(() => ({ site_theme_mode: "dark" })),
