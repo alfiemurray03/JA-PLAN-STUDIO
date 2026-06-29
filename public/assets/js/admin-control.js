@@ -1196,9 +1196,6 @@ async function savePlanChanges() {
       method: "POST",
       body: JSON.stringify({ action: "save_visibility", plans })
     });
-    if (data.debug) {
-      console.table?.(data.debug.updates || []);
-    }
     state.planDraft = null;
     state.planDirty = false;
     setSaved("plansSaved", "Plan changes saved.");
