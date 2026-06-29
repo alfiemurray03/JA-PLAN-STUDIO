@@ -995,7 +995,7 @@ function renderCustomers(customers = []) {
 
 function renderPlans(plans = []) {
   const cards = plans.map((plan) => `
-    <article class="plan-card">
+    <article class="plan-card" data-plan-card data-plan-id="${escapeAttr(plan.id)}">
       <div class="plan-top">
         <div>
           <strong>${escapeHtml(plan.plan_name)}</strong>
@@ -1039,10 +1039,20 @@ async function togglePlan(id, isActive) {
   const checkbox = document.querySelector(`[data-plan-toggle="${CSS.escape(id)}"]`);
   const card = checkbox?.closest(".plan-card");
   const previous = Number(plan.is_active) === 1;
+  if (checkbox?.disabled) return;
   setPlanSaving(card, checkbox, true);
   checkbox.checked = isActive;
   try {
-    await savePlan({ ...plan, is_active: isActive, is_featured: Number(plan.is_featured) === 1 });
+    const data = await api("plans", {
+      method: "POST",
+      body: JSON.stringify({
+        ...plan,
+        is_active: isActive,
+        is_featured: Number(plan.is_featured) === 1
+      })
+    });
+    state.data.plans = data;
+    updatePlanCardFromState(id);
     setSaved("plansSaved", "Plan visibility saved.");
   } catch (error) {
     checkbox.checked = previous;
@@ -1118,6 +1128,33 @@ async function savePlan(plan) {
 function setPlanSaving(card, checkbox, saving) {
   if (checkbox) checkbox.disabled = saving;
   if (card) card.classList.toggle("is-saving", saving);
+}
+
+function updatePlanCardFromState(id) {
+  const plan = (state.data.plans?.plans || []).find((item) => item.id === id);
+  const card = document.querySelector(`[data-plan-card][data-plan-id="${CSS.escape(id)}"]`);
+  if (!plan || !card) return;
+
+  const checkbox = card.querySelector("[data-plan-toggle]");
+  const title = card.querySelector("strong");
+  const type = card.querySelector(".plan-top span");
+  const price = card.querySelector(".plan-meta div:nth-child(1) strong");
+  const delivery = card.querySelector(".plan-meta div:nth-child(2) strong");
+  const revisions = card.querySelector(".plan-meta div:nth-child(3) strong");
+  const product = card.querySelector(".plan-meta div:nth-child(4) strong");
+  const stripePrice = card.querySelector(".plan-meta div:nth-child(5) strong");
+  const statusBadge = card.querySelector(".section-actions .badge");
+
+  if (checkbox) checkbox.checked = Number(plan.is_active) === 1;
+  if (title) title.textContent = plan.plan_name || title.textContent;
+  if (type) type.textContent = plan.plan_type || "Service plan";
+  if (price) price.textContent = plan.price_label || "Not set";
+  if (delivery) delivery.textContent = plan.delivery_time || "Not set";
+  if (revisions) revisions.textContent = plan.revisions || "Not set";
+  if (product) product.textContent = plan.stripe_product_id || "Not stored";
+  if (stripePrice) stripePrice.textContent = plan.stripe_price_id || "Not stored";
+  if (statusBadge) statusBadge.textContent = Number(plan.is_active) === 1 ? "Active" : "Inactive";
+  card.classList.toggle("is-saving", false);
 }
 
 function renderStripe(stripe = {}) {
