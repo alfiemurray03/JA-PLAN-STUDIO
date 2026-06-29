@@ -267,6 +267,17 @@ function injectTheme(html, settings) {
   return `${themeScript}${themeStyle}${html}`;
 }
 
+function stripFreePlanMarkup(html, settings) {
+  if (settings.show_free_plan !== "false") return html;
+
+  return html
+    .replace(/<article class="pricing-card" data-free-plan-public>[\s\S]*?<\/article>\s*/g, "")
+    .replace(/<div class="pricing-strip-item" data-free-plan-public>[\s\S]*?<\/div>\s*/g, "")
+    .replace(/<p data-free-plan-public>[\s\S]*?<\/p>\s*/g, "")
+    .replace(/<a class="[^"]*" href="\/enquiry\/" data-free-plan-public>[\s\S]*?<\/a>\s*/g, "")
+    .replace(/<section class="[^"]*" data-free-plan-public>[\s\S]*?<\/section>\s*/g, "");
+}
+
 export async function onRequest(context) {
   const { request, env, next } = context;
   const url = new URL(request.url);
@@ -349,7 +360,8 @@ export async function onRequest(context) {
   const headers = new Headers(response.headers);
   headers.set("Cache-Control", "no-store");
   headers.delete("Content-Length");
-  return new Response(injectTheme(html, settings), {
+  const rewritten = path.startsWith("/pricing") ? stripFreePlanMarkup(injectTheme(html, settings), settings) : injectTheme(html, settings);
+  return new Response(rewritten, {
     status: response.status,
     statusText: response.statusText,
     headers
