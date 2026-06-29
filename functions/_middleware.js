@@ -267,6 +267,117 @@ function injectTheme(html, settings) {
   return `${themeScript}${themeStyle}${html}`;
 }
 
+function injectAccessibility(html) {
+  const accessibilityStyle = `<style>
+    :root {
+      --accessibility-line-height: 1.6;
+      --accessibility-letter-spacing: 0em;
+    }
+    html.accessibility-underline-links a { text-decoration: underline !important; text-underline-offset: .14em; }
+    html.accessibility-dyslexia-font, html.accessibility-dyslexia-font body {
+      font-family: "Arial", "Helvetica Neue", Helvetica, sans-serif !important;
+    }
+    html.accessibility-large-cursor, html.accessibility-large-cursor * { cursor: auto; }
+    html.accessibility-reduced-motion *, html.accessibility-reduced-motion *::before, html.accessibility-reduced-motion *::after {
+      animation-duration: .001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .001ms !important;
+      scroll-behavior: auto !important;
+    }
+    body { line-height: var(--accessibility-line-height, 1.6); letter-spacing: var(--accessibility-letter-spacing, 0em); }
+    .accessibility-button {
+      position: fixed;
+      right: 1rem;
+      bottom: 1rem;
+      z-index: 9999;
+      border: 0;
+      border-radius: 999px;
+      padding: .9rem 1.1rem;
+      background: #0f172a;
+      color: #fff;
+      box-shadow: 0 14px 34px rgba(15, 23, 42, .2);
+      font: inherit;
+      font-weight: 800;
+    }
+    .accessibility-panel {
+      position: fixed;
+      right: 1rem;
+      bottom: 4.75rem;
+      z-index: 9999;
+      width: min(92vw, 360px);
+      background: #fff;
+      color: #0f172a;
+      border: 1px solid rgba(148, 163, 184, .4);
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(15, 23, 42, .18);
+      padding: 1rem;
+    }
+    .accessibility-panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .75rem;
+      margin-bottom: .85rem;
+    }
+    .accessibility-panel-head strong { font-size: 1rem; }
+    .accessibility-close {
+      border: 0;
+      background: transparent;
+      font-size: 1.4rem;
+      line-height: 1;
+      padding: .25rem .35rem;
+      color: inherit;
+    }
+    .accessibility-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: .7rem;
+    }
+    .accessibility-grid label {
+      display: grid;
+      gap: .35rem;
+      font-size: .92rem;
+      font-weight: 700;
+    }
+    .accessibility-grid select,
+    .toggle-row {
+      min-height: 42px;
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, .4);
+      padding: .55rem .7rem;
+      background: #fff;
+      color: inherit;
+      font: inherit;
+    }
+    .toggle-row {
+      display: flex !important;
+      align-items: center;
+      gap: .6rem;
+    }
+    .accessibility-actions { margin-top: .85rem; }
+    .accessibility-reset {
+      width: 100%;
+      min-height: 42px;
+      border: 0;
+      border-radius: 10px;
+      background: #e2e8f0;
+      color: #0f172a;
+      font: inherit;
+      font-weight: 800;
+    }
+    @media (max-width: 560px) {
+      .accessibility-button, .accessibility-panel { right: .75rem; left: .75rem; width: auto; }
+      .accessibility-panel { bottom: 4.4rem; }
+    }
+  </style>`;
+  const accessibilityScript = `<script defer src="/assets/js/accessibility.js"></script>`;
+  let output = html;
+  if (output.includes("</head>")) output = output.replace("</head>", `${accessibilityStyle}</head>`);
+  if (output.includes("</body>")) output = output.replace("</body>", `${accessibilityScript}</body>`);
+  else output += accessibilityScript;
+  return output;
+}
+
 export async function onRequest(context) {
   const { request, env, next } = context;
   const url = new URL(request.url);
@@ -289,7 +400,7 @@ export async function onRequest(context) {
     const headers = new Headers(response.headers);
     headers.set("Cache-Control", "no-store");
     headers.delete("Content-Length");
-    return new Response(injectTheme(await response.text(), settings), {
+    return new Response(injectAccessibility(injectTheme(await response.text(), settings)), {
       status: response.status,
       statusText: response.statusText,
       headers
@@ -349,7 +460,7 @@ export async function onRequest(context) {
   const headers = new Headers(response.headers);
   headers.set("Cache-Control", "no-store");
   headers.delete("Content-Length");
-  return new Response(injectTheme(html, settings), {
+  return new Response(injectAccessibility(injectTheme(html, settings)), {
     status: response.status,
     statusText: response.statusText,
     headers
