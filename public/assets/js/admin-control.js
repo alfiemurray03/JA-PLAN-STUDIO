@@ -2167,7 +2167,7 @@ function openSupportModal(id) {
         <label class="admin-label">Priority<select id="support_workspace_priority">${priorities.map((priority) => `<option value="${priority}" ${priority === item.priority ? "selected" : ""}>${priority}</option>`).join("")}</select></label>
       </div>
       <label class="admin-label">Reply draft (not saved)<textarea id="support_reply_draft" placeholder="Draft a reply to copy into your approved email channel"></textarea></label>
-      <div class="admin-alert">Reply sending is not connected yet. This draft is not saved or sent. A separate internal-note field is also not available in the current support API.</div>
+      <div class="admin-alert">This draft is for internal use only and is not sent directly from the Admin Centre. Use your approved customer communications channel to send replies.</div>
       <div class="section-actions">
         <button class="admin-button" type="submit">Save status</button>
         <button class="admin-button secondary" type="button" disabled>Send reply</button>
@@ -3133,7 +3133,7 @@ function renderCustomerDrawer(customer, plans = []) {
 async function openAccountModal() {
   const identity = state.data[state.currentSection]?.admin || {};
   if (!identity.email) {
-    openModal(`<div class="modal-head"><div><h2>Account settings</h2><p>Your signed-in administrator profile is not available yet.</p></div><button class="drawer-close" type="button" data-action="close-modal">×</button></div>`);
+    openModal(`<div class="modal-head"><div><h2>Account settings</h2><p>Your signed-in administrator profile could not be loaded.</p></div><button class="drawer-close" type="button" data-action="close-modal">×</button></div>`);
     return;
   }
   await openAdminProfileModal(identity.email, { isOwnProfile: true });
