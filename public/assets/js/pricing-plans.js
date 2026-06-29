@@ -82,6 +82,7 @@
         if (plan && card) updateCard(card, plan, link);
       });
     } catch {
+      applyFreePlanVisibility(false);
       links.forEach((link) => {
         link.removeAttribute("href");
         link.setAttribute("aria-disabled", "true");

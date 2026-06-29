@@ -20,6 +20,7 @@ const sectionTitles = {
   systemreports: "System Reports",
   closures: "Closure Requests",
   analytics: "Analytics",
+  status: "Status Centre",
   affiliate: "Affiliate Content",
   appearance: "Appearance",
   email: "Email",
@@ -31,6 +32,7 @@ const sectionTitles = {
 const sectionDescriptions = {
   overview: "Executive summary of your customer and platform operations.",
   analytics: "Review account, enquiry, request and plan activity.",
+  status: "Monitor live service health, incidents and maintenance from Atlassian Statuspage.",
   audit: "Trace sensitive administrative activity across the platform.",
   admins: "Manage authorised administrators and access records.",
   customers: "Search customer profiles, memberships and account history.",
@@ -62,6 +64,7 @@ const iconPaths = {
   clock: '<circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path>',
   file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8"></path><path d="M8 17h6"></path>',
   chart: '<path d="M3 3v18h18"></path><path d="M8 17V9"></path><path d="M13 17V5"></path><path d="M18 17v-6"></path>',
+  pulse: '<path d="M3 12h4l2-7 4 14 2-7h6"></path>',
   link: '<path d="M10 13a5 5 0 0 0 7.1 0l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1"></path><path d="M14 11a5 5 0 0 0-7.1 0l-2 2A5 5 0 1 0 12 20.1l1.1-1.1"></path>',
   palette: '<circle cx="13.5" cy="6.5" r=".5"></circle><circle cx="17.5" cy="10.5" r=".5"></circle><circle cx="8.5" cy="7.5" r=".5"></circle><circle cx="6.5" cy="12.5" r=".5"></circle><path d="M12 2a10 10 0 0 0 0 20h1.5a2.5 2.5 0 0 0 0-5H12a2 2 0 0 1 0-4h2a8 8 0 0 0 0-16z"></path>'
 };
@@ -222,6 +225,12 @@ function bindAdminActions() {
       exportRecords(action.dataset.section, action.dataset.format || "csv");
     }
 
+    if (type === "reset-microsoft-password") {
+      const email = action.dataset.email || "";
+      if (!window.confirm(`Open the Microsoft Entra admin centre for ${email || "this customer"} in a new tab? This will not reset the password directly.`)) return;
+      window.open("https://entra.microsoft.com/", "_blank", "noopener,noreferrer");
+    }
+
     if (type === "export-customer-data") {
       exportCustomerData(action.dataset.email, action.dataset.format || "json");
     }
@@ -289,6 +298,22 @@ async function loadSection(section) {
   panel.innerHTML = `<div class="admin-loading">Loading ${escapeHtml(sectionTitles[section] || section)}...</div>`;
 
   try {
+    if (section === "status") {
+      const status = await fetchLiveStatus();
+      state.data.status = { status };
+      renderSection(section, { status });
+      return;
+    }
+
+    if (section === "analytics") {
+      const [data, status] = await Promise.all([api(section), fetchLiveStatus().catch(() => null)]);
+      state.data[section] = data;
+      if (status) state.data.status = { status };
+      if (data.admin) setAdmin(data.admin);
+      renderSection(section, { ...data, status });
+      return;
+    }
+
     const data = await api(section);
     state.data[section] = data;
     if (data.admin) setAdmin(data.admin);
@@ -435,7 +460,8 @@ async function saveFavourites(favourites) {
 
 function renderSection(section, data) {
   if (section === "overview") renderOverview(data.overview);
-  if (section === "analytics") renderAnalytics(data.analytics);
+  if (section === "analytics") renderAnalytics(data.analytics, data.status);
+  if (section === "status") renderStatusCentre(data.status);
   if (section === "admins") renderAdmins(data.admins);
   if (section === "customers") renderCustomers(data.customers);
   if (section === "plans") renderPlans(data.plans);
@@ -496,6 +522,7 @@ function renderOverview(overview) {
           </div>
           <div class="quick-grid">
             ${quick("customers", "users", "View CRM", "Search and manage customer profiles")}
+            ${quick("status", "pulse", "Status Centre", "Review live service health and incidents")}
             ${quick("maintenance", "shield", "Maintenance mode", "Manage public maintenance controls")}
             ${quick("comingsoon", "clock", "Publish website", "Review Coming Soon visibility")}
             ${quick("stripe", "card", "Stripe dashboard", "Review connection and API controls")}
@@ -558,7 +585,10 @@ function quick(section, icon, title, text) {
   `;
 }
 
-function renderAnalytics(analytics = {}) {
+function renderAnalytics(analytics = {}, statusData = null) {
+  const status = statusData?.status || statusData || state.data.status?.status || {};
+  const summary = status.summary || {};
+  const overall = status.overall || {};
   const rows = Object.entries({
     "Total users": analytics.totalUsers,
     "New users this month": analytics.newUsersThisMonth,
@@ -578,8 +608,9 @@ function renderAnalytics(analytics = {}) {
 
   document.getElementById("adminPanel").innerHTML = `
     <div class="section-head">
-      <div><h2>Analytics</h2><p>Operational dashboard for account, request, enquiry and notification activity.</p></div>
+      <div><h2>Analytics</h2><p>Operational dashboard for account, request, enquiry, notification and live service activity.</p></div>
       <div class="section-actions">
+        <button class="admin-button secondary" type="button" data-action="load-section" data-section="status">Open Status Centre</button>
         <button class="admin-button secondary" type="button" data-action="export-records" data-section="analytics" data-format="csv">Export CSV</button>
       </div>
     </div>
@@ -590,12 +621,132 @@ function renderAnalytics(analytics = {}) {
       ${stat("Total enquiries", analytics.totalEnquiries || 0)}
       ${stat("Open data requests", analytics.openDataRequests || 0)}
       ${stat("System reports", analytics.systemReportsSubmitted || 0)}
+      ${stat("Overall System Status", overall.label || "Status unavailable")}
+      ${stat("Operational Components", `${summary.operationalComponents || 0}/${summary.totalComponents || 0}`)}
+      ${stat("Active Incidents", summary.activeIncidents || 0)}
+      ${stat("Scheduled Maintenance", summary.scheduledMaintenance || 0)}
     </div>
     <div class="admin-card">
       <div class="section-head"><div><h2>Performance Summary</h2><p>Use this table for a quick management snapshot. Date-range filters can be extended once booking/referral event data is available.</p></div></div>
       ${table(["Metric", "Value"], rows)}
     </div>
   `;
+}
+
+function renderStatusCentre(statusData = {}) {
+  const status = statusData.status || statusData;
+  const summary = status?.summary || {};
+  const overall = status?.overall || {};
+  const components = Array.isArray(status?.components) ? status.components : [];
+  const incidents = status?.incidents || {};
+  const maintenance = status?.maintenance || {};
+  const source = status?.source || {};
+  const latestUpdated = status?.lastUpdated || source.updatedAt || new Date().toISOString();
+
+  document.getElementById("adminPanel").innerHTML = `
+    <div class="admin-card">
+      <div class="section-head">
+        <div>
+          <h2>Status Centre</h2>
+          <p>Live operational dashboard from Atlassian Statuspage. The same feed powers the public status page.</p>
+        </div>
+        <div class="section-actions">
+          <button class="admin-button secondary" type="button" data-action="refresh-status-centre">Refresh Status</button>
+          <a class="admin-button secondary" href="/status/" target="_blank" rel="noopener noreferrer" onclick="window.open(this.href, '_blank', 'noopener,noreferrer'); return false;">Open Public Status Page</a>
+          <a class="admin-button" href="https://jagroupservices.statuspage.io" target="_blank" rel="noopener noreferrer" onclick="window.open(this.href, '_blank', 'noopener,noreferrer'); return false;">Open Atlassian Statuspage</a>
+        </div>
+      </div>
+      <div class="admin-grid">
+        ${stat("Overall System Status", overall.label || "Status unavailable")}
+        ${stat("Component Status", `${summary.operationalComponents || 0}/${summary.totalComponents || 0} operational`)}
+        ${stat("Current Incidents", incidents.active?.length || summary.activeIncidents || 0)}
+        ${stat("Scheduled Maintenance", maintenance.scheduled?.length || summary.scheduledMaintenance || 0)}
+        ${stat("Last Updated", formatDate(latestUpdated))}
+        ${stat("Automatic Refresh", `${Math.max(Number(status?.refreshAfter || 60), 30)}s`)}
+      </div>
+      <div class="admin-card" style="margin-top:1rem;">
+        <div class="section-head"><div><h2>System Health Summary</h2><p>${escapeHtml(overall.description || "Live service status supplied by the official portal.")}</p></div></div>
+        <div class="health-list">
+          ${health("Overall", overall.label || "Status unavailable", overall.tone || "online")}
+          ${health("API feed", status?.ok ? "Connected" : "Unavailable", status?.ok ? "online" : "warning")}
+          ${health("Operational components", `${summary.operationalComponents || 0} of ${summary.totalComponents || 0}`, Number(summary.affectedComponents || 0) ? "warning" : "online")}
+          ${health("Active incidents", String(incidents.active?.length || 0), incidents.active?.length ? "critical" : "online")}
+          ${health("Maintenance", String((maintenance.active?.length || 0) + (maintenance.scheduled?.length || 0)), maintenance.active?.length || maintenance.scheduled?.length ? "maintenance" : "online")}
+          ${health("Source", source.name || "Atlassian Statuspage", "online")}
+        </div>
+      </div>
+    </div>
+    <div class="dashboard-layout">
+      <div class="dashboard-stack">
+        <section class="admin-card">
+          <div class="section-head"><div><h2>Component Status</h2><p>Current status for each published service component.</p></div></div>
+          <div class="component-grid">
+            ${components.map((component) => `
+              <article class="component-card">
+                <div class="component-card-head">
+                  <div>
+                    <h3>${escapeHtml(component.name)}</h3>
+                    <p>${escapeHtml(component.description || "No component description provided.")}</p>
+                  </div>
+                  ${badge(component.statusLabel || component.status || "Unknown", statusColour(component.status))}
+                </div>
+                <p>Updated ${escapeHtml(formatDate(component.updatedAt || latestUpdated))}</p>
+              </article>
+            `).join("") || `<div class="admin-alert">No components are currently published by the official status service.</div>`}
+          </div>
+        </section>
+      </div>
+      <div class="dashboard-stack">
+        <section class="admin-card">
+          <div class="section-head"><div><h2>Current Incidents</h2><p>Active incidents and the latest published updates.</p></div></div>
+          ${renderStatusEventList(incidents.active || [], "No active incidents", "The official status service has not published any active incidents.")}
+        </section>
+        <section class="admin-card">
+          <div class="section-head"><div><h2>Scheduled Maintenance</h2><p>Upcoming or in-progress maintenance events.</p></div></div>
+          ${renderStatusEventList([...(maintenance.active || []), ...(maintenance.scheduled || [])], "No scheduled maintenance", "The official status service has not published any maintenance events.")}
+        </section>
+        <section class="admin-card">
+          <div class="section-head"><div><h2>Status History</h2><p>Recently resolved incidents and completed maintenance.</p></div></div>
+          ${renderStatusEventList([...(incidents.history || []), ...(maintenance.history || [])], "No recent history", "No resolved incidents or completed maintenance are currently published.")}
+        </section>
+      </div>
+    </div>
+  `;
+
+  document.querySelector('[data-action="refresh-status-centre"]')?.addEventListener("click", async () => {
+    state.data.status = { status: await fetchLiveStatus(true) };
+    renderStatusCentre(state.data.status);
+  });
+}
+
+function renderStatusEventList(events = [], emptyTitle, emptyDescription) {
+  if (!events.length) {
+    return `<div class="admin-alert">${escapeHtml(emptyTitle)}: ${escapeHtml(emptyDescription)}</div>`;
+  }
+
+  return `<div class="activity-list">${events.map((event) => `
+    <article class="activity-card">
+      <div class="section-head">
+        <div>
+          <h3>${escapeHtml(event.name || "Service event")}</h3>
+          <p>${escapeHtml(event.eventType || "Service update")}</p>
+        </div>
+        ${badge(event.statusLabel || event.status || "Unknown", statusColour(event.status))}
+      </div>
+      <p>${escapeHtml(event.body || event.description || "Live status update available from the official portal.")}</p>
+      <p>${escapeHtml(formatDate(event.updatedAt || event.resolvedAt || event.createdAt || event.scheduledFor))}</p>
+    </article>
+  `).join("")}</div>`;
+}
+
+async function fetchLiveStatus(skipCache = false) {
+  const response = await fetch("/api/status", {
+    cache: skipCache ? "no-store" : "no-store",
+    headers: { "Accept": "application/json" }
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || !data.ok) throw new Error(data.message || "Status data could not be loaded.");
+  return data;
 }
 
 function renderAdmins(admins = []) {
@@ -2154,6 +2305,7 @@ function renderCustomerDrawer(customer, plans = []) {
       <button class="admin-button secondary" type="button" data-action="open-closure" data-id="" id="customerClosureButton">Closure Request</button>
       <button class="admin-button secondary" type="button" data-action="export-customer-data" data-email="${escapeAttr(customer.email)}" data-format="json">Export JSON</button>
       <button class="admin-button secondary" type="button" data-action="export-customer-data" data-email="${escapeAttr(customer.email)}" data-format="csv">Export CSV</button>
+      <button class="admin-button" type="button" data-action="reset-microsoft-password" data-email="${escapeAttr(customer.email)}">Reset Microsoft Password</button>
     </div>
     <div id="customerSaved" class="admin-success" hidden></div>
   `;

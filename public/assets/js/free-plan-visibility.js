@@ -21,6 +21,7 @@
   }
 
   async function loadFreePlanVisibility() {
+    setFreePlanVisibility(false);
     try {
       const response = await fetch("/plans-data", {
         headers: { "Accept": "application/json" },
@@ -30,7 +31,7 @@
       if (!response.ok) throw new Error(data.error || "Plan data could not be loaded.");
       setFreePlanVisibility(data.show_free_plan !== false);
     } catch {
-      // Leave static content visible if settings cannot be reached.
+      // Fail closed so the Free plan does not leak when pricing data is unavailable.
     }
   }
 
