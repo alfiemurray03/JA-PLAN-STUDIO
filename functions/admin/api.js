@@ -6,6 +6,7 @@ const THEME_MODES = ["light", "dark", "system"];
 const PERMISSION_SECTIONS = {
   overview: ["view_dashboard"],
   operations: ["view_dashboard", "manage_status", "manage_analytics", "manage_api", "manage_settings"],
+  status: ["manage_status"],
   analytics: ["manage_analytics"],
   audit: ["manage_audit"],
   admins: ["manage_admins", "manage_roles", "manage_permissions"],
@@ -1168,7 +1169,7 @@ async function removeAdmin(DB, body, identity, env) {
 }
 
 async function saveAdminPreferences(DB, body, identity) {
-  const allowedSections = new Set(["overview", "operations", "analytics", "audit", "admins", "roles", "sessions", "customers", "datarequests", "systemreports", "closures", "support", "system", "plans", "stripe", "email", "branding", "appearance", "affiliate", "comingsoon", "maintenance", "policies"]);
+  const allowedSections = new Set(["overview", "operations", "status", "analytics", "audit", "admins", "roles", "sessions", "customers", "datarequests", "systemreports", "closures", "support", "system", "plans", "stripe", "email", "branding", "appearance", "affiliate", "comingsoon", "maintenance", "policies"]);
   const favourites = Array.isArray(body.favourites)
     ? body.favourites.map((item) => clean(item, 80)).filter((item) => allowedSections.has(item)).slice(0, 12)
     : [];
