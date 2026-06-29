@@ -5,16 +5,16 @@ function clearAdminCookies() {
 }
 
 function redirectResponse(location, cookies = []) {
+  const headers = new Headers({
+    Location: location,
+    "Cache-Control": "no-store"
+  });
+  for (const cookie of cookies) {
+    headers.append("Set-Cookie", cookie);
+  }
   return new Response(null, {
     status: 302,
-    headers: {
-      Location: location,
-      "Cache-Control": "no-store",
-      ...cookies.reduce((headers, cookie, index) => {
-        headers[index === 0 ? "Set-Cookie" : `Set-Cookie-${index}`] = cookie;
-        return headers;
-      }, {})
-    }
+    headers
   });
 }
 
@@ -33,6 +33,10 @@ export async function onRequestGet(context) {
   const signInAgain = `${url.origin}/admin`;
   const signedOut = `${url.origin}/signed-out/`;
   const accessLogout = `/cdn-cgi/access/logout?redirect_url=${encodeURIComponent(signedOut)}`;
+
+  if (url.searchParams.get("logout") === "1") {
+    return redirectResponse(accessLogout, clearAdminCookies());
+  }
 
   if (url.searchParams.get("complete") === "1") {
     return htmlResponse(`<!doctype html>
@@ -67,5 +71,25 @@ export async function onRequestGet(context) {
 </html>`);
   }
 
-  return redirectResponse(accessLogout, clearAdminCookies());
+  return htmlResponse(`<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="refresh" content="0; url=${accessLogout}">
+  <title>Signing out | JA Experiences &amp; Discovery</title>
+  <meta name="robots" content="noindex,nofollow">
+  <style>body{font-family:Inter,system-ui,sans-serif;margin:0;min-height:100vh;display:grid;place-items:center;background:#f6f7f9;color:#111827;padding:1rem}main{max-width:36rem;width:100%;background:#fff;border:1px solid #e2e6eb;border-radius:16px;padding:2rem;text-align:center;box-shadow:0 18px 50px rgba(16,24,40,.08)}</style>
+</head>
+<body>
+  <main>
+    <h1>Signing you out…</h1>
+    <p>If you are not redirected automatically, <a href="${accessLogout}">continue to sign out</a>.</p>
+  </main>
+  <script>
+    document.cookie = "ja_admin_bypass=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax";
+    window.location.replace(${JSON.stringify(accessLogout)});
+  </script>
+</body>
+</html>`);
 }
