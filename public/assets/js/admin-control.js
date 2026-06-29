@@ -4,6 +4,7 @@ const state = {
   selectedPolicy: null,
   favourites: [],
   branding: {},
+  allowedSections: ["overview"],
   planDraft: null,
   planDirty: false,
   planSaving: false
@@ -406,8 +407,25 @@ function setAdmin(admin) {
     avatar.textContent = (name || email || "A").slice(0, 1).toUpperCase();
   });
   state.adminName = name;
+  state.allowedSections = Array.isArray(admin.allowed_sections) && admin.allowed_sections.length ? admin.allowed_sections : ["overview"];
   state.favourites = Array.isArray(admin.preferences?.favourites) ? admin.preferences.favourites : state.favourites;
+  syncNavigationAccess();
   renderFavourites();
+}
+
+function syncNavigationAccess() {
+  const allowed = new Set(state.allowedSections || ["overview"]);
+  document.querySelectorAll("[data-section]").forEach((button) => {
+    const section = button.dataset.section;
+    const permitted = allowed.has(section);
+    button.hidden = !permitted;
+    button.setAttribute("aria-hidden", permitted ? "false" : "true");
+    button.disabled = !permitted;
+  });
+  document.querySelectorAll("[data-section]").forEach((button) => {
+    const permitted = allowed.has(button.dataset.section);
+    if (!permitted) button.classList.remove("active");
+  });
 }
 
 function bindFavouriteActions() {
@@ -418,7 +436,8 @@ function renderFavourites() {
   const group = document.getElementById("favouritesGroup");
   const nav = document.getElementById("favouritesNav");
   if (!group || !nav) return;
-  const favourites = state.favourites.filter((section) => sectionTitles[section]);
+   const allowed = new Set(state.allowedSections || ["overview"]);
+   const favourites = state.favourites.filter((section) => sectionTitles[section] && allowed.has(section));
   group.hidden = favourites.length === 0;
   nav.innerHTML = favourites.map((section, index) => `
     <button data-section="${escapeAttr(section)}" data-icon="dashboard" class="${state.currentSection === section ? "active" : ""}">

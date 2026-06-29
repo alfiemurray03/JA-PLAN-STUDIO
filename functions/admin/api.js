@@ -3,6 +3,40 @@ const CLOSURE_STATUSES = ["Open", "In Progress", "Approved", "Rejected", "Comple
 const DPR_STATUSES = ["Received", "Verifying Identity", "In Progress", "Ready to Send", "Sent", "Closed", "Rejected"];
 const SYSTEM_REPORT_STATUSES = ["Open", "In Progress", "Resolved", "Rejected"];
 const THEME_MODES = ["light", "dark", "system"];
+const PERMISSION_SECTIONS = {
+  overview: ["view_dashboard"],
+  analytics: ["manage_analytics"],
+  audit: ["manage_audit"],
+  admins: ["manage_admins", "manage_roles", "manage_permissions"],
+  customers: ["manage_users", "manage_crm"],
+  datarequests: ["manage_data_requests"],
+  systemreports: ["manage_system_reports", "manage_audit"],
+  closures: ["manage_closure_requests"],
+  support: ["manage_support", "manage_crm"],
+  system: ["manage_settings"],
+  plans: ["manage_plans", "manage_pricing"],
+  stripe: ["manage_stripe"],
+  email: ["manage_email"],
+  branding: ["manage_branding", "manage_content"],
+  appearance: ["manage_settings"],
+  affiliate: ["manage_content"],
+  policies: ["manage_policies", "manage_content"],
+  comingsoon: ["manage_content"],
+  maintenance: ["manage_content"]
+};
+const DEFAULT_ROLE_PERMISSIONS = {
+  "Platform Owner": ["*"],
+  "Senior Administrator": [
+    "view_dashboard","manage_admins","manage_roles","manage_permissions","manage_users","manage_crm","manage_plans","manage_pricing","manage_stripe","manage_support","manage_status","manage_analytics","manage_content","manage_branding","manage_email","manage_reports","manage_policies","manage_settings","manage_audit","manage_api","manage_data_requests","manage_closure_requests","manage_system_reports","manage_travel","manage_bookings","manage_refunds"
+  ],
+  Administrator: ["view_dashboard","manage_users","manage_crm","manage_plans","manage_pricing","manage_content","manage_status","manage_system_reports","manage_support","manage_analytics"],
+  "Travel Consultant": ["view_dashboard","manage_users","manage_crm","manage_travel","manage_bookings"],
+  Finance: ["view_dashboard","manage_stripe","manage_refunds","manage_reports"],
+  "Customer Support": ["view_dashboard","manage_users","manage_crm","manage_support","manage_data_requests","manage_closure_requests","manage_system_reports"],
+  "Marketing & Content": ["view_dashboard","manage_content","manage_policies","manage_branding"],
+  "Compliance & Data Protection": ["view_dashboard","manage_data_requests","manage_audit","manage_policies","manage_reports"],
+  "Auditor": ["view_only"]
+};
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data, null, 2), {
@@ -174,6 +208,33 @@ async function ensureTables(DB, env) {
     )
   `).run();
 
+  await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS admin_roles (
+      name TEXT PRIMARY KEY,
+      description TEXT,
+      is_system INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+
+  await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS admin_permissions (
+      code TEXT PRIMARY KEY,
+      description TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+
+  await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS role_permissions (
+      role_name TEXT,
+      permission_code TEXT,
+      PRIMARY KEY (role_name, permission_code)
+    )
+  `).run();
+
   await safeAlter(DB, `ALTER TABLE admin_users ADD COLUMN role TEXT DEFAULT 'Admin'`);
   await safeAlter(DB, `ALTER TABLE admin_users ADD COLUMN status TEXT DEFAULT 'Active'`);
   await safeAlter(DB, `ALTER TABLE admin_users ADD COLUMN permissions TEXT`);
@@ -182,11 +243,39 @@ async function ensureTables(DB, env) {
   for (const email of configuredAdmins(env)) {
     await DB.prepare(`
       INSERT INTO admin_users (email, name, role, status, permissions, favourites, source, created_by, updated_at)
-      VALUES (?, ?, 'Admin', 'Active', '[]', '[]', 'default', 'system', CURRENT_TIMESTAMP)
+      VALUES (?, ?, 'Platform Owner', 'Active', '["*"]', '[]', 'default', 'system', CURRENT_TIMESTAMP)
       ON CONFLICT(email) DO UPDATE SET
+        role = 'Platform Owner',
+        permissions = '["*"]',
         source = CASE WHEN admin_users.source = 'portal' THEN admin_users.source ELSE 'default' END,
         updated_at = CURRENT_TIMESTAMP
     `).bind(email, email).run();
+  }
+
+  for (const [role, permissions] of Object.entries(DEFAULT_ROLE_PERMISSIONS)) {
+    await DB.prepare(`
+      INSERT INTO admin_roles (name, description, is_system, updated_at)
+      VALUES (?, ?, 1, CURRENT_TIMESTAMP)
+      ON CONFLICT(name) DO UPDATE SET
+        description = excluded.description,
+        updated_at = CURRENT_TIMESTAMP
+    `).bind(role, role).run();
+
+    for (const permission of permissions) {
+      await DB.prepare(`
+        INSERT INTO admin_permissions (code, description, updated_at)
+        VALUES (?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(code) DO UPDATE SET
+          description = excluded.description,
+          updated_at = CURRENT_TIMESTAMP
+      `).bind(permission, permission).run();
+
+      await DB.prepare(`
+        INSERT INTO role_permissions (role_name, permission_code)
+        VALUES (?, ?)
+        ON CONFLICT(role_name, permission_code) DO NOTHING
+      `).bind(role, permission).run();
+    }
   }
 
   await DB.prepare(`
@@ -408,6 +497,38 @@ async function isAllowedAdmin(DB, identity, env) {
 
   const row = await DB.prepare(`SELECT email FROM admin_users WHERE lower(email) = lower(?) AND COALESCE(status, 'Active') != 'Suspended'`).bind(identity.email).first();
   return Boolean(row);
+}
+
+async function getEffectivePermissions(DB, adminRow) {
+  if (!adminRow) return ["view_only"];
+  const role = adminRow.role || "Auditor";
+  if (role === "Platform Owner") return ["*"];
+
+  const roleRows = await DB.prepare(`SELECT permission_code FROM role_permissions WHERE role_name = ? ORDER BY permission_code ASC`).bind(role).all();
+  const rolePermissions = (roleRows.results || []).map((row) => row.permission_code).filter(Boolean);
+  const explicitPermissions = safeJson(adminRow.permissions, []).filter(Boolean);
+  const merged = new Set([...rolePermissions, ...explicitPermissions]);
+  if (!merged.size) merged.add("view_only");
+  return [...merged];
+}
+
+function allowedSectionsForPermissions(permissions) {
+  const set = new Set(["overview"]);
+  if (permissions.includes("*")) {
+    Object.keys(PERMISSION_SECTIONS).forEach((section) => set.add(section));
+    return [...set];
+  }
+  for (const [section, needed] of Object.entries(PERMISSION_SECTIONS)) {
+    if (needed.some((permission) => permissions.includes(permission) || permissions.includes("*"))) set.add(section);
+  }
+  return [...set];
+}
+
+function canAccessSection(permissions, section) {
+  if (permissions.includes("*")) return true;
+  const needed = PERMISSION_SECTIONS[section];
+  if (!needed) return true;
+  return needed.some((permission) => permissions.includes(permission));
 }
 
 async function all(DB, sql, bindings = []) {
@@ -645,22 +766,25 @@ async function getAdmins(DB, env) {
 async function addAdmin(DB, body, identity) {
   const email = cleanEmail(body.email);
   if (!isEmail(email)) throw new Error("Enter a valid admin email address.");
+  const existing = await DB.prepare(`SELECT role FROM admin_users WHERE lower(email) = lower(?)`).bind(email).first();
+  const nextRole = existing?.role === "Platform Owner" ? "Platform Owner" : clean(body.role, 80) || "Administrator";
+  const nextPermissions = nextRole === "Platform Owner" ? ["*"] : (Array.isArray(body.permissions) ? body.permissions : []);
 
   await DB.prepare(`
     INSERT INTO admin_users (email, name, role, status, permissions, source, created_by, updated_at)
     VALUES (?, ?, ?, ?, ?, 'portal', ?, CURRENT_TIMESTAMP)
     ON CONFLICT(email) DO UPDATE SET
       name = excluded.name,
-      role = excluded.role,
-      status = excluded.status,
-      permissions = excluded.permissions,
+      role = CASE WHEN admin_users.role = 'Platform Owner' THEN 'Platform Owner' ELSE excluded.role END,
+      status = CASE WHEN admin_users.role = 'Platform Owner' THEN 'Active' ELSE excluded.status END,
+      permissions = CASE WHEN admin_users.role = 'Platform Owner' THEN '["*"]' ELSE excluded.permissions END,
       updated_at = CURRENT_TIMESTAMP
   `).bind(
     email,
     clean(body.name || email, 180),
-    clean(body.role, 80) || "Admin",
+    nextRole,
     clean(body.status, 80) || "Active",
-    JSON.stringify(Array.isArray(body.permissions) ? body.permissions : []),
+    JSON.stringify(nextPermissions),
     identity.email
   ).run();
 }
@@ -668,6 +792,8 @@ async function addAdmin(DB, body, identity) {
 async function removeAdmin(DB, body, identity, env) {
   const email = cleanEmail(body.email);
   if (!isEmail(email)) throw new Error("Admin email is required.");
+  const current = await DB.prepare(`SELECT role FROM admin_users WHERE lower(email) = lower(?)`).bind(email).first();
+  if (current?.role === "Platform Owner") throw new Error("The Platform Owner cannot be removed.");
 
   const admins = await getAdmins(DB, env);
   if (admins.length <= 1) throw new Error("The last remaining admin cannot be removed.");
@@ -1549,7 +1675,17 @@ async function getAuditLog(DB) {
 }
 
 async function adminPayload(DB, identity) {
-  return { ...identity, preferences: await getAdminPreferences(DB, identity) };
+  const admin = await DB.prepare(`SELECT email, name, role, status, permissions, favourites, source, created_by, created_at, updated_at FROM admin_users WHERE lower(email) = lower(?)`).bind(identity.email).first();
+  const role = admin?.role || "Auditor";
+  const permissions = await getEffectivePermissions(DB, admin);
+  return {
+    ...identity,
+    role,
+    permissions,
+    allowed_sections: allowedSectionsForPermissions(permissions),
+    is_platform_owner: role === "Platform Owner",
+    preferences: await getAdminPreferences(DB, identity)
+  };
 }
 
 async function exportCustomerData(DB, customerEmail, format = "json") {
@@ -1707,21 +1843,22 @@ export async function onRequest(context) {
   if (!(await isAllowedAdmin(env.DB, identity, env))) {
     return json({ error: "Forbidden.", signedInAs: identity.email }, 403);
   }
+  const adminContext = await adminPayload(env.DB, identity);
 
   const url = new URL(request.url);
   const section = url.searchParams.get("section") || "overview";
 
   try {
     if (request.method === "GET") {
-      const admin = await adminPayload(env.DB, identity);
-      if (section === "overview") return json({ admin, overview: await getOverview(env.DB) });
-      if (section === "analytics") return json({ admin, analytics: await getAnalytics(env.DB) });
-      if (section === "audit") return json({ admin, audit: await getAuditLog(env.DB) });
-      if (section === "prefs") return json({ admin, preferences: admin.preferences });
-      if (section === "admins") return json({ admin, admins: await getAdmins(env.DB, env) });
+      if (!canAccessSection(adminContext.permissions, section)) return json({ error: "Forbidden.", section }, 403);
+      if (section === "overview") return json({ admin: adminContext, overview: await getOverview(env.DB) });
+      if (section === "analytics") return json({ admin: adminContext, analytics: await getAnalytics(env.DB) });
+      if (section === "audit") return json({ admin: adminContext, audit: await getAuditLog(env.DB) });
+      if (section === "prefs") return json({ admin: adminContext, preferences: adminContext.preferences });
+      if (section === "admins") return json({ admin: adminContext, admins: await getAdmins(env.DB, env) });
       if (section === "customers") {
         return json({
-          admin,
+          admin: adminContext,
           customers: await all(env.DB, `
             SELECT email, verified_name, display_name, contact_email, phone, communication_preference,
               support_notes, admin_lifetime, admin_lifetime_plan_id, admin_customer_status, admin_notes,
@@ -1734,23 +1871,23 @@ export async function onRequest(context) {
       }
       if (section === "plans") {
         return json({
-          admin,
+          admin: adminContext,
           plans: await all(env.DB, `SELECT * FROM service_plans ORDER BY sort_order ASC, plan_name ASC`)
         });
       }
-      if (section === "policies") return json({ admin, policies: await all(env.DB, `SELECT * FROM policy_pages ORDER BY title ASC`) });
-      if (section === "branding") return json({ admin, branding: await env.DB.prepare(`SELECT * FROM company_branding WHERE id = 'main'`).first() });
-      if (section === "support") return json({ admin, support: await all(env.DB, `SELECT * FROM support_tickets ORDER BY updated_at DESC, created_at DESC LIMIT 500`) });
-      if (section === "system") return json({ admin, system: await all(env.DB, `SELECT * FROM system_events ORDER BY updated_at DESC, created_at DESC LIMIT 500`) });
-      if (section === "datarequests") return json({ admin, datarequests: await getDataProtectionRequests(env.DB) });
-      if (section === "systemreports") return json({ admin, systemreports: await getSystemReports(env.DB) });
-      if (section === "closures") return json({ admin, closures: await getClosureRequests(env.DB) });
-      if (section === "affiliate") return json({ admin, affiliate: await getAffiliateContent(env.DB) });
-      if (section === "appearance") return json({ admin, appearance: await getAppearance(env.DB) });
-      if (section === "email") return json({ admin, email: await getEmailSettings(env.DB, env) });
-      if (section === "maintenance") return json({ admin, maintenance: await getMaintenance(env.DB) });
-      if (section === "comingsoon") return json({ admin, comingsoon: await getComingSoon(env.DB) });
-      if (section === "stripe") return json({ admin, stripe: await getStripe(env.DB, env, url.searchParams.get("test") === "1") });
+      if (section === "policies") return json({ admin: adminContext, policies: await all(env.DB, `SELECT * FROM policy_pages ORDER BY title ASC`) });
+      if (section === "branding") return json({ admin: adminContext, branding: await env.DB.prepare(`SELECT * FROM company_branding WHERE id = 'main'`).first() });
+      if (section === "support") return json({ admin: adminContext, support: await all(env.DB, `SELECT * FROM support_tickets ORDER BY updated_at DESC, created_at DESC LIMIT 500`) });
+      if (section === "system") return json({ admin: adminContext, system: await all(env.DB, `SELECT * FROM system_events ORDER BY updated_at DESC, created_at DESC LIMIT 500`) });
+      if (section === "datarequests") return json({ admin: adminContext, datarequests: await getDataProtectionRequests(env.DB) });
+      if (section === "systemreports") return json({ admin: adminContext, systemreports: await getSystemReports(env.DB) });
+      if (section === "closures") return json({ admin: adminContext, closures: await getClosureRequests(env.DB) });
+      if (section === "affiliate") return json({ admin: adminContext, affiliate: await getAffiliateContent(env.DB) });
+      if (section === "appearance") return json({ admin: adminContext, appearance: await getAppearance(env.DB) });
+      if (section === "email") return json({ admin: adminContext, email: await getEmailSettings(env.DB, env) });
+      if (section === "maintenance") return json({ admin: adminContext, maintenance: await getMaintenance(env.DB) });
+      if (section === "comingsoon") return json({ admin: adminContext, comingsoon: await getComingSoon(env.DB) });
+      if (section === "stripe") return json({ admin: adminContext, stripe: await getStripe(env.DB, env, url.searchParams.get("test") === "1") });
     }
 
     if (request.method === "POST") {
@@ -1770,12 +1907,18 @@ export async function onRequest(context) {
         return json({ export: exported, saved: true });
       }
       if (section === "admins") {
+        if (!(adminContext.permissions.includes("*") || adminContext.permissions.includes("manage_admins") || adminContext.permissions.includes("manage_roles") || adminContext.permissions.includes("manage_permissions"))) {
+          return json({ error: "Forbidden.", section }, 403);
+        }
         if (body.action === "remove") await removeAdmin(env.DB, body, identity, env);
         else await addAdmin(env.DB, body, identity);
         await writeAudit(env.DB, identity, body.action === "remove" ? "admin_remove" : "admin_add", "admin_users", cleanEmail(body.email), `Updated admin access for ${cleanEmail(body.email)}.`, {});
         return json({ admins: await getAdmins(env.DB, env), saved: true });
       }
       if (section === "plans") {
+        if (!(adminContext.permissions.includes("*") || adminContext.permissions.includes("manage_plans") || adminContext.permissions.includes("manage_pricing"))) {
+          return json({ error: "Forbidden.", section }, 403);
+        }
         if (body.action === "save_visibility") {
           const result = await savePlanVisibility(env.DB, body);
           await writeAudit(env.DB, identity, "plan_visibility_save", "service_plans", "bulk", "Saved plan visibility changes.", {});
