@@ -2398,7 +2398,7 @@ export async function onRequest(context) {
       if (section === "email") return json({ admin: adminContext, email: await getEmailSettings(env.DB, env) });
       if (section === "maintenance") return json({ admin: adminContext, maintenance: await getMaintenance(env.DB) });
       if (section === "comingsoon") return json({ admin: adminContext, comingsoon: await getComingSoon(env.DB) });
-      if (section === "stripe") return json({ admin: adminContext, stripe: await getStripe(env.DB, env, url.searchParams.get("test") === "1") });
+      if (section === "stripe") return json({ admin: adminContext, stripe: await getStripe(env.DB, env, true) });
     }
 
     if (request.method === "POST") {
