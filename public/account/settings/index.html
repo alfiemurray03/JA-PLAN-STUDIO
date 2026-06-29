@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Settings | JA Experiences &amp; Discovery</title>
+  <meta name="description" content="Customer settings for JA Experiences & Discovery.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#0b1220;--panel:#1d2a3c;--panel-soft:#223149;--line:rgba(148,163,184,.2);--text:#f8fafc;--muted:#9fb8d8;--blue:#3b82f6;--blue-soft:rgba(59,130,246,.16);--green:#22c55e;--green-soft:rgba(34,197,94,.15);--amber:#fbbf24;--amber-soft:rgba(251,191,36,.15);--radius:14px;--shadow:0 24px 70px rgba(0,0,0,.24)}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font-family:Inter,Arial,sans-serif}a{color:inherit;text-decoration:none}.shell{min-height:100vh;display:grid;grid-template-columns:320px minmax(0,1fr)}.sidebar{position:sticky;top:0;height:100vh;background:#1b2738;border-right:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden}.brand,.user-card,.sidebar-footer{padding:1.25rem;border-bottom:1px solid var(--line)}.brand{display:flex;gap:.85rem;align-items:center;min-height:92px}.brand-mark,.avatar{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:var(--blue);color:#fff;font-weight:900}.user-card{display:flex;gap:.85rem;align-items:center}.avatar{width:44px;height:44px;border-radius:999px;background:#1d4ed8;color:#bfdbfe}.sidebar-nav{padding:1rem .85rem;overflow:auto}.nav-heading{margin:1.05rem 0 .45rem;padding:0 .8rem;color:#7d97b9;font-size:.72rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase}.nav-link{width:100%;min-height:50px;border-radius:12px;display:flex;align-items:center;gap:.75rem;padding:0 .8rem;color:#bdd0ea;font-weight:700}.nav-link.active,.nav-link:hover{background:var(--blue);color:#fff;box-shadow:0 14px 34px rgba(59,130,246,.22)}.button{min-height:50px;display:inline-flex;align-items:center;justify-content:center;padding:0 1rem;border-radius:10px;background:var(--blue);color:#fff;font-weight:850;border:1px solid var(--blue)}.main{min-width:0;padding:2rem clamp(1rem,3vw,3rem) 3rem}.wrap{width:min(1180px,100%);margin:0 auto;display:grid;gap:1rem}.hero,.card,.panel{background:var(--panel);border:1px solid #334761;border-radius:var(--radius);padding:1.5rem}.hero{display:flex;justify-content:space-between;gap:1rem;align-items:flex-start}.eyebrow{display:block;color:var(--blue);font-size:.75rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase;margin-bottom:.65rem}h1,h2,p{margin-top:0}h1{margin-bottom:.45rem;font-size:clamp(2rem,4vw,3.1rem);letter-spacing:-.045em;line-height:1.04}p{color:var(--muted);line-height:1.6;margin-bottom:1rem}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}.field{display:grid;gap:.45rem;margin-bottom:1rem}.field label{font-weight:800}.field input,.field select,.field textarea{min-height:50px;border:1px solid #334761;background:#101827;color:#fff;border-radius:10px;padding:.85rem .95rem;font:inherit}.field textarea{min-height:110px;resize:vertical}.toolbar{display:flex;flex-wrap:wrap;gap:.75rem}.footer{margin-top:1rem;color:var(--muted);font-size:.92rem}@media (max-width:1180px){.shell{grid-template-columns:280px minmax(0,1fr)}.grid{grid-template-columns:1fr}}@media (max-width:860px){.shell{display:block}.sidebar{position:relative;height:auto}.main{padding:1rem}}</style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark">JA</div><div><strong>JA Experiences</strong><span>Customer account</span></div></div>
+      <div class="user-card"><div class="avatar">JA</div><div><strong>Settings</strong><span>Preferences and privacy</span></div></div>
+      <nav class="sidebar-nav" aria-label="Customer dashboard navigation">
+        <div class="nav-heading">Account</div>
+        <a class="nav-link" href="/account/"><span>Overview</span></a>
+        <a class="nav-link" href="/account/profile/"><span>Profile</span></a>
+        <a class="nav-link active" href="/account/settings/"><span>Settings</span></a>
+        <div class="nav-heading">Quick links</div>
+        <a class="nav-link" href="/pricing/"><span>Plans &amp; billing</span></a>
+        <a class="nav-link" href="/enquiry/"><span>New enquiry</span></a>
+      </nav>
+      <div class="sidebar-footer"><a class="button" href="/cdn-cgi/access/logout">Sign out</a></div>
+    </aside>
+    <main class="main">
+      <div class="wrap">
+        <section class="hero"><div><span class="eyebrow">Customer settings</span><h1>Settings</h1><p>Manage appearance, notifications, privacy and other preferences from one place.</p></div><div class="badge green">Ready</div></section>
+        <section class="grid">
+          <article class="card"><h2>Appearance</h2><div class="field"><label for="themeSelect">Theme</label><select id="themeSelect"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></div><div class="field"><label for="langSelect">Language</label><select id="langSelect"><option>English (UK)</option><option>English (US)</option></select></div><div class="field"><label for="regionInput">Region</label><input id="regionInput" type="text" placeholder="United Kingdom"></div><div class="field"><label for="timezoneInput">Time zone</label><input id="timezoneInput" type="text" placeholder="Europe/London"></div></article>
+          <article class="card"><h2>Notifications</h2><div class="field"><label for="emailAlerts"><input id="emailAlerts" type="checkbox"> Email notifications</label></div><div class="field"><label for="smsAlerts"><input id="smsAlerts" type="checkbox"> SMS notifications</label></div><div class="field"><label for="marketing"><input id="marketing" type="checkbox"> Marketing preferences</label></div><div class="field"><label for="privacyMode"><input id="privacyMode" type="checkbox"> Privacy mode</label></div></article>
+          <article class="card"><h2>Accessibility</h2><div class="field"><label for="textScale">Text size</label><select id="textScale"><option value="100">Default</option><option value="110">Large</option><option value="120">Extra large</option></select></div><div class="field"><label for="motionReduction"><input id="motionReduction" type="checkbox"> Reduce motion</label></div><div class="field"><label for="highContrast"><input id="highContrast" type="checkbox"> High contrast</label></div></article>
+          <article class="card"><h2>Save preferences</h2><p>Your settings are saved in this browser for now. This keeps the page functional while the customer preferences backend remains unchanged.</p><div class="toolbar"><button class="button" type="button" id="saveSettingsBtn">Save settings</button><button class="button" type="button" id="resetSettingsBtn">Reset</button></div><p id="settingsMessage" aria-live="polite"></p></article>
+        </section>
+        <div class="footer">Protected by Microsoft Entra ID • Cloudflare Zero Trust • © JA Group Services Ltd</div>
+      </div>
+    </main>
+  </div>
+  <script>
+    const SETTINGS_KEY = 'ja-account-settings';
+    const defaults = { themeSelect:'system', langSelect:'English (UK)', regionInput:'United Kingdom', timezoneInput:'Europe/London', emailAlerts:true, smsAlerts:false, marketing:true, privacyMode:false, textScale:'100', motionReduction:false, highContrast:false };
+    const ids = Object.keys(defaults);
+    function read(){ try{return {...defaults,...JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')};} catch { return {...defaults}; } }
+    function write(value){ localStorage.setItem(SETTINGS_KEY, JSON.stringify(value)); }
+    function apply(value){ document.documentElement.dataset.theme = value.themeSelect; document.documentElement.style.fontSize = `${Number(value.textScale)||100}%`; ids.forEach((id)=>{ const el=document.getElementById(id); if(!el) return; if(el.type==='checkbox') el.checked = Boolean(value[id]); else el.value = value[id] ?? defaults[id]; }); }
+    function collect(){ const value = {}; ids.forEach((id)=>{ const el=document.getElementById(id); value[id] = el?.type === 'checkbox' ? Boolean(el.checked) : (el?.value || defaults[id]); }); return value; }
+    const message = document.getElementById('settingsMessage');
+    apply(read());
+    document.getElementById('saveSettingsBtn').addEventListener('click', ()=>{ write(collect()); if (message) message.textContent = 'Settings saved in this browser.'; });
+    document.getElementById('resetSettingsBtn').addEventListener('click', ()=>{ localStorage.removeItem(SETTINGS_KEY); apply(defaults); if (message) message.textContent = 'Settings reset.'; });
+  </script>
+</body>
+</html>
