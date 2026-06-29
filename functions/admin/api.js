@@ -1682,13 +1682,9 @@ export async function onRequest(context) {
         });
       }
       if (section === "plans") {
-        const planSettings = await settingMap(env.DB, ["show_free_plan"], { show_free_plan: "true" });
         return json({
           admin,
-          plans: await all(env.DB, `SELECT * FROM service_plans ORDER BY sort_order ASC, plan_name ASC`),
-          settings: {
-            show_free_plan: planSettings.show_free_plan !== "false"
-          }
+          plans: await all(env.DB, `SELECT * FROM service_plans ORDER BY sort_order ASC, plan_name ASC`)
         });
       }
       if (section === "policies") return json({ admin, policies: await all(env.DB, `SELECT * FROM policy_pages ORDER BY title ASC`) });
@@ -1729,20 +1725,6 @@ export async function onRequest(context) {
         return json({ admins: await getAdmins(env.DB, env), saved: true });
       }
       if (section === "plans") {
-        if (body.action === "save_free_plan_visibility") {
-          const current = await settingMap(env.DB, ["show_free_plan"], { show_free_plan: "true" });
-          const showFreePlan = Boolean(body.show_free_plan);
-          await saveSettings(env.DB, { show_free_plan: showFreePlan ? "true" : "false" });
-          await writeAudit(env.DB, identity, "free_plan_visibility_update", "site_settings", "show_free_plan", `Set Free plan visibility to ${showFreePlan ? "enabled" : "disabled"}.`, {
-            previousValue: current.show_free_plan !== "false",
-            newValue: showFreePlan
-          });
-          return json({
-            plans: await all(env.DB, `SELECT * FROM service_plans ORDER BY sort_order ASC, plan_name ASC`),
-            settings: { show_free_plan: showFreePlan },
-            saved: true
-          });
-        }
         const plans = await savePlan(env.DB, body);
         await writeAudit(env.DB, identity, "plan_save", "service_plans", clean(body.id, 120), `Saved plan ${clean(body.plan_name, 180)}.`, {});
         return json({ plans, saved: true });

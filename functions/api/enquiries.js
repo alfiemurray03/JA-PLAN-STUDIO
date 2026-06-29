@@ -213,8 +213,14 @@ async function insertConsent(DB, consent) {
 
 async function freePlanIsHidden(env, enquiry) {
   if (!env || !env.DB || !isFreePlanEnquiry(enquiry)) return false;
-  const settings = await settingMap(env.DB, ["show_free_plan"], { show_free_plan: "true" });
-  return settings.show_free_plan === "false";
+  const freePlan = await env.DB.prepare(`
+    SELECT is_active
+    FROM service_plans
+    WHERE lower(plan_type) = 'free' OR price_pence = 0 OR lower(plan_name) LIKE '%free discovery enquiry%'
+    ORDER BY sort_order ASC, plan_name ASC
+    LIMIT 1
+  `).first();
+  return Number(freePlan?.is_active || 0) !== 1;
 }
 
 function isFreePlanEnquiry(enquiry) {

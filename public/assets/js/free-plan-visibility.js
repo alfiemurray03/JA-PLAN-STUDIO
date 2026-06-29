@@ -21,7 +21,6 @@
   }
 
   async function loadFreePlanVisibility() {
-    setFreePlanVisibility(false);
     try {
       const response = await fetch("/plans-data", {
         headers: { "Accept": "application/json" },
@@ -29,9 +28,12 @@
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Plan data could not be loaded.");
-      setFreePlanVisibility(data.show_free_plan !== false);
+      setFreePlanVisibility(Array.isArray(data.plans) && data.plans.some(function (plan) {
+        const type = String(plan.plan_type || "").toLowerCase();
+        return type === "free" || Number(plan.price_pence || 0) === 0;
+      }));
     } catch {
-      // Fail closed so the Free plan does not leak when pricing data is unavailable.
+      setFreePlanVisibility(false);
     }
   }
 

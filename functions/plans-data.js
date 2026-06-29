@@ -17,9 +17,6 @@ export async function onRequestGet(context) {
 
   await ensureServicePlans(env.DB);
 
-  const settings = await settingMap(env.DB, ["show_free_plan"], { show_free_plan: "true" });
-  const showFreePlan = settings.show_free_plan !== "false";
-
   const result = await env.DB.prepare(`
     SELECT id, plan_name, plan_type, price_label, price_pence, delivery_time, revisions,
       description, button_label, is_active, is_featured, sort_order,
@@ -29,16 +26,15 @@ export async function onRequestGet(context) {
   `).all();
 
   const plans = (result.results || [])
-    .filter((plan) => showFreePlan || !isFreePlan(plan))
+    .filter((plan) => Number(plan.is_active || 0) === 1)
     .map((plan) => ({
       ...plan,
       is_active: Number(plan.is_active || 0),
       is_featured: Number(plan.is_featured || 0),
-      payment_available: Number(plan.is_active || 0) === 1 && Number(plan.has_stripe_price || 0) === 1,
-      is_free_plan: isFreePlan(plan)
+      payment_available: Number(plan.has_stripe_price || 0) === 1
     }));
 
-  return json({ plans, show_free_plan: showFreePlan });
+  return json({ plans });
 };
 
 async function ensureServicePlans(DB) {
@@ -94,30 +90,6 @@ async function safeAlter(DB, sql) {
   } catch {
     // Column already exists.
   }
-}
-
-async function settingMap(DB, keys, defaults = {}) {
-  try {
-    await DB.prepare(`
-      CREATE TABLE IF NOT EXISTS site_settings (
-        key TEXT PRIMARY KEY,
-        value TEXT,
-        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-      )
-    `).run();
-    const placeholders = keys.map(() => "?").join(", ");
-    const result = await DB.prepare(`SELECT key, value FROM site_settings WHERE key IN (${placeholders})`).bind(...keys).all();
-    const settings = { ...defaults };
-    for (const row of result.results || []) settings[row.key] = row.value;
-    return settings;
-  } catch {
-    return { ...defaults };
-  }
-}
-
-function isFreePlan(plan = {}) {
-  const text = `${plan.id || ""} ${plan.plan_name || ""} ${plan.plan_type || ""} ${plan.price_label || ""}`.toLowerCase();
-  return text.includes("free") || Number(plan.price_pence || 0) === 0;
 }
 
 function json(data, status = 200) {

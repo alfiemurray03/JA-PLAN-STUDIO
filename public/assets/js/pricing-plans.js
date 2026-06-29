@@ -74,59 +74,58 @@
 
       renderPricing(data);
     } catch {
-      renderPricing({ plans: [], show_free_plan: false });
+      renderPricing({ plans: [] });
     }
   }
 
   function renderPricing(data) {
-    const showFreePlan = data.show_free_plan !== false;
     const plans = Array.isArray(data.plans) ? data.plans : [];
 
-    applyFreePlanVisibility(showFreePlan);
-    renderSummary(showFreePlan, plans);
+    applyFreePlanVisibility(plans);
+    renderSummary(plans);
     renderGrid(document.getElementById("pricingPlanGrid"), plans);
   }
 
-  function renderSummary(showFreePlan, plans) {
+  function renderSummary(plans) {
     const heroCopy = document.getElementById("pricingHeroCopy");
     const beforeCopy = document.getElementById("pricingBeforeYouBuy");
     const finalCopy = document.getElementById("pricingFinalCopy");
     const freeCta = document.getElementById("pricingFreeCta");
     const finalCta = document.getElementById("pricingFinalCta");
     const strip = document.getElementById("pricingStrip");
-    const freePlan = plans.find((plan) => isFreePlan(plan));
+    const freePlan = plans.find((plan) => String(plan.plan_type || "").toLowerCase() === "free" || Number(plan.price_pence || 0) === 0);
     const standardPlans = plans.filter((plan) => String(plan.plan_type || "").toLowerCase() === "standard");
     const socialPlans = plans.filter((plan) => String(plan.plan_type || "").toLowerCase() === "social tariff");
 
     if (heroCopy) {
-      heroCopy.textContent = showFreePlan
-        ? "Start with a free enquiry, or buy a paid guidance plan securely through Stripe. JA Experiences & Discovery provides guidance and planning support only."
-        : "Choose from the available paid guidance plans securely through Stripe. JA Experiences & Discovery provides guidance and planning support only.";
+      heroCopy.textContent = freePlan
+        ? "Start with a free enquiry, or choose from the available guidance plans securely through Stripe. JA Experiences & Discovery provides guidance and planning support only."
+        : "Choose from the available guidance plans securely through Stripe. JA Experiences & Discovery provides guidance and planning support only.";
     }
 
     if (beforeCopy) {
-      beforeCopy.textContent = showFreePlan
+      beforeCopy.textContent = freePlan
         ? "If you are unsure which plan fits your request, start with the free enquiry. We can point you towards the right level of support before you pay."
-        : "If you are unsure which plan fits your request, review the paid plans above or contact JA Experiences & Discovery for help choosing the right support route.";
+        : "If you are unsure which plan fits your request, review the plans above or contact JA Experiences & Discovery for help choosing the right support route.";
     }
 
     if (finalCopy) {
-      finalCopy.textContent = showFreePlan
-        ? "Choose a paid plan above, or start with the free enquiry if you need help choosing the right service."
-        : "Choose the paid plan that best fits your request.";
+      finalCopy.textContent = freePlan
+        ? "Choose a plan above, or start with the free enquiry if you need help choosing the right service."
+        : "Choose the plan that best fits your request.";
     }
 
     if (freeCta) {
-      freeCta.hidden = !showFreePlan;
+      freeCta.hidden = !freePlan;
     }
 
     if (finalCta) {
-      finalCta.hidden = !showFreePlan;
+      finalCta.hidden = !freePlan;
     }
 
     if (strip) {
       const items = [];
-      if (showFreePlan && freePlan) items.push(summaryItem(freePlan.price_label || "£0", "Free enquiry"));
+      if (freePlan) items.push(summaryItem(freePlan.price_label || "£0", "Free enquiry"));
       if (standardPlans.length) items.push(summaryItem("From £49", "Standard plans"));
       if (socialPlans.length) items.push(summaryItem("From £29", "Social tariff"));
       items.push(summaryItem("Email/PDF", "Written delivery"));
@@ -169,21 +168,17 @@
         ${plan.revisions ? `<li>Includes ${escapeHtml(plan.revisions)}</li>` : ""}
         <li>${escapeHtml(planType === "free" ? "No charge" : planType === "social tariff" ? "Minimum evidence requested" : "Secure Stripe checkout")}</li>
       </ul>
-      ${active && plan.is_free_plan ? `<a class="pricing-button orange" href="/enquiry/">Start a free enquiry</a>` : active && plan.payment_available ? `<a class="pricing-button ${index === 0 && planType === "standard" ? "orange" : ""} stripe-direct-link" href="/create-checkout-session?plan=${encodeURIComponent(plan.id)}">${escapeHtml(plan.button_label || "Buy now securely")}</a>` : `<span class="pricing-button disabled" aria-disabled="true">Currently unavailable</span>`}
+      ${active ? (planType === "free" ? `<a class="pricing-button orange" href="/enquiry/">${escapeHtml(plan.button_label || "Start a free enquiry")}</a>` : plan.payment_available ? `<a class="pricing-button ${index === 0 && planType === "standard" ? "orange" : ""} stripe-direct-link" href="/create-checkout-session?plan=${encodeURIComponent(plan.id)}">${escapeHtml(plan.button_label || "Buy now securely")}</a>` : `<span class="pricing-button disabled" aria-disabled="true">Currently unavailable</span>`) : `<span class="pricing-button disabled" aria-disabled="true">Currently unavailable</span>`}
       ${planType === "social tariff" ? '<a class="pricing-small-link" href="/social-tariff/">Read social tariff terms</a>' : ""}
     `;
     return article;
   }
 
-  function applyFreePlanVisibility(showFreePlan) {
+  function applyFreePlanVisibility(plans) {
+    const showFreePlan = plans.some((plan) => String(plan.plan_type || "").toLowerCase() === "free" || Number(plan.price_pence || 0) === 0);
     if (window.JAFreePlanVisibility && typeof window.JAFreePlanVisibility.apply === "function") {
       window.JAFreePlanVisibility.apply(showFreePlan);
     }
-  }
-
-  function isFreePlan(plan) {
-    const text = `${plan.id || ""} ${plan.plan_name || ""} ${plan.plan_type || ""} ${plan.price_label || ""}`.toLowerCase();
-    return text.includes("free") || Number(plan.price_pence || 0) === 0;
   }
 
   document.addEventListener("click", function (event) {
