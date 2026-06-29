@@ -1196,10 +1196,14 @@ async function savePlanChanges() {
       method: "POST",
       body: JSON.stringify({ action: "save_visibility", plans })
     });
+    if (!data || data.success !== true || !Array.isArray(data.plans)) {
+      throw new Error("The server did not confirm the saved plan state.");
+    }
     state.planDraft = null;
     state.planDirty = false;
-    setSaved("plansSaved", "Plan changes saved.");
-    await loadSection("plans");
+    state.data.plans = data;
+    renderPlans(data.plans);
+    setSaved("plansSaved", "Changes saved successfully.");
   } catch (error) {
     setSaved("plansSaved", error.message || "Unable to save plan changes.", true);
   } finally {
