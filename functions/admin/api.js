@@ -539,12 +539,12 @@ async function getEffectivePermissions(DB, adminRow) {
   const role = canonicalRoleName(adminRow.role || "Auditor");
   if (role === "Platform Owner") return ["*"];
 
-  const roleRows = await DB.prepare(`SELECT permission_code FROM role_permissions WHERE role_name = ? ORDER BY permission_code ASC`).bind(role).all();
-  const rolePermissions = (roleRows.results || []).map((row) => row.permission_code).filter(Boolean);
-  const explicitPermissions = safeJson(adminRow.permissions, []).filter(Boolean);
-  const merged = new Set([...rolePermissions, ...explicitPermissions]);
-  if (!merged.size) merged.add("view_only");
-  return [...merged];
+  const explicitPermissions = normalisePermissionList(safeJson(adminRow.permissions, []));
+  if (explicitPermissions.length) return explicitPermissions;
+
+  const defaults = await getRoleDefaultPermissions(DB, role);
+  if (defaults.length) return defaults;
+  return ["view_only"];
 }
 
 function allowedSectionsForPermissions(permissions) {
@@ -599,6 +599,11 @@ async function all(DB, sql, bindings = []) {
   const statement = DB.prepare(sql);
   const result = bindings.length ? await statement.bind(...bindings).all() : await statement.all();
   return result.results || [];
+}
+
+async function getRoleDefaultPermissions(DB, role) {
+  const roleRows = await DB.prepare(`SELECT permission_code FROM role_permissions WHERE role_name = ? ORDER BY permission_code ASC`).bind(canonicalRoleName(role)).all();
+  return normalisePermissionList((roleRows.results || []).map((row) => row.permission_code));
 }
 
 async function settingMap(DB, keys, defaults = {}) {
@@ -1087,7 +1092,9 @@ async function addAdmin(DB, body, identity) {
     const role = await DB.prepare(`SELECT name FROM admin_roles WHERE name = ?`).bind(nextRole).first();
     if (!role) throw new Error("Selected role does not exist.");
   }
-  const nextPermissions = nextRole === "Platform Owner" ? ["*"] : (Array.isArray(body.permissions) ? body.permissions : []);
+  const nextPermissions = nextRole === "Platform Owner"
+    ? ["*"]
+    : (Array.isArray(body.permissions) && body.permissions.length ? normalisePermissionList(body.permissions) : await getRoleDefaultPermissions(DB, nextRole));
 
   await DB.prepare(`
     INSERT INTO admin_users (email, name, role, status, permissions, source, created_by, updated_at)
@@ -1125,7 +1132,9 @@ async function updateAdmin(DB, body, identity, env) {
   const roleExists = await DB.prepare(`SELECT name FROM admin_roles WHERE name = ?`).bind(nextRole).first();
   if (!roleExists) throw new Error("Selected role does not exist.");
   const nextStatus = ["Active", "Inactive", "Suspended"].includes(clean(body.status, 80)) ? clean(body.status, 80) : (current.status || "Active");
-  const nextPermissions = Array.isArray(body.permissions) ? normalisePermissionList(body.permissions) : safeJson(current.permissions, []);
+  const nextPermissions = nextRole === "Platform Owner"
+    ? ["*"]
+    : (Array.isArray(body.permissions) && body.permissions.length ? normalisePermissionList(body.permissions) : await getRoleDefaultPermissions(DB, nextRole));
   if (nextEmail !== originalEmail) {
     const emailExists = await DB.prepare(`SELECT email FROM admin_users WHERE lower(email) = lower(?)`).bind(nextEmail).first();
     if (emailExists) throw new Error("Another administrator already uses that email.");

@@ -1264,6 +1264,50 @@ function buildPermissionGroups(selected = []) {
   `).join("");
 }
 
+function getRoleDefaultPermissions(roleName) {
+  const role = getCurrentRoles().find((item) => String(item.name) === String(roleName));
+  return Array.isArray(role?.permissions) ? role.permissions : [];
+}
+
+function renderPermissionEditor(selected = [], filter = "", locked = false) {
+  const catalog = getPermissionCatalog();
+  const query = String(filter || "").toLowerCase();
+  const groups = Object.entries(catalog)
+    .map(([group, permissions]) => {
+      const filtered = permissions.filter((permission) => !query || `${group} ${permission}`.toLowerCase().includes(query));
+      if (!filtered.length) return "";
+      return `
+        <fieldset class="permission-group">
+          <legend>${escapeHtml(group)}</legend>
+          <div class="permission-grid">
+            ${filtered.map((permission) => `
+              <label class="permission-item">
+                <input type="checkbox" value="${escapeAttr(permission)}" ${selected.includes(permission) ? "checked" : ""} ${locked ? "disabled" : ""}>
+                <span>${escapeHtml(permission)}</span>
+              </label>
+            `).join("")}
+          </div>
+        </fieldset>
+      `;
+    })
+    .filter(Boolean)
+    .join("");
+
+  return `
+    <div class="admin-card" style="margin:0;">
+      <div class="section-head">
+        <div><h3>Permissions</h3><p>${locked ? "Platform Owner permissions are fixed and cannot be reduced." : "Choose the effective permissions for this administrator."}</p></div>
+        <div class="section-actions">
+          <button class="mini-button" type="button" data-action="select-all-permissions" ${locked ? "disabled" : ""}>Select All</button>
+          <button class="mini-button" type="button" data-action="clear-all-permissions" ${locked ? "disabled" : ""}>Clear All</button>
+        </div>
+      </div>
+      <label class="admin-label">Search permissions<input id="adminPermissionSearch" type="search" placeholder="Filter permissions" value="${escapeAttr(filter)}" ${locked ? "disabled" : ""}></label>
+      <div class="permission-catalog">${groups || `<div class="admin-alert">No permissions match this filter.</div>`}</div>
+    </div>
+  `;
+}
+
 function openRoleEditor(role = null) {
   const isEdit = Boolean(role);
   const permissions = Array.isArray(role?.permissions) ? role.permissions : [];
@@ -1346,11 +1390,14 @@ async function openAdminProfileModal(email, options = {}) {
 
   const isDefault = admin.source === "default";
   const isOwnProfile = Boolean(options.isOwnProfile);
+  const isPlatformOwner = String(admin.role || "") === "Platform Owner";
   const roleOptions = getCurrentRoles()
     .filter((role) => state.data.admins?.admin?.is_platform_owner || role.name !== "Platform Owner")
     .map((role) => `<option value="${escapeAttr(role.name)}">${escapeHtml(role.name)}</option>`)
     .join("") || `<option value="Administrator">Administrator</option>`;
-  const permissionSummary = parseAdminPermissions(admin.permissions);
+  const currentRoleDefaultPermissions = getRoleDefaultPermissions(admin.role);
+  const initialPermissions = isPlatformOwner ? ["*"] : (parseAdminPermissions(admin.permissions).length ? parseAdminPermissions(admin.permissions) : currentRoleDefaultPermissions);
+  const permissionSummary = initialPermissions;
   const loginHistory = Array.isArray(admin.login_history) ? admin.login_history : [];
   const isSuspended = String(admin.status || "").toLowerCase() === "suspended";
   openModal(`
@@ -1371,10 +1418,7 @@ async function openAdminProfileModal(email, options = {}) {
           <option value="Inactive">Inactive</option>
         </select>
       </label>
-      <div class="admin-card" style="margin:0;">
-        <div class="section-head"><div><h3>Permissions summary</h3><p>${escapeHtml(permissionSummary.includes("*") ? "All permissions" : `${permissionSummary.length} permissions assigned`)}</p></div></div>
-        <div class="permission-tags">${permissionSummary.slice(0, 24).map((permission) => `<span class="badge">${escapeHtml(permission)}</span>`).join("")}</div>
-      </div>
+      <div id="permissionEditorWrap">${renderPermissionEditor(permissionSummary, "", isPlatformOwner)}</div>
       <div class="section-actions">
         ${isDefault ? "" : `<button class="mini-button" type="button" data-action="profile-status-toggle">${isSuspended ? "Reactivate administrator" : "Suspend administrator"}</button>`}
         ${isOwnProfile ? `<a class="mini-button secondary" href="/cdn-cgi/access/logout">Sign out</a>` : ""}
@@ -1397,9 +1441,30 @@ async function openAdminProfileModal(email, options = {}) {
   setValue("admin_profile_email", admin.email || "");
   setValue("admin_profile_role", admin.role || "Administrator");
   setValue("admin_profile_status", admin.status || "Active");
+  document.getElementById("admin_profile_role")?.addEventListener("change", () => {
+    if (isPlatformOwner) return;
+    const nextRole = getValue("admin_profile_role");
+    const defaults = nextRole === "Platform Owner" ? ["*"] : getRoleDefaultPermissions(nextRole);
+    const wrap = document.getElementById("permissionEditorWrap");
+    if (wrap) wrap.innerHTML = renderPermissionEditor(defaults, getValue("adminPermissionSearch"), nextRole === "Platform Owner");
+  });
+  document.getElementById("adminPermissionSearch")?.addEventListener("input", (event) => {
+    if (isPlatformOwner) return;
+    const current = [...document.querySelectorAll('#permissionEditorWrap input[type="checkbox"]:checked')].map((input) => input.value);
+    const nextRole = getValue("admin_profile_role");
+    const wrap = document.getElementById("permissionEditorWrap");
+    if (wrap) wrap.innerHTML = renderPermissionEditor(current, event.target.value, false);
+  });
+  document.querySelector('[data-action="select-all-permissions"]')?.addEventListener("click", () => {
+    document.querySelectorAll('#permissionEditorWrap input[type="checkbox"]').forEach((checkbox) => { checkbox.checked = true; });
+  });
+  document.querySelector('[data-action="clear-all-permissions"]')?.addEventListener("click", () => {
+    document.querySelectorAll('#permissionEditorWrap input[type="checkbox"]').forEach((checkbox) => { checkbox.checked = false; });
+  });
 
   document.getElementById("adminProfileForm").addEventListener("submit", async (event) => {
     event.preventDefault();
+    const selectedPermissions = isPlatformOwner ? ["*"] : [...document.querySelectorAll('#permissionEditorWrap input[type="checkbox"]:checked')].map((input) => input.value);
     try {
       const data = await api("admins", {
         method: "POST",
@@ -1410,7 +1475,7 @@ async function openAdminProfileModal(email, options = {}) {
           name: getValue("admin_profile_name"),
           role: isDefault ? (admin.role || "Admin") : getValue("admin_profile_role"),
           status: isDefault ? (admin.status || "Active") : getValue("admin_profile_status"),
-          permissions: parseAdminPermissions(admin.permissions)
+          permissions: selectedPermissions
         })
       });
       state.data.admins = { ...(state.data.admins || {}), admins: data.admins || [] };
