@@ -122,7 +122,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (window.JAFreePlanVisibility && typeof window.JAFreePlanVisibility.load === "function") {
     window.JAFreePlanVisibility.load();
   } else {
-    loadSharedScript("/assets/js/free-plan-visibility.js?v=20260622-1");
+    loadSharedScript("/assets/js/free-plan-visibility.js?v=20260629-3");
   }
 });
 
