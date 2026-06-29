@@ -1,4 +1,5 @@
 const DEFAULT_PLANS = [
+  ["free_discovery_enquiry", "Free Discovery Enquiry", "Free", "£0", 0, "", "", "1 to 3 working days", "Initial review and recommendation", "A no-cost starting point for questions and support route guidance.", "Start a free enquiry", 1, 0, 0],
   ["destination_discovery_standard", "Destination Discovery Plan", "Standard", "£49", 4900, "prod_destination_discovery", "price_1TkZu2DZzb3r6Q3cuhKd6KTt", "3-5 working days", "1 minor revision", "A focused destination discovery plan for early-stage trip ideas.", "Buy now securely", 1, 1, 10],
   ["itinerary_experience_standard", "Itinerary and Experience Planning Plan", "Standard", "£89", 8900, "prod_itinerary_experience", "price_1TkZuJDZzb3r6Q3c9cEy41Iw", "5-7 working days", "1 minor revision", "A structured itinerary and experience planning service.", "Buy now securely", 1, 1, 20],
   ["complete_planning_standard", "Complete Discovery and Planning Guidance Plan", "Standard", "£149", 14900, "prod_complete_planning", "price_1TkZucDZzb3r6Q3cGVNcyvIF", "7-10 working days", "2 minor revisions", "A complete discovery and planning guidance package.", "Buy now securely", 1, 1, 30],
@@ -33,7 +34,8 @@ export async function onRequestGet(context) {
       ...plan,
       is_active: Number(plan.is_active || 0),
       is_featured: Number(plan.is_featured || 0),
-      payment_available: Number(plan.is_active || 0) === 1 && Number(plan.has_stripe_price || 0) === 1
+      payment_available: Number(plan.is_active || 0) === 1 && Number(plan.has_stripe_price || 0) === 1,
+      is_free_plan: isFreePlan(plan)
     }));
 
   return json({ plans, show_free_plan: showFreePlan });
@@ -61,15 +63,27 @@ async function ensureServicePlans(DB) {
 
   await safeAlter(DB, `ALTER TABLE service_plans ADD COLUMN stripe_product_id TEXT`);
 
-  const planCount = await DB.prepare(`SELECT COUNT(*) AS count FROM service_plans`).first();
-  if (planCount && Number(planCount.count || 0) > 0) return;
-
   for (const plan of DEFAULT_PLANS) {
     await DB.prepare(`
       INSERT INTO service_plans (
         id, plan_name, plan_type, price_label, price_pence, stripe_product_id, stripe_price_id,
         delivery_time, revisions, description, button_label, is_active, is_featured, sort_order
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        plan_name = excluded.plan_name,
+        plan_type = excluded.plan_type,
+        price_label = excluded.price_label,
+        price_pence = excluded.price_pence,
+        stripe_product_id = excluded.stripe_product_id,
+        stripe_price_id = excluded.stripe_price_id,
+        delivery_time = excluded.delivery_time,
+        revisions = excluded.revisions,
+        description = excluded.description,
+        button_label = excluded.button_label,
+        is_active = excluded.is_active,
+        is_featured = excluded.is_featured,
+        sort_order = excluded.sort_order,
+        updated_at = CURRENT_TIMESTAMP
     `).bind(...plan).run();
   }
 }

@@ -81,23 +81,22 @@
   function renderPricing(data) {
     const showFreePlan = data.show_free_plan !== false;
     const plans = Array.isArray(data.plans) ? data.plans : [];
-    const standardPlans = plans.filter((plan) => !isFreePlan(plan) && String(plan.plan_type || "").toLowerCase() !== "social tariff");
-    const socialPlans = plans.filter((plan) => String(plan.plan_type || "").toLowerCase() === "social tariff");
-    const freePlan = plans.find((plan) => isFreePlan(plan));
 
     applyFreePlanVisibility(showFreePlan);
-    renderSummary(showFreePlan, freePlan, standardPlans, socialPlans);
-    renderGrid(document.getElementById("pricingStandardGrid"), standardPlans, false);
-    renderGrid(document.getElementById("pricingSocialGrid"), socialPlans, true);
+    renderSummary(showFreePlan, plans);
+    renderGrid(document.getElementById("pricingPlanGrid"), plans);
   }
 
-  function renderSummary(showFreePlan, freePlan, standardPlans, socialPlans) {
+  function renderSummary(showFreePlan, plans) {
     const heroCopy = document.getElementById("pricingHeroCopy");
     const beforeCopy = document.getElementById("pricingBeforeYouBuy");
     const finalCopy = document.getElementById("pricingFinalCopy");
     const freeCta = document.getElementById("pricingFreeCta");
     const finalCta = document.getElementById("pricingFinalCta");
     const strip = document.getElementById("pricingStrip");
+    const freePlan = plans.find((plan) => isFreePlan(plan));
+    const standardPlans = plans.filter((plan) => String(plan.plan_type || "").toLowerCase() === "standard");
+    const socialPlans = plans.filter((plan) => String(plan.plan_type || "").toLowerCase() === "social tariff");
 
     if (heroCopy) {
       heroCopy.textContent = showFreePlan
@@ -135,14 +134,14 @@
     }
   }
 
-  function renderGrid(container, plans, social) {
+  function renderGrid(container, plans) {
     if (!container) return;
     if (!plans.length) {
       container.replaceChildren(summaryItem("No plans available", "Please try again shortly."));
       return;
     }
 
-    container.replaceChildren(...plans.map((plan, index) => createPlanCard(plan, social, index)));
+    container.replaceChildren(...plans.map((plan, index) => createPlanCard(plan, index)));
   }
 
   function summaryItem(value, label) {
@@ -152,12 +151,13 @@
     return item;
   }
 
-  function createPlanCard(plan, social, index) {
+  function createPlanCard(plan, index) {
     const article = document.createElement("article");
-    article.className = `pricing-card${index === 0 && !social ? " featured" : ""}`;
+    const planType = String(plan.plan_type || "").toLowerCase();
+    article.className = `pricing-card${index === 0 && planType === "standard" ? " featured" : ""}`;
     const active = Number(plan.is_active || 0) === 1;
     article.innerHTML = `
-      <span class="pricing-pill">${escapeHtml(plan.plan_type || (social ? "Social tariff" : "Service plan"))}</span>
+      <span class="pricing-pill">${escapeHtml(plan.plan_type || "Service plan")}</span>
       <h3>${escapeHtml(plan.plan_name || "Service plan")}</h3>
       <p>${escapeHtml(plan.description || "")}</p>
       <div class="pricing-price">
@@ -167,10 +167,10 @@
       <ul class="pricing-features">
         ${plan.delivery_time ? `<li>Delivery: ${escapeHtml(plan.delivery_time)}</li>` : ""}
         ${plan.revisions ? `<li>Includes ${escapeHtml(plan.revisions)}</li>` : ""}
-        <li>${escapeHtml(social ? "Minimum evidence requested" : "Secure Stripe checkout")}</li>
+        <li>${escapeHtml(planType === "free" ? "No charge" : planType === "social tariff" ? "Minimum evidence requested" : "Secure Stripe checkout")}</li>
       </ul>
-      ${active && plan.payment_available ? `<a class="pricing-button ${index === 0 && !social ? "orange" : ""} stripe-direct-link" href="/create-checkout-session?plan=${encodeURIComponent(plan.id)}">${escapeHtml(plan.button_label || "Buy now securely")}</a>` : `<span class="pricing-button disabled" aria-disabled="true">Currently unavailable</span>`}
-      ${social ? '<a class="pricing-small-link" href="/social-tariff/">Read social tariff terms</a>' : ""}
+      ${active && plan.is_free_plan ? `<a class="pricing-button orange" href="/enquiry/">Start a free enquiry</a>` : active && plan.payment_available ? `<a class="pricing-button ${index === 0 && planType === "standard" ? "orange" : ""} stripe-direct-link" href="/create-checkout-session?plan=${encodeURIComponent(plan.id)}">${escapeHtml(plan.button_label || "Buy now securely")}</a>` : `<span class="pricing-button disabled" aria-disabled="true">Currently unavailable</span>`}
+      ${planType === "social tariff" ? '<a class="pricing-small-link" href="/social-tariff/">Read social tariff terms</a>' : ""}
     `;
     return article;
   }
