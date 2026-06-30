@@ -1,5 +1,18 @@
-function buildMicrosoftLogoutUrl(origin, env = {}) {
-  const redirectTarget = `${origin}/signed-out/`;
+function safeReturnTarget(origin, value, fallback = "/signed-out/") {
+  const text = String(value || "").trim();
+  if (!text) return `${origin}${fallback}`;
+
+  try {
+    const resolved = new URL(text, origin);
+    if (resolved.origin !== origin) return `${origin}${fallback}`;
+    return resolved.toString();
+  } catch {
+    return `${origin}${fallback}`;
+  }
+}
+
+function buildMicrosoftLogoutUrl(origin, env = {}, returnTarget) {
+  const redirectTarget = safeReturnTarget(origin, returnTarget);
   const configured = String(env.MICROSOFT_LOGOUT_URL || "").trim();
   if (configured) {
     const url = new URL(configured);
@@ -13,5 +26,6 @@ function buildMicrosoftLogoutUrl(origin, env = {}) {
 
 export async function onRequestGet(context) {
   const url = new URL(context.request.url);
-  return Response.redirect(buildMicrosoftLogoutUrl(url.origin, context.env), 302);
+  const returnTarget = url.searchParams.get("return_to") || "/signed-out/";
+  return Response.redirect(buildMicrosoftLogoutUrl(url.origin, context.env, returnTarget), 302);
 }
