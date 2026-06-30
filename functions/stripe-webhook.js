@@ -46,8 +46,6 @@ const paymentRecord = {
   created: session.created,
 };
 
-console.log("Stripe checkout completed:", paymentRecord);
-
 /*
   Later, this is where we can add:
   - Send an internal email notification

@@ -90,6 +90,22 @@ async function isAllowedAdmin(DB, identity, env) {
   return Boolean(admin);
 }
 
+async function getAdminPermissions(DB, identity) {
+  const admin = await DB.prepare(`SELECT role, permissions FROM admin_users WHERE lower(email) = lower(?)`).bind(identity.email).first();
+  const role = admin?.role || "Auditor";
+  if (role === "Platform Owner") return ["*"];
+  const roleRows = await DB.prepare(`SELECT permission_code FROM role_permissions WHERE role_name = ? ORDER BY permission_code ASC`).bind(role).all();
+  const rolePermissions = (roleRows.results || []).map((row) => row.permission_code).filter(Boolean);
+  let explicit = [];
+  try {
+    const parsed = JSON.parse(admin?.permissions || "[]");
+    explicit = Array.isArray(parsed) ? parsed : [];
+  } catch {
+    explicit = [];
+  }
+  return [...new Set([...rolePermissions, ...explicit])];
+}
+
 async function ensureCustomerAdminColumns(DB) {
   const columns = [
     ["admin_lifetime", "INTEGER DEFAULT 0"],
@@ -119,6 +135,25 @@ async function ensureAuditLog(DB) {
       summary TEXT,
       metadata TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+}
+
+async function ensureRoleTables(DB) {
+  await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS admin_roles (
+      name TEXT PRIMARY KEY,
+      description TEXT,
+      is_system INTEGER DEFAULT 0,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+
+  await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS role_permissions (
+      role_name TEXT,
+      permission_code TEXT,
+      PRIMARY KEY (role_name, permission_code)
     )
   `).run();
 }
@@ -186,9 +221,11 @@ export async function onRequest(context) {
   await ensureAdminUsers(env.DB, env);
 
   if (!(await isAllowedAdmin(env.DB, identity, env))) return json({ error: "Forbidden.", signedInAs: identity.email }, 403);
+  const permissions = await getAdminPermissions(env.DB, identity);
 
   await ensureCustomerAdminColumns(env.DB);
   await ensureAuditLog(env.DB);
+  await ensureRoleTables(env.DB);
 
   const url = new URL(request.url);
   const email = String(url.searchParams.get("email") || "").trim().toLowerCase();
@@ -196,6 +233,9 @@ export async function onRequest(context) {
   if (!email) return json({ error: "Customer email is required." }, 400);
 
   if (request.method === "GET") {
+    if (!(permissions.includes("*") || permissions.includes("manage_users") || permissions.includes("manage_crm"))) {
+      return json({ error: "Forbidden.", section: "customers" }, 403);
+    }
     const customer = await getCustomer(env.DB, email);
 
     if (!customer) return json({ error: "Customer not found." }, 404);
@@ -204,6 +244,9 @@ export async function onRequest(context) {
   }
 
   if (request.method === "POST") {
+    if (!(permissions.includes("*") || permissions.includes("manage_users") || permissions.includes("manage_crm"))) {
+      return json({ error: "Forbidden.", section: "customers" }, 403);
+    }
     const body = await request.json().catch(() => ({}));
 
     const makeLifetime = Boolean(body.admin_lifetime);

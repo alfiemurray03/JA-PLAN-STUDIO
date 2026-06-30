@@ -100,6 +100,22 @@ async function isAllowedAdmin(DB, identity, env) {
   return Boolean(admin);
 }
 
+async function getAdminPermissions(DB, identity) {
+  const admin = await DB.prepare(`SELECT role, permissions FROM admin_users WHERE lower(email) = lower(?)`).bind(identity.email).first();
+  const role = admin?.role || "Auditor";
+  if (role === "Platform Owner") return ["*"];
+  const roleRows = await DB.prepare(`SELECT permission_code FROM role_permissions WHERE role_name = ? ORDER BY permission_code ASC`).bind(role).all();
+  const rolePermissions = (roleRows.results || []).map((row) => row.permission_code).filter(Boolean);
+  let explicit = [];
+  try {
+    const parsed = JSON.parse(admin?.permissions || "[]");
+    explicit = Array.isArray(parsed) ? parsed : [];
+  } catch {
+    explicit = [];
+  }
+  return [...new Set([...rolePermissions, ...explicit])];
+}
+
 async function ensureProfileTable(DB) {
   await DB.prepare(`
     CREATE TABLE IF NOT EXISTS profiles (
@@ -112,6 +128,25 @@ async function ensureProfileTable(DB) {
       support_notes TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+}
+
+async function ensureRoleTables(DB) {
+  await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS admin_roles (
+      name TEXT PRIMARY KEY,
+      description TEXT,
+      is_system INTEGER DEFAULT 0,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+
+  await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS role_permissions (
+      role_name TEXT,
+      permission_code TEXT,
+      PRIMARY KEY (role_name, permission_code)
     )
   `).run();
 }
@@ -137,9 +172,15 @@ export async function onRequest(context) {
       signedInAs: identity.email
     }, 403);
   }
+  const permissions = await getAdminPermissions(env.DB, identity);
 
   if (request.method !== "GET") {
     return json({ error: "Method not allowed." }, 405);
+  }
+
+  await ensureRoleTables(env.DB);
+  if (!(permissions.includes("*") || permissions.includes("manage_users") || permissions.includes("manage_crm"))) {
+    return json({ error: "Forbidden.", section: "customers" }, 403);
   }
 
   await ensureProfileTable(env.DB);
