@@ -15,6 +15,34 @@ export async function onRequest(context) {
   return submitEnquiry(context.request, context.env);
 }
 
+// Verify Turnstile token with Cloudflare siteverify endpoint.
+// Returns true when verification succeeds or when TURNSTILE_SECRET is not configured (useful for dev previews).
+async function verifyTurnstile(token, request, env) {
+  // In production you should ensure TURNSTILE_SECRET exists; we treat missing secret as permissive for non-production previews.
+  if (!env.TURNSTILE_SECRET) return true;
+  if (!token) return false;
+
+  const params = new URLSearchParams();
+  params.set("secret", env.TURNSTILE_SECRET);
+  params.set("response", token);
+
+  const ip = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "";
+  if (ip) params.set("remoteip", ip);
+
+  try {
+    const resp = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      body: params
+    });
+    if (!resp.ok) return false;
+    const data = await resp.json();
+    return Boolean(data && data.success === true);
+  } catch (e) {
+    console.error("Turnstile verification error", e);
+    return false;
+  }
+}
+
 async function submitEnquiry(request, env) {
   let body;
   try {
@@ -23,8 +51,15 @@ async function submitEnquiry(request, env) {
     return json({ ok: false, message: "Please check the form and try again." }, 400);
   }
 
+  // Honeypot: keep existing behaviour (short-circuit)
   if (clean(body.website, 100)) {
     return json({ ok: true, reference: "JA-RECEIVED" });
+  }
+
+  // Server-side Turnstile verification: ensure token is valid before processing
+  const token = body["cf-turnstile-response"] || "";
+  if (!(await verifyTurnstile(token, request, env))) {
+    return json({ ok: false, message: "Verification failed. Please try again." }, 400);
   }
 
   const submittedAt = Number(body.startedAt);
