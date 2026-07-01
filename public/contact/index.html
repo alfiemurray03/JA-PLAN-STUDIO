@@ -4,8 +4,8 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Contact Us | JA Experiences & Discovery</title>
   <meta name="description" content="Contact JA Experiences & Discovery for customer support, general enquiries, complaints and service information.">
-  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/css/ja-travel-rebuild.css?v=20260621-1">
+  <link rel="preconnect" href="https://challenges.cloudflare.com"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/css/ja-travel-rebuild.css?v=20260701-1">
 </head>
 <body data-page="contact"><div id="siteShellHeader"></div><main id="main">
   <section class="page-hero"><div class="container"><span class="eyebrow">Contact Us</span><h1>How can we help?</h1><p>Use this form for general enquiries, customer support, plans and pricing, social tariff questions, website issues, data protection or complaints.</p></div></section>
@@ -26,15 +26,20 @@
           <label>Full name *<input name="name" type="text" autocomplete="name" maxlength="100" required></label>
           <label>Email address *<input name="email" type="email" autocomplete="email" maxlength="160" required></label>
           <label>Telephone number optional<input name="telephone" type="tel" autocomplete="tel" maxlength="40"></label>
-          <label>Enquiry type *<select name="enquiryType" required><option value="">Please select</option><option>General enquiry</option><option>Customer support</option><option>Activities and experiences</option><option>Plans and pricing</option><option>Social tariff</option><option>Website issue</option><option>Data protection</option><option>Complaint</option></select></label>
+          <label>Category *<select name="category" required><option value="">Please select</option><option>General Enquiry</option><option>Sales</option><option>Billing</option><option>Technical Support</option><option>Partnerships</option><option>Accessibility</option><option>Data Protection</option><option>Safeguarding</option><option>Complaints</option><option>Feedback</option><option>Other</option></select></label>
+          <label>Subject *<input name="subject" type="text" maxlength="180" required></label>
+          <label>Booking reference optional<input name="bookingReference" type="text" maxlength="80" autocomplete="off"></label>
+          <label>Order reference optional<input name="orderReference" type="text" maxlength="80" autocomplete="off"></label>
         </div>
         <label>Message *<textarea name="message" rows="8" maxlength="4000" required></textarea></label>
         <label class="checkbox-label"><input name="termsAccepted" type="checkbox" required> I accept the <a href="/policies/terms-of-service" target="_blank" rel="noopener">Terms of Service</a>. *</label>
         <label class="checkbox-label"><input name="privacyAccepted" type="checkbox" required> I acknowledge the <a href="/policies/privacy-notice" target="_blank" rel="noopener">Privacy Notice</a> and understand that JA Group Services Ltd may use this information to respond to my enquiry. *</label>
         <label class="checkbox-label"><input name="marketingConsent" type="checkbox"> I would like to receive occasional JA Experiences &amp; Discovery service updates and understand I can withdraw consent at any time.</label>
-        <button class="button accent" type="submit">Send message</button>
+        <div id="turnstileStatus" class="form-status" role="status" aria-live="polite" tabindex="-1"></div>
+        <div id="turnstileContainer" class="turnstile-container" aria-label="Security verification"></div>
+        <button class="button accent" type="submit">Send Message</button>
       </form>
       <div id="formStatus" class="form-status" role="status" aria-live="polite"></div>
     </div>
   </div></section>
-</main><div id="siteShellFooter"></div><script src="/assets/js/site-shell.js?v=20260629-3"></script><script src="/assets/js/enquiry-form.js?v=20260621-1"></script></body></html>
+</main><div id="siteShellFooter"></div><script src="/assets/js/site-shell.js?v=20260629-3"></script><script src="/assets/js/enquiry-form.js?v=20260701-1"></script></body></html>

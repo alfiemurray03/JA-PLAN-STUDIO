@@ -1,119 +1,108 @@
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.querySelector("#customerForm");
   const status = document.querySelector("#formStatus");
+  const turnstileContainer = document.querySelector("#turnstileContainer");
+  const turnstileStatus = document.querySelector("#turnstileStatus");
   if (!form || !status) return;
 
   const startedAt = form.querySelector('[name="startedAt"]');
   if (startedAt) startedAt.value = String(Date.now());
+  const idempotencyKey = crypto.randomUUID();
+  let turnstileEnabled = false;
+  let turnstileAvailable = true;
+  let turnstileToken = "";
+  let widgetId = null;
 
   const params = new URLSearchParams(window.location.search);
   const destination = params.get("destination");
   if (destination && form.elements.destination) form.elements.destination.value = destination;
 
-  // --- Turnstile: attempt to load public site key from /site-settings and render widget ---
-  (async function initTurnstile() {
+  function setStatus(element, message, isError = false) {
+    if (!element) return;
+    element.className = isError ? "form-status error" : "form-status";
+    element.textContent = message;
+  }
+
+  function waitForTurnstile() {
+    return new Promise((resolve, reject) => {
+      if (window.turnstile) return resolve(window.turnstile);
+      const existing = document.querySelector('script[data-ja-turnstile="true"]');
+      if (existing) {
+        existing.addEventListener("load", () => resolve(window.turnstile), { once: true });
+        existing.addEventListener("error", reject, { once: true });
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+      script.async = true;
+      script.defer = true;
+      script.dataset.jaTurnstile = "true";
+      script.addEventListener("load", () => resolve(window.turnstile), { once: true });
+      script.addEventListener("error", reject, { once: true });
+      document.head.appendChild(script);
+    });
+  }
+
+  async function initialiseTurnstile() {
     try {
-      const resp = await fetch("/site-settings", { cache: "no-store" });
-      if (!resp.ok) {
-        console.info("Turnstile: /site-settings unavailable", resp.status);
+      const response = await fetch("/api/enquiries", { headers: { Accept: "application/json" }, cache: "no-store" });
+      const result = await response.json();
+      if (!response.ok || !result.ok) throw new Error("Security configuration could not be loaded.");
+      turnstileEnabled = Boolean(result.turnstile?.enabled);
+      turnstileAvailable = result.turnstile?.available !== false;
+      if (!turnstileAvailable) {
+        setStatus(turnstileStatus, "The security check is temporarily unavailable. Please try again later.", true);
         return;
       }
-      const settings = await resp.json();
-      // Two places we may find the key: top-level or inside branding
-      const siteKey = (settings && (settings.turnstile_site_key || settings.branding?.turnstile_site_key)) || "";
-      if (!siteKey) {
-        console.info("Turnstile: site key not configured in site-settings");
+      if (!turnstileEnabled) {
+        if (turnstileContainer) turnstileContainer.hidden = true;
         return;
       }
-
-      // Ensure submit button exists before injecting the widget
-      const submit = form.querySelector('button[type="submit"]');
-      if (!submit) {
-        console.warn("Turnstile: submit button not found; will not render widget.");
-        return;
-      }
-
-      // Insert a container for the Turnstile widget (before the submit button)
-      let container = form.querySelector("#turnstileContainer");
-      if (!container) {
-        container = document.createElement("div");
-        container.id = "turnstileContainer";
-        submit.parentNode.insertBefore(container, submit);
-      }
-
-      // Create the widget element now (so there's something in DOM for auto-init)
-      container.innerHTML = `<div class="cf-turnstile" data-sitekey="${siteKey}"></div>`;
-
-      // Add the Turnstile script if it's not present
-      let script = document.querySelector('script[src^="https://challenges.cloudflare.com/turnstile/v0/api.js"]');
-      let scriptLoaded = false;
-      if (!script) {
-        script = document.createElement("script");
-        script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
-        script.defer = true;
-        script.async = true;
-        script.onload = () => {
-          scriptLoaded = true;
-          renderTurnstile();
-        };
-        script.onerror = (e) => console.warn("Turnstile script failed to load", e);
-        document.head.appendChild(script);
-      } else {
-        // If the script tag exists, check if the API is already available
-        scriptLoaded = !!window.turnstile;
-      }
-
-      function renderTurnstile() {
-        try {
-          const el = container.querySelector('.cf-turnstile');
-          if (!el) {
-            container.innerHTML = `<div class="cf-turnstile" data-sitekey="${siteKey}"></div>`;
-          }
-
-          // If the Turnstile API is present, render programmatically to handle cases
-          // where the script loaded before we inserted the element.
-          if (window.turnstile && typeof window.turnstile.render === 'function') {
-            try {
-              // Clear any previous rendered widget inside the element first (safe no-op)
-              // Use the element itself as the target
-              window.turnstile.render(container.querySelector('.cf-turnstile'), { sitekey: siteKey });
-            } catch (e) {
-              console.warn('Turnstile: programmatic render failed', e);
-            }
-          } else {
-            // If turnstile API not present yet, the script's auto-init will handle it when it loads.
-            if (!scriptLoaded) {
-              // wait for onload to call renderTurnstile
-            }
-          }
-        } catch (e) {
-          console.warn('Turnstile: widget render error', e);
+      const turnstile = await waitForTurnstile();
+      widgetId = turnstile.render(turnstileContainer, {
+        sitekey: result.turnstile.siteKey,
+        action: "contact_enquiry",
+        callback(token) {
+          turnstileToken = token;
+          setStatus(turnstileStatus, "Security check completed.");
+        },
+        "expired-callback"() {
+          turnstileToken = "";
+          setStatus(turnstileStatus, "The security check expired. Please complete it again.", true);
+        },
+        "error-callback"() {
+          turnstileToken = "";
+          setStatus(turnstileStatus, "The security check could not be completed. Please try again.", true);
         }
-      }
-
-      // If API already available, try to render immediately
-      if (window.turnstile && typeof window.turnstile.render === 'function') {
-        renderTurnstile();
-      }
-    } catch (e) {
-      // Non-fatal — proceed without Turnstile if settings unavailable or network fails
-      console.warn("Turnstile initialisation error", e);
+      });
+    } catch {
+      turnstileAvailable = false;
+      setStatus(turnstileStatus, "The security check is temporarily unavailable. Please try again later.", true);
     }
-  })();
-  // --- End Turnstile init ---
+  }
 
-  form.addEventListener("submit", async event => {
+  initialiseTurnstile();
+
+  form.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!form.reportValidity()) return;
-
     const submit = form.querySelector('button[type="submit"]');
-    const originalText = submit ? submit.textContent : "";
-    if (submit) {
-      submit.disabled = true;
-      submit.textContent = "Sending...";
+    const originalText = submit.textContent;
+
+    if (!turnstileAvailable) {
+      setStatus(status, "The security check is temporarily unavailable. Please try again later.", true);
+      turnstileStatus?.focus();
+      return;
     }
-    status.className = "form-status";
-    status.textContent = "";
+    if (turnstileEnabled && !turnstileToken) {
+      setStatus(turnstileStatus, "Complete the security check before sending your message.", true);
+      turnstileContainer?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
+    submit.disabled = true;
+    submit.textContent = "Sending…";
+    setStatus(status, "Sending your enquiry…");
 
     const data = Object.fromEntries(new FormData(form).entries());
     data.socialTariff = Boolean(form.elements.socialTariff?.checked);
@@ -122,53 +111,44 @@ document.addEventListener("DOMContentLoaded", () => {
     data.termsAccepted = Boolean(form.elements.termsAccepted?.checked);
     data.privacyAccepted = Boolean(form.elements.privacyAccepted?.checked);
     data.marketingConsent = Boolean(form.elements.marketingConsent?.checked);
-
-    // Add the Turnstile token (if present). The widget will populate an input named "cf-turnstile-response".
-    const tokenInput = document.querySelector('[name="cf-turnstile-response"]');
-    data["cf-turnstile-response"] = tokenInput ? tokenInput.value : "";
+    data.turnstileToken = turnstileToken;
+    data.idempotencyKey = idempotencyKey;
 
     if (data.supportNeeds?.trim() && !data.specialCategoryConsent) {
-      status.className = "form-status error";
-      status.textContent = "Please confirm the sensitive-information consent, or remove the accessibility information.";
-      if (submit) {
-        submit.disabled = false;
-        submit.textContent = originalText;
-      }
-      return;
-    }
-
-    if (!data.termsAccepted || !data.privacyAccepted) {
-      status.className = "form-status error";
-      status.textContent = "Please confirm the Terms of Service and Privacy Notice before sending your enquiry.";
-      if (submit) {
-        submit.disabled = false;
-        submit.textContent = originalText;
-      }
+      setStatus(status, "Please confirm the sensitive-information consent, or remove the accessibility information.", true);
+      submit.disabled = false;
+      submit.textContent = originalText;
       return;
     }
 
     try {
       const response = await fetch("/api/enquiries", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify(data)
       });
       const contentType = response.headers.get("content-type") || "";
-      const result = contentType.includes("application/json")
-        ? await response.json()
-        : { ok: false, message: "The online form could not be sent. Please try again later." };
+      const result = contentType.includes("application/json") ? await response.json() : { ok: false, message: "The online form could not be sent. Please try again later." };
       if (!response.ok || !result.ok) throw new Error(result.message || "The form could not be sent.");
 
       form.hidden = true;
       status.className = "form-status success";
-      status.innerHTML = `<strong>Message sent.</strong><br>Your reference is <strong>${result.reference}</strong>.`;
+      status.replaceChildren();
+      const heading = document.createElement("strong");
+      heading.textContent = result.duplicate ? "Enquiry already received." : "Message sent.";
+      const reference = document.createElement("strong");
+      reference.textContent = result.reference;
+      status.append(heading, document.createElement("br"), "Your reference is ", reference, ".");
+      status.setAttribute("tabindex", "-1");
+      status.focus();
     } catch (error) {
-      status.className = "form-status error";
-      status.textContent = error.message;
-      if (submit) {
-        submit.disabled = false;
-        submit.textContent = originalText;
+      setStatus(status, error.message, true);
+      if (turnstileEnabled && widgetId !== null && window.turnstile) {
+        window.turnstile.reset(widgetId);
+        turnstileToken = "";
       }
+      submit.disabled = false;
+      submit.textContent = originalText;
     }
   });
 });

@@ -10,25 +10,17 @@ Production domain: `experiences.jagroupservices.co.uk`
 python -m http.server 4174 --directory public
 ```
 
-Static previews do not run the enquiry API. Use Wrangler to test the complete Worker:
+Static previews do not run Pages Functions. Use Wrangler Pages to test the complete application:
 
 ```powershell
-Copy-Item .dev.vars.example .dev.vars
-npx wrangler dev
+npx wrangler pages dev public --d1 DB=ja-group-services
 ```
 
 ## Enquiry email setup
 
-The form at `/contact/` submits to the Cloudflare Worker endpoint `/api/enquiries`.
+Production is served by **Cloudflare Pages with Pages Functions**. The form at `/contact/` submits to the single Pages Functions endpoint `/api/enquiries`; the standalone Worker contains no enquiry route.
 
-1. Verify `experiences.jagroupservices.co.uk` or the chosen sending subdomain in Resend.
-2. Create a Resend API key.
-3. Add the production secrets:
-
-```powershell
-npx wrangler secret put RESEND_API_KEY
-npx wrangler secret put ENQUIRY_FROM_EMAIL
-```
+The enquiry system reuses the email provider configured in the Administrator Control Centre. Cloudflare Pages environment variables remain supported as a fallback, including `RESEND_API_KEY`, `ENQUIRY_FROM_EMAIL` and `ENQUIRY_TO_EMAIL`.
 
 `ENQUIRY_FROM_EMAIL` should use the verified domain, for example:
 
@@ -36,7 +28,16 @@ npx wrangler secret put ENQUIRY_FROM_EMAIL
 JA Experiences & Discovery <enquiries@experiences.jagroupservices.co.uk>
 ```
 
-`ENQUIRY_TO_EMAIL` is defined in `wrangler.jsonc` and currently points to `hello@jagroupservices.co.uk`.
+The Administrator Control Centre email settings take precedence over environment-variable fallbacks.
+
+## Turnstile setup
+
+Configure these values in the production Cloudflare Pages project:
+
+- `TURNSTILE_SITE_KEY` — public widget site key. The existing `turnstile_site_key` database setting is also supported.
+- `TURNSTILE_SECRET_KEY` — encrypted secret used only by Pages Functions. The existing `TURNSTILE_SECRET` name remains supported.
+
+For a local or `.pages.dev` preview without Turnstile credentials, verification is disabled automatically. `TURNSTILE_DISABLED=true` may be used only for an explicitly non-production preview. Production fails safely if the keys are missing.
 
 ## Generate the XML sitemap
 
@@ -46,15 +47,13 @@ node scripts/generate-sitemap.mjs
 
 ## Deploy
 
-```powershell
-npx wrangler deploy
-```
+Push `main` to deploy through the connected Cloudflare Pages project.
 
 ## Launch notes
 
 - Activity bookings are completed with the named third-party provider.
 - No flights, visas, transfers, transport or package holidays are sold.
-- The enquiry and contact forms require the Cloudflare Worker email secrets described above.
+- The enquiry and contact forms require the Cloudflare Pages Turnstile and email settings described above.
 - Headout content will be added when the relevant approved partner material is ready.
 - The Privacy Policy, Terms and Conditions and Cookie Policy pages are holding pages and require final approved policies before the relevant public service features are fully launched.
 - No selected partner hotels are currently listed.

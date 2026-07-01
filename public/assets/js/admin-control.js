@@ -28,6 +28,7 @@ const sectionTitles = {
   branding: "Branding",
   policies: "Policies",
   support: "Support",
+  enquiries: "Contact Enquiries",
   system: "System",
   datarequests: "Data Protection Requests",
   systemreports: "System Reports",
@@ -57,6 +58,7 @@ const sectionDescriptions = {
   systemreports: "Review customer-reported website and account issues.",
   closures: "Process account closure requests safely and consistently.",
   support: "Review and manage customer support enquiries.",
+  enquiries: "Manage contact enquiries, assignments, replies and internal notes.",
   plans: "Configure service plans, prices and public availability.",
   stripe: "Review Stripe configuration and connection status.",
   email: "Configure outbound email and test notifications.",
@@ -100,7 +102,9 @@ document.addEventListener("DOMContentLoaded", () => {
   bindAdminActions();
   bindFavouriteActions();
   bindWorkspaceActions();
-  loadSection("overview");
+  const requestedSection = new URLSearchParams(window.location.search).get("section");
+  if (sectionTitles[requestedSection]) state.initialWorkspaceApplied = true;
+  loadSection(sectionTitles[requestedSection] ? requestedSection : "overview");
 });
 
 function iconSvg(name) {
@@ -357,14 +361,16 @@ function bindAdminActions() {
 }
 
 async function api(section, options = {}) {
-  const response = await fetch(`/admin/api?section=${encodeURIComponent(section)}`, {
+  const { query = {}, ...fetchOptions } = options;
+  const params = new URLSearchParams({ section, ...query });
+  const response = await fetch(`/admin/api?${params.toString()}`, {
     credentials: "include",
     cache: "no-store",
     headers: {
       "Accept": "application/json",
       "Content-Type": "application/json"
     },
-    ...options
+    ...fetchOptions
   });
 
   const data = await response.json().catch(() => ({}));
@@ -401,7 +407,8 @@ async function loadSection(section) {
       return;
     }
 
-    const data = await api(section);
+    const reference = section === "enquiries" ? new URLSearchParams(window.location.search).get("reference") : "";
+    const data = await api(section, { query: reference ? { reference } : {} });
     state.data[section] = data;
     if (section === "plans") {
       state.planDraft = null;
@@ -688,6 +695,7 @@ function renderSection(section, data) {
   if (section === "branding") renderBranding(data.branding);
   if (section === "policies") renderPolicies(data.policies);
   if (section === "support") renderSupport(data.support);
+  if (section === "enquiries") renderEnquiries(data.enquiries, data.thread, data.filters);
   if (section === "comingsoon") renderComingSoon(data.comingsoon);
   if (section === "maintenance") renderMaintenance(data.maintenance);
   if (section === "system") renderSystem(data.system);
@@ -2091,6 +2099,122 @@ async function togglePolicyPublished(slug, isPublished) {
   state.selectedPolicy = slug;
   renderPolicies(data.policies);
   setSaved("policySaved", isPublished ? "Policy published. The public URL is now live." : "Policy unpublished. The public URL now returns 404.");
+}
+
+function renderEnquiries(items = [], selectedThread = null, filters = {}) {
+  const statuses = ["New", "Open", "In Progress", "Awaiting Customer", "Resolved", "Closed"];
+  const categories = ["General Enquiry", "Sales", "Billing", "Technical Support", "Partnerships", "Accessibility", "Data Protection", "Safeguarding", "Complaints", "Feedback", "Other"];
+  const rows = items.map((item) => `
+    <tr>
+      <td><strong>${escapeHtml(item.reference)}</strong><span>${escapeHtml(item.subject || "No subject")}</span></td>
+      <td>${escapeHtml(item.name || "Unknown")}<span>${escapeHtml(item.email || "")}</span></td>
+      <td>${escapeHtml(item.category || "Other")}</td>
+      <td>${badge(item.priority || "Normal", item.priority === "Urgent" ? "red" : item.priority === "High" ? "amber" : "")}</td>
+      <td>${badge(item.status || "New", ["Resolved", "Closed"].includes(item.status) ? "green" : "blue")}</td>
+      <td>${escapeHtml(item.assigned_admin || "Unassigned")}</td>
+      <td>${escapeHtml(item.notification_status || "Pending")}</td>
+      <td><button class="mini-button" type="button" data-open-enquiry="${escapeAttr(item.reference)}">Open</button></td>
+    </tr>
+  `).join("");
+
+  adminPanel.innerHTML = `
+    <div class="admin-card">
+      <div class="section-head"><div><h2>Contact Enquiries</h2><p>Search, assign and manage customer conversations. Internal notes remain visible to administrators only.</p></div></div>
+      <form class="admin-form" id="enquiryFilters">
+        ${input("Search", "enquiry_search", "search")}
+        <label class="admin-label">Status<select id="enquiry_filter_status"><option value="">All statuses</option>${statuses.map((value) => `<option ${filters.status === value ? "selected" : ""}>${escapeHtml(value)}</option>`).join("")}</select></label>
+        <label class="admin-label">Priority<select id="enquiry_filter_priority"><option value="">All priorities</option>${priorities.map((value) => `<option ${filters.priority === value ? "selected" : ""}>${escapeHtml(value)}</option>`).join("")}</select></label>
+        <label class="admin-label">Category<select id="enquiry_filter_category"><option value="">All categories</option>${categories.map((value) => `<option ${filters.category === value ? "selected" : ""}>${escapeHtml(value)}</option>`).join("")}</select></label>
+        <button class="admin-button" type="submit">Apply filters</button>
+      </form>
+      ${table(["Enquiry", "Customer", "Category", "Priority", "Status", "Assigned", "Email", ""], rows)}
+    </div>
+  `;
+  setValue("enquiry_search", filters.search || "");
+  document.getElementById("enquiryFilters")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const query = {
+      search: getValue("enquiry_search"), status: getValue("enquiry_filter_status"),
+      priority: getValue("enquiry_filter_priority"), category: getValue("enquiry_filter_category")
+    };
+    const data = await api("enquiries", { query });
+    state.data.enquiries = data;
+    renderEnquiries(data.enquiries || [], null, data.filters || query);
+  });
+  document.querySelectorAll("[data-open-enquiry]").forEach((button) => button.addEventListener("click", () => openEnquiry(button.dataset.openEnquiry)));
+  if (selectedThread) openEnquiryWorkspace(selectedThread);
+}
+
+async function openEnquiry(reference) {
+  try {
+    const data = await api("enquiries", { query: { reference } });
+    state.data.enquiries = data;
+    openEnquiryWorkspace(data.thread);
+  } catch (error) {
+    adminPanel.insertAdjacentHTML("afterbegin", renderInlineStatus("error", error.message));
+  }
+}
+
+function openEnquiryWorkspace(thread) {
+  if (!thread?.enquiry) return;
+  const item = thread.enquiry;
+  const statuses = ["New", "Open", "In Progress", "Awaiting Customer", "Resolved", "Closed"];
+  const messages = (thread.messages || []).map((message) => `
+    <article class="list-card">
+      <div class="section-head"><div><strong>${message.is_internal ? "Internal note" : message.author_type === "administrator" ? "Administrator" : "Customer"}</strong><p>${escapeHtml(message.author_email || "")}</p></div><span>${formatDate(message.created_at)}</span></div>
+      <p style="white-space:pre-wrap">${escapeHtml(message.message)}</p>
+      ${message.notification_status === "Failed" ? renderInlineStatus("error", "The related email notification failed. The message remains saved.") : ""}
+    </article>
+  `).join("");
+  const failedNotifications = (thread.notifications || []).filter((notification) => notification.status === "Failed");
+
+  openModal(`
+    <div class="modal-head"><div><h2>${escapeHtml(item.reference)}: ${escapeHtml(item.subject)}</h2><p>${escapeHtml(item.name)} · ${escapeHtml(item.email)} · ${escapeHtml(item.category)}</p></div><button class="drawer-close" type="button" data-action="close-modal" aria-label="Close">×</button></div>
+    <div class="support-request-summary">
+      <div><span>Status</span><strong>${escapeHtml(item.status)}</strong></div><div><span>Priority</span><strong>${escapeHtml(item.priority)}</strong></div>
+      <div><span>Telephone</span><strong>${escapeHtml(item.telephone || "Not provided")}</strong></div><div><span>Assigned</span><strong>${escapeHtml(item.assigned_admin || "Unassigned")}</strong></div>
+      <div><span>Booking reference</span><strong>${escapeHtml(item.booking_reference || "Not provided")}</strong></div><div><span>Order reference</span><strong>${escapeHtml(item.order_reference || "Not provided")}</strong></div>
+    </div>
+    ${failedNotifications.length ? renderInlineStatus("error", `${failedNotifications.length} email notification${failedNotifications.length === 1 ? " has" : "s have"} failed. The enquiry and messages remain saved.`) : ""}
+    <section class="support-message-panel"><h3>Conversation</h3>${messages || emptyCard("No messages recorded.")}</section>
+    <form class="admin-form single support-workspace-form" id="enquiryWorkspaceForm">
+      <div class="form-grid">
+        <label class="admin-label">Status<select id="enquiry_workspace_status">${statuses.map((value) => `<option ${item.status === value ? "selected" : ""}>${escapeHtml(value)}</option>`).join("")}</select></label>
+        <label class="admin-label">Priority<select id="enquiry_workspace_priority">${priorities.map((value) => `<option ${item.priority === value ? "selected" : ""}>${escapeHtml(value)}</option>`).join("")}</select></label>
+        ${input("Assigned administrator email", "enquiry_workspace_assigned", "email")}
+      </div>
+      ${textarea("Reply to customer", "enquiry_workspace_reply")}
+      ${textarea("Internal note (administrators only)", "enquiry_workspace_note")}
+      <button class="admin-button" type="submit">Save enquiry</button>
+      <div id="enquiryWorkspaceSaved" class="admin-success" role="status" hidden></div>
+    </form>
+  `);
+  setValue("enquiry_workspace_assigned", item.assigned_admin || "");
+  document.getElementById("enquiryWorkspaceForm")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = event.currentTarget.querySelector('button[type="submit"]');
+    button.disabled = true;
+    try {
+      const data = await api("enquiries", {
+        method: "POST",
+        body: JSON.stringify({
+          reference: item.reference,
+          status: getValue("enquiry_workspace_status"),
+          priority: getValue("enquiry_workspace_priority"),
+          assignedAdmin: getValue("enquiry_workspace_assigned"),
+          reply: getValue("enquiry_workspace_reply"),
+          internalNote: getValue("enquiry_workspace_note")
+        })
+      });
+      state.data.enquiries = { ...(state.data.enquiries || {}), enquiries: data.enquiries || [] };
+      if (state.currentSection === "enquiries") renderEnquiries(data.enquiries || [], null, {});
+      openEnquiryWorkspace(data.thread);
+      setSaved("enquiryWorkspaceSaved", "Enquiry updated successfully.");
+    } catch (error) {
+      setSaved("enquiryWorkspaceSaved", error.message, true);
+      button.disabled = false;
+    }
+  });
 }
 
 function renderSupport(items = []) {

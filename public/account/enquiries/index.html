@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>My Enquiries | JA Experiences &amp; Discovery</title>
+  <meta name="description" content="View and continue your JA Experiences & Discovery enquiries securely.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/account-enquiries.css?v=20260701-1">
+</head>
+<body>
+  <a class="skip-link" href="#mainContent">Skip to enquiries</a>
+  <header class="account-header"><div class="account-wrap header-inner"><a class="account-brand" href="/account/"><span aria-hidden="true">JA</span><strong>JA Experiences &amp; Discovery</strong></a><nav aria-label="Account"><a href="/account/">Account home</a><a href="/enquiry/">New enquiry</a><a href="/account/logout">Sign out</a></nav></div></header>
+  <main id="mainContent" class="account-wrap account-main">
+    <header class="page-heading"><span>Customer account</span><h1>My Enquiries</h1><p>View your enquiry status, read replies and continue conversations securely.</p></header>
+    <div id="enquiryStatus" class="notice" role="status" aria-live="polite">Loading your enquiries…</div>
+    <div class="enquiry-layout">
+      <section aria-labelledby="enquiryListHeading"><h2 id="enquiryListHeading">Your enquiries</h2><div id="enquiryList" class="enquiry-list"></div></section>
+      <section id="threadPanel" class="thread-panel" aria-labelledby="threadHeading" hidden><h2 id="threadHeading">Conversation</h2><div id="threadSummary"></div><div id="threadMessages" class="thread-messages"></div><form id="replyForm"><label for="customerReply">Reply</label><textarea id="customerReply" rows="6" maxlength="6000" required></textarea><button type="submit">Send reply</button><div id="replyStatus" class="notice" role="status" aria-live="polite"></div></form></section>
+    </div>
+  </main>
+  <script src="/assets/js/account-enquiries.js?v=20260701-1"></script>
+</body>
+</html>

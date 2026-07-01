@@ -502,6 +502,8 @@ tr:last-child td { border-bottom: 0; }
 .form-card input, .form-card select, .form-card textarea { width: 100%; padding: 12px 13px; border: 1px solid #cbd7df; border-radius: 9px; color: var(--ink); background: white; font: inherit; }
 .form-card input:focus, .form-card select:focus, .form-card textarea:focus { outline: 3px solid rgba(37,103,168,.18); border-color: var(--blue); }
 .form-card textarea { resize: vertical; }
+.turnstile-container { min-height: 65px; margin: 8px 0 14px; }
+.turnstile-container[hidden] { display: none; }
 .checkbox-label { display: flex !important; grid-template-columns: auto 1fr; align-items: flex-start; gap: 10px !important; font-weight: 500 !important; }
 .checkbox-label input { width: 18px; height: 18px; margin-top: 2px; flex: 0 0 auto; }
 
