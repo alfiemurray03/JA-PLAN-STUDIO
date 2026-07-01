@@ -41,7 +41,8 @@ export async function onRequestGet({ env }) {
   await migrateStatusPageContent(env.DB).catch(() => {});
 
   const [theme, branding, affiliate] = await Promise.all([
-    settingMap(env.DB, ["site_theme_mode"], { site_theme_mode: "dark" }).catch(() => ({ site_theme_mode: "dark" })),
+    // Include turnstile_site_key in the requested settings so the frontend can fetch the public site key
+    settingMap(env.DB, ["site_theme_mode", "turnstile_site_key"], { site_theme_mode: "dark", turnstile_site_key: "" }).catch(() => ({ site_theme_mode: "dark", turnstile_site_key: "" })),
     env.DB.prepare(`SELECT * FROM company_branding WHERE id = 'main'`).first().catch(() => null),
     all(env.DB, `
       SELECT id, block_type, title, body, widget_code, cta_label, cta_url, legal_notice, sort_order
@@ -55,6 +56,8 @@ export async function onRequestGet({ env }) {
   return json({
     theme: theme.site_theme_mode || "dark",
     branding: branding || {},
-    affiliate
+    affiliate,
+    // Public Turnstile site key (empty string if not configured). The frontend uses this to render the widget.
+    turnstile_site_key: theme.turnstile_site_key || ""
   });
 }
