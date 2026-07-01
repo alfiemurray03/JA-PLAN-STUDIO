@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!form || !status) return;
 
   const startedAt = form.querySelector('[name="startedAt"]');
-  startedAt.value = String(Date.now());
+  if (startedAt) startedAt.value = String(Date.now());
 
   const params = new URLSearchParams(window.location.search);
   const destination = params.get("destination");
@@ -14,37 +14,90 @@ document.addEventListener("DOMContentLoaded", () => {
   (async function initTurnstile() {
     try {
       const resp = await fetch("/site-settings", { cache: "no-store" });
-      if (!resp.ok) return;
+      if (!resp.ok) {
+        console.info("Turnstile: /site-settings unavailable", resp.status);
+        return;
+      }
       const settings = await resp.json();
-      // Two possible places to store the key: top-level turnstile_site_key or inside branding
+      // Two places we may find the key: top-level or inside branding
       const siteKey = (settings && (settings.turnstile_site_key || settings.branding?.turnstile_site_key)) || "";
-      if (!siteKey) return;
+      if (!siteKey) {
+        console.info("Turnstile: site key not configured in site-settings");
+        return;
+      }
+
+      // Ensure submit button exists before injecting the widget
+      const submit = form.querySelector('button[type="submit"]');
+      if (!submit) {
+        console.warn("Turnstile: submit button not found; will not render widget.");
+        return;
+      }
 
       // Insert a container for the Turnstile widget (before the submit button)
       let container = form.querySelector("#turnstileContainer");
       if (!container) {
-        const submit = form.querySelector('button[type="submit"]');
         container = document.createElement("div");
         container.id = "turnstileContainer";
-        // put it right before the submit button to keep layout predictable
         submit.parentNode.insertBefore(container, submit);
       }
 
-      // Add the Turnstile script (once)
-      if (!document.querySelector('script[src="https://challenges.cloudflare.com/turnstile/v0/api.js"]')) {
-        const s = document.createElement("script");
-        s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
-        s.defer = true;
-        s.async = true;
-        document.head.appendChild(s);
+      // Create the widget element now (so there's something in DOM for auto-init)
+      container.innerHTML = `<div class="cf-turnstile" data-sitekey="${siteKey}"></div>`;
+
+      // Add the Turnstile script if it's not present
+      let script = document.querySelector('script[src^="https://challenges.cloudflare.com/turnstile/v0/api.js"]');
+      let scriptLoaded = false;
+      if (!script) {
+        script = document.createElement("script");
+        script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+        script.defer = true;
+        script.async = true;
+        script.onload = () => {
+          scriptLoaded = true;
+          renderTurnstile();
+        };
+        script.onerror = (e) => console.warn("Turnstile script failed to load", e);
+        document.head.appendChild(script);
+      } else {
+        // If the script tag exists, check if the API is already available
+        scriptLoaded = !!window.turnstile;
       }
 
-      // Render the widget element (the Turnstile script will auto-initialize elements with class 'cf-turnstile'
-      // but we create the element now with the sitekey)
-      container.innerHTML = `<div class="cf-turnstile" data-sitekey="${siteKey}"></div>`;
+      function renderTurnstile() {
+        try {
+          const el = container.querySelector('.cf-turnstile');
+          if (!el) {
+            container.innerHTML = `<div class="cf-turnstile" data-sitekey="${siteKey}"></div>`;
+          }
+
+          // If the Turnstile API is present, render programmatically to handle cases
+          // where the script loaded before we inserted the element.
+          if (window.turnstile && typeof window.turnstile.render === 'function') {
+            try {
+              // Clear any previous rendered widget inside the element first (safe no-op)
+              // Use the element itself as the target
+              window.turnstile.render(container.querySelector('.cf-turnstile'), { sitekey: siteKey });
+            } catch (e) {
+              console.warn('Turnstile: programmatic render failed', e);
+            }
+          } else {
+            // If turnstile API not present yet, the script's auto-init will handle it when it loads.
+            if (!scriptLoaded) {
+              // wait for onload to call renderTurnstile
+            }
+          }
+        } catch (e) {
+          console.warn('Turnstile: widget render error', e);
+        }
+      }
+
+      // If API already available, try to render immediately
+      if (window.turnstile && typeof window.turnstile.render === 'function') {
+        renderTurnstile();
+      }
     } catch (e) {
-      // Non-fatal — proceed without Turnstile if settings unavailable
-      console.warn("Turnstile not initialised", e);
+      // Non-fatal — proceed without Turnstile if settings unavailable or network fails
+      console.warn("Turnstile initialisation error", e);
     }
   })();
   // --- End Turnstile init ---
@@ -54,9 +107,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!form.reportValidity()) return;
 
     const submit = form.querySelector('button[type="submit"]');
-    const originalText = submit.textContent;
-    submit.disabled = true;
-    submit.textContent = "Sending...";
+    const originalText = submit ? submit.textContent : "";
+    if (submit) {
+      submit.disabled = true;
+      submit.textContent = "Sending...";
+    }
     status.className = "form-status";
     status.textContent = "";
 
@@ -75,16 +130,20 @@ document.addEventListener("DOMContentLoaded", () => {
     if (data.supportNeeds?.trim() && !data.specialCategoryConsent) {
       status.className = "form-status error";
       status.textContent = "Please confirm the sensitive-information consent, or remove the accessibility information.";
-      submit.disabled = false;
-      submit.textContent = originalText;
+      if (submit) {
+        submit.disabled = false;
+        submit.textContent = originalText;
+      }
       return;
     }
 
     if (!data.termsAccepted || !data.privacyAccepted) {
       status.className = "form-status error";
       status.textContent = "Please confirm the Terms of Service and Privacy Notice before sending your enquiry.";
-      submit.disabled = false;
-      submit.textContent = originalText;
+      if (submit) {
+        submit.disabled = false;
+        submit.textContent = originalText;
+      }
       return;
     }
 
@@ -106,8 +165,10 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (error) {
       status.className = "form-status error";
       status.textContent = error.message;
-      submit.disabled = false;
-      submit.textContent = originalText;
+      if (submit) {
+        submit.disabled = false;
+        submit.textContent = originalText;
+      }
     }
   });
 });
