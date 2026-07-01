@@ -4,6 +4,8 @@ Public website for **JA Experiences & Discovery**, a trading division and servic
 
 Production domain: `experiences.jagroupservices.co.uk`
 
+Administrator authentication and Access branding deployment steps are documented in [docs/CLOUDFLARE-ACCESS-ADMIN-LOGIN.md](docs/CLOUDFLARE-ACCESS-ADMIN-LOGIN.md).
+
 ## Local preview
 
 ```powershell
