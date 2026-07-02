@@ -83,6 +83,24 @@ async function decryptPin(env, ciphertext, iv) {
   return new TextDecoder().decode(plaintext);
 }
 
+async function createSupportPinRecord(DB, env, email, actorEmail, pin = null) {
+  const supportPin = pin || generatePin();
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+  const payload = JSON.stringify([{ event: "generated", at: new Date().toISOString(), actor: actorEmail }]);
+  const encrypted = await encryptPin(env, supportPin);
+  await DB.prepare(`INSERT INTO customer_support_pins (id, email, pin_hash, pin_ciphertext, pin_iv, pin_last4, status, expires_at, audit_history) VALUES (?, ?, ?, ?, ?, ?, 'Active', ?, ?)`).bind(
+    crypto.randomUUID(),
+    email,
+    await hashPin(supportPin),
+    encrypted.ciphertext,
+    encrypted.iv,
+    supportPin.slice(-4),
+    expiresAt,
+    payload
+  ).run();
+  return { pin: supportPin, expiresAt };
+}
+
 function serializePinRow(row) {
   return row ? {
     id: row.id,
@@ -114,14 +132,8 @@ export async function onRequest(context) {
       active.active_pin = await decryptPin(env, active.pin_ciphertext, active.pin_iv);
     }
     if (!active || !active.active_pin) {
-      const pin = generatePin();
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-      const payload = JSON.stringify([{ event: "generated", at: new Date().toISOString(), actor: identity.email }]);
-      const encrypted = await encryptPin(env, pin);
-      await env.DB.prepare(`INSERT INTO customer_support_pins (id, email, pin_hash, pin_ciphertext, pin_iv, pin_last4, status, expires_at, audit_history) VALUES (?, ?, ?, ?, ?, ?, 'Active', ?, ?)`).bind(
-        crypto.randomUUID(), identity.email, await hashPin(pin), encrypted.ciphertext, encrypted.iv, pin.slice(-4), expiresAt, payload
-      ).run();
-      active = { id: null, pin_last4: pin.slice(-4), status: "Active", expires_at: expiresAt, used_at: null, revoked_at: null, revoked_by: null, last_used_at: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), active_pin: pin, generated: true };
+      const created = await createSupportPinRecord(env.DB, env, identity.email, identity.email);
+      active = { id: null, pin_last4: created.pin.slice(-4), status: "Active", expires_at: created.expiresAt, used_at: null, revoked_at: null, revoked_by: null, last_used_at: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), active_pin: created.pin, generated: true };
       pins = [active];
       return json({ pins });
     }
@@ -133,13 +145,7 @@ export async function onRequest(context) {
     const action = clean(body.action, 20);
     const id = clean(body.id, 120);
     if (action === "generate") {
-      const pin = generatePin();
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-      const payload = JSON.stringify([{ event: "generated", at: new Date().toISOString(), actor: identity.email }]);
-      const encrypted = await encryptPin(env, pin);
-      await env.DB.prepare(`INSERT INTO customer_support_pins (id, email, pin_hash, pin_ciphertext, pin_iv, pin_last4, status, expires_at, audit_history) VALUES (?, ?, ?, ?, ?, ?, 'Active', ?, ?)`).bind(
-        crypto.randomUUID(), identity.email, await hashPin(pin), encrypted.ciphertext, encrypted.iv, pin.slice(-4), expiresAt, payload
-      ).run();
+      const { pin, expiresAt } = await createSupportPinRecord(env.DB, env, identity.email, identity.email);
       return json({ pin, expiresAt });
     }
     const current = await env.DB.prepare(`SELECT * FROM customer_support_pins WHERE id = ? AND lower(email) = lower(?)`).bind(id, identity.email).first();
