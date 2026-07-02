@@ -706,13 +706,41 @@ export async function getNativeSession(request, env, realm) {
   const token = readCookie(request, config.cookie);
   if (!token) return null;
   const tokenHash = await hashToken(token);
+  const columns = await getTableColumns(env.DB, config.sessionTable);
+  const selectColumns = [
+    "token_hash",
+    "subject",
+    "tenant_id",
+    "email",
+    "name",
+    "refresh_token_encrypted",
+    "refresh_after",
+    "created_at",
+    "last_seen_at",
+    "idle_expires_at",
+    "absolute_expires_at",
+    "revoked_at",
+    "datetime(refresh_after) <= datetime('now') AS refresh_due"
+  ];
+  for (const column of [
+    "microsoft_object_id",
+    "microsoft_given_name",
+    "microsoft_family_name",
+    "microsoft_preferred_username",
+    "microsoft_locale",
+    "microsoft_job_title",
+    "microsoft_department",
+    "microsoft_company_name",
+    "microsoft_mobile_phone",
+    "microsoft_business_phone",
+    "microsoft_country",
+    "microsoft_preferred_language",
+    "microsoft_photo_url"
+  ]) {
+    if (columns.has(column)) selectColumns.splice(selectColumns.length - 1, 0, column);
+  }
   const row = await env.DB.prepare(`
-    SELECT token_hash, subject, tenant_id, email, name, refresh_token_encrypted, refresh_after,
-      microsoft_object_id, microsoft_given_name, microsoft_family_name, microsoft_preferred_username, microsoft_locale,
-      microsoft_job_title, microsoft_department, microsoft_company_name, microsoft_mobile_phone, microsoft_business_phone,
-      microsoft_country, microsoft_preferred_language, microsoft_photo_url,
-      datetime(refresh_after) <= datetime('now') AS refresh_due,
-      created_at, last_seen_at, idle_expires_at, absolute_expires_at
+    SELECT ${selectColumns.join(", ")}
     FROM ${config.sessionTable}
     WHERE token_hash = ? AND revoked_at IS NULL
       AND datetime(idle_expires_at) > datetime('now')
