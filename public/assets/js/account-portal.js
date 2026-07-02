@@ -92,8 +92,8 @@ async function loadRequests() {
   return portalState.requests;
 }
 
-async function loadPins() {
-  if (portalState.pins) return portalState.pins;
+async function loadPins(force = false) {
+  if (!force && portalState.pins) return portalState.pins;
   const response = await fetch("/account/pins", { credentials: "include", cache: "no-store", headers: { Accept: "application/json" } });
   if (!response.ok) return { pins: [] };
   portalState.pins = await response.json().catch(() => ({ pins: [] }));
@@ -350,7 +350,7 @@ async function renderPage(page) {
   }
 
   if (page === "security") {
-    const pins = portalState.pins || await loadPins().catch(() => ({ pins: [] }));
+    const pins = await loadPins(true).catch(() => ({ pins: [] }));
     pageRoot.innerHTML = `
       <section class="portal-grid">
         <article class="portal-card portal-span-6">
@@ -389,7 +389,7 @@ async function renderPage(page) {
         const action = button.dataset.pinAction;
         const target = pins.pins?.[0]?.id || "";
         if (action === "copy") {
-          const activePin = pins.pins?.[0]?.active_pin;
+          const activePin = pins.pins?.find((pin) => pin.active_pin)?.active_pin;
           if (!activePin) {
             alert("Generate or rotate the PIN first.");
             return;
@@ -409,6 +409,7 @@ async function renderPage(page) {
           alert(data.error || "PIN action failed.");
           return;
         }
+        portalState.pins = null;
         await renderPage("security");
       });
     });
