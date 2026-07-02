@@ -113,6 +113,30 @@ test("middleware redirects an unauthenticated administrator and preserves the de
   assert.equal(response.headers.get("location"), "/admin/login?return_to=%2Fadmin%2Fapi%3Fsection%3Dcustomers");
 });
 
+test("authenticated users bypass the public administrator landing page", async () => {
+  const response = await onRequest({
+    request: new Request("https://experiences.example.test/admin/", {
+      headers: { Cookie: "ja_admin_session=opaque-session" }
+    }),
+    env: environment(new MiddlewareD1()),
+    next: async () => Response.text("landing")
+  });
+  assert.equal(response.status, 302);
+  assert.equal(response.headers.get("location"), "/admin/dashboard/");
+});
+
+test("authenticated users bypass the public customer landing page", async () => {
+  const response = await onRequest({
+    request: new Request("https://experiences.example.test/account/", {
+      headers: { Cookie: "ja_customer_oidc_session=opaque-session" }
+    }),
+    env: environment(new MiddlewareD1()),
+    next: async () => Response.text("landing")
+  });
+  assert.equal(response.status, 302);
+  assert.equal(response.headers.get("location"), "/account/dashboard/");
+});
+
 test("middleware fails closed when native realm configuration is incomplete", async () => {
   const originalConsoleError = console.error;
   console.error = () => {};

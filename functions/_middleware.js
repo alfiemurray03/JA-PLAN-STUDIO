@@ -360,6 +360,8 @@ export async function onRequest(context) {
   let request = withIdentity(context.request, null);
   const url = new URL(request.url);
   const path = url.pathname;
+  const rootLanding = path === "/admin" || path === "/admin/" || path === "/account" || path === "/account/";
+  const landingRealm = path.startsWith("/admin") ? "admin" : path.startsWith("/account") ? "customer" : "";
   const publicAuthPath = new Set([
     "/admin/login", "/admin/login/", "/admin/auth/callback", "/admin/auth/callback/", "/admin/logout", "/admin/logout/",
     "/account/login", "/account/login/", "/account/auth/callback", "/account/auth/callback/", "/account/logout", "/account/logout/"
@@ -372,6 +374,29 @@ export async function onRequest(context) {
 
   if (realm === "admin" && !publicAuthPath) {
     request = withIdentity(request, null);
+  }
+
+  if (rootLanding && landingRealm) {
+    try {
+      const landingIdentity = await getNativeSession(request, env, landingRealm);
+      if (landingIdentity) {
+        const headers = new Headers({
+          Location: landingRealm === "admin" ? "/admin/dashboard/" : "/account/dashboard/",
+          "Cache-Control": "no-store"
+        });
+        return new Response(null, { status: 302, headers });
+      }
+    } catch (error) {
+      console.error(JSON.stringify({
+        event: "native_oidc_session_validation_error",
+        realm: landingRealm,
+        message: error instanceof Error ? error.message : "Unknown session error"
+      }));
+      return new Response("Authentication is temporarily unavailable.", {
+        status: 503,
+        headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" }
+      });
+    }
   }
 
   if (realm && !publicAuthPath) {
