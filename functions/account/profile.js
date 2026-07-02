@@ -25,70 +25,18 @@ function wantsJson(request) {
 
 function getAccessIdentity(request) {
   const nativeEmail = request.headers.get("x-ja-auth-email") || "";
-  if (nativeEmail) {
-    return {
-      email: nativeEmail.trim().toLowerCase(),
-      verifiedName: (request.headers.get("x-ja-auth-name") || nativeEmail).trim(),
-      realm: (request.headers.get("x-ja-auth-realm") || "").trim(),
-      subject: (request.headers.get("x-ja-auth-subject") || "").trim(),
-      tenantId: (request.headers.get("x-ja-auth-tenant") || "").trim(),
-      objectId: (request.headers.get("x-ja-auth-object-id") || "").trim(),
-      givenName: (request.headers.get("x-ja-auth-given-name") || "").trim(),
-      familyName: (request.headers.get("x-ja-auth-family-name") || "").trim(),
-      preferredUsername: (request.headers.get("x-ja-auth-preferred-username") || "").trim(),
-      locale: (request.headers.get("x-ja-auth-locale") || "").trim()
-    };
-  }
-  const emailHeader =
-    request.headers.get("cf-access-authenticated-user-email") ||
-    request.headers.get("CF-Access-Authenticated-User-Email") ||
-    "";
-
-  const jwt =
-    request.headers.get("cf-access-jwt-assertion") ||
-    request.headers.get("CF-Access-Jwt-Assertion") ||
-    "";
-
-  const tokenIdentity = decodeJwtPayload(jwt);
-
-  const emails = Array.isArray(tokenIdentity.emails) ? tokenIdentity.emails : [];
-  const email =
-    emailHeader ||
-    tokenIdentity.email ||
-    emails[0] ||
-    tokenIdentity.preferred_username ||
-    tokenIdentity.upn ||
-    tokenIdentity.user_email ||
-    tokenIdentity.username ||
-    "";
-
-  const verifiedName =
-    tokenIdentity.name ||
-    tokenIdentity.common_name ||
-    tokenIdentity.user_name ||
-    tokenIdentity.preferred_username ||
-    email ||
-    "";
-
   return {
-    email: String(email || "").trim().toLowerCase(),
-    verifiedName: String(verifiedName || "").trim()
+    email: nativeEmail.trim().toLowerCase(),
+    verifiedName: (request.headers.get("x-ja-auth-name") || nativeEmail).trim(),
+    realm: (request.headers.get("x-ja-auth-realm") || "").trim(),
+    subject: (request.headers.get("x-ja-auth-subject") || "").trim(),
+    tenantId: (request.headers.get("x-ja-auth-tenant") || "").trim(),
+    objectId: (request.headers.get("x-ja-auth-object-id") || "").trim(),
+    givenName: (request.headers.get("x-ja-auth-given-name") || "").trim(),
+    familyName: (request.headers.get("x-ja-auth-family-name") || "").trim(),
+    preferredUsername: (request.headers.get("x-ja-auth-preferred-username") || "").trim(),
+    locale: (request.headers.get("x-ja-auth-locale") || "").trim()
   };
-}
-
-function decodeJwtPayload(jwt) {
-  try {
-    if (!jwt || !jwt.includes(".")) return {};
-
-    const payload = jwt.split(".")[1];
-    const normalised = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = normalised.padEnd(normalised.length + ((4 - normalised.length % 4) % 4), "=");
-    const decoded = atob(padded);
-
-    return JSON.parse(decoded);
-  } catch {
-    return {};
-  }
 }
 
 function clean(value, maxLength = 500) {

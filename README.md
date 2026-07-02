@@ -6,7 +6,7 @@ Production domain: `experiences.jagroupservices.co.uk`
 
 Administrator authentication now uses native Microsoft Entra ID directly through the application.
 
-The Customer Portal remains on its existing Microsoft Entra External ID and Cloudflare Access configuration.
+The Customer Portal also uses native Microsoft Entra External ID through the application.
 
 ## Local preview
 

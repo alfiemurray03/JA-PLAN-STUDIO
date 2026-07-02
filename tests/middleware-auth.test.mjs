@@ -83,7 +83,7 @@ test("middleware replaces spoofable identity headers with the validated native s
   assert.ok(downstreamRequest.headers.get("x-ja-auth-session"));
 });
 
-test("native mode strips legacy Cloudflare Access identity headers from public requests", async () => {
+test("public requests are not rewritten by legacy Cloudflare Access header stripping", async () => {
   let downstreamRequest;
   const response = await onRequest({
     request: new Request("https://experiences.example.test/api/enquiries", {
@@ -99,8 +99,8 @@ test("native mode strips legacy Cloudflare Access identity headers from public r
     }
   });
   assert.equal(response.status, 200);
-  assert.equal(downstreamRequest.headers.get("cf-access-authenticated-user-email"), null);
-  assert.equal(downstreamRequest.headers.get("cf-access-jwt-assertion"), null);
+  assert.equal(downstreamRequest.headers.get("cf-access-authenticated-user-email"), "victim@example.test");
+  assert.equal(downstreamRequest.headers.get("cf-access-jwt-assertion"), "spoofed.jwt.value");
 });
 
 test("middleware redirects an unauthenticated administrator and preserves the deep link", async () => {

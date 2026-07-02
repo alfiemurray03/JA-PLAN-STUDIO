@@ -41,28 +41,20 @@ export function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length <= 254;
 }
 
-export function decodeJwtPayload(jwt) {
-  try {
-    if (!jwt || !jwt.includes(".")) return {};
-    const payload = jwt.split(".")[1];
-    const normalised = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = normalised.padEnd(normalised.length + ((4 - normalised.length % 4) % 4), "=");
-    return JSON.parse(atob(padded));
-  } catch {
-    return {};
-  }
-}
-
 export function getAccessIdentity(request) {
   const nativeEmail = request.headers.get("x-ja-auth-email") || "";
-  if (nativeEmail) return { email: cleanEmail(nativeEmail), name: clean(request.headers.get("x-ja-auth-name") || nativeEmail, 160) };
-  const emailHeader = request.headers.get("cf-access-authenticated-user-email") || request.headers.get("CF-Access-Authenticated-User-Email") || "";
-  const jwt = request.headers.get("cf-access-jwt-assertion") || request.headers.get("CF-Access-Jwt-Assertion") || "";
-  const token = decodeJwtPayload(jwt);
-  const emails = Array.isArray(token.emails) ? token.emails : [];
-  const email = emailHeader || token.email || emails[0] || token.preferred_username || token.upn || token.user_email || token.username || "";
-  const name = token.name || token.common_name || token.user_name || token.preferred_username || email || "";
-  return { email: cleanEmail(email), name: clean(name, 160) };
+  return {
+    email: cleanEmail(nativeEmail),
+    name: clean(request.headers.get("x-ja-auth-name") || nativeEmail, 160),
+    realm: clean(request.headers.get("x-ja-auth-realm"), 40),
+    subject: clean(request.headers.get("x-ja-auth-subject"), 200),
+    tenantId: clean(request.headers.get("x-ja-auth-tenant"), 120),
+    objectId: clean(request.headers.get("x-ja-auth-object-id"), 120),
+    givenName: clean(request.headers.get("x-ja-auth-given-name"), 120),
+    familyName: clean(request.headers.get("x-ja-auth-family-name"), 120),
+    preferredUsername: clean(request.headers.get("x-ja-auth-preferred-username"), 254),
+    locale: clean(request.headers.get("x-ja-auth-locale"), 20)
+  };
 }
 
 export async function hashValue(value) {

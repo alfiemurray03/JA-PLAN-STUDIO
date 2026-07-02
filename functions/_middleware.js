@@ -11,13 +11,6 @@ function getAccessIdentity(request) {
   return String(request.headers.get("x-ja-auth-email") || "").trim().toLowerCase();
 }
 
-function withoutCloudflareAccessIdentity(request) {
-  const headers = new Headers(request.headers);
-  headers.delete("cf-access-authenticated-user-email");
-  headers.delete("cf-access-jwt-assertion");
-  return new Request(request, { headers });
-}
-
 function configuredAdmins(env) {
   const raw = env.ADMIN_EMAILS || env.ADMIN_EMAIL || "alfieholywoodmurray@jagroupservices.co.uk";
   return String(raw).split(",").map((email) => email.trim().toLowerCase()).filter(Boolean);
@@ -364,7 +357,7 @@ function injectAccessibility(html) {
 
 export async function onRequest(context) {
   const { env, next } = context;
-  let request = withoutCloudflareAccessIdentity(withIdentity(context.request, null));
+  let request = withIdentity(context.request, null);
   const url = new URL(request.url);
   const path = url.pathname;
   const publicAuthPath = new Set([
@@ -379,10 +372,6 @@ export async function onRequest(context) {
 
   if (realm === "admin" && !publicAuthPath) {
     request = withIdentity(request, null);
-    const headers = new Headers(request.headers);
-    headers.delete("cf-access-authenticated-user-email");
-    headers.delete("cf-access-jwt-assertion");
-    request = new Request(request, { headers });
   }
 
   if (realm && !publicAuthPath) {
