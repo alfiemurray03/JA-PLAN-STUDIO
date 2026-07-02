@@ -623,6 +623,18 @@ export async function completeLogin(context, realm) {
   const requestId = requestCorrelationId(context.request);
   const state = url.searchParams.get("state") || "";
   const cookieState = readCookie(context.request, config.transactionCookie);
+  logAuthEvent(context.env, {
+    realm,
+    stage: "callback_state_check",
+    file: "functions/_shared/oidc.js",
+    function: "completeLogin",
+    requestId,
+    timestamp: new Date().toISOString(),
+    url: url.toString(),
+    state,
+    cookieState,
+    matches: Boolean(state && cookieState && state === cookieState)
+  });
   if (!state || !cookieState || state !== cookieState) throw new Error("Authentication state validation failed.");
   if (url.searchParams.get("error")) throw new Error(`Microsoft authentication failed: ${url.searchParams.get("error")}.`);
   const code = url.searchParams.get("code") || "";

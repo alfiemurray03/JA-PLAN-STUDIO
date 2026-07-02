@@ -1,4 +1,11 @@
 async function loadAccessProfile() {
+  console.log(JSON.stringify({
+    component: "customer-profile-page",
+    stage: "page_load",
+    url: window.location.href,
+    referrer: document.referrer || "",
+    userAgent: navigator.userAgent
+  }));
   bindDashboardShell();
   await applyAccountBranding();
 
@@ -35,6 +42,11 @@ async function loadAccessProfile() {
   }
 
   try {
+    console.log(JSON.stringify({
+      component: "customer-profile-page",
+      stage: "profile_fetch_start",
+      url: window.location.href
+    }));
     const response = await fetch("/account/profile", {
       credentials: "include",
       cache: "no-store",
@@ -42,12 +54,26 @@ async function loadAccessProfile() {
         "Accept": "application/json"
       }
     });
+    console.log(JSON.stringify({
+      component: "customer-profile-page",
+      stage: "profile_fetch_response",
+      status: response.status,
+      ok: response.ok,
+      redirected: response.redirected,
+      url: response.url
+    }));
 
     if (!response.ok) {
       throw new Error("Profile response was not available.");
     }
 
     const data = await response.json();
+    console.log(JSON.stringify({
+      component: "customer-profile-page",
+      stage: "profile_fetch_payload",
+      keys: Object.keys(data || {}),
+      hasProfile: Boolean(data?.profile)
+    }));
     const profile = { ...(bootstrap || {}), ...(data.profile || {}) };
 
     updateProfile(profile);

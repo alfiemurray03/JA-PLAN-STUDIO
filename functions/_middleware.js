@@ -411,6 +411,16 @@ export async function onRequest(context) {
   let request = withIdentity(context.request, null);
   const url = new URL(request.url);
   const path = url.pathname;
+  const requestId = request.headers.get("cf-ray") || request.headers.get("x-request-id") || request.headers.get("x-correlation-id") || "";
+  console.error(JSON.stringify({
+    component: "middleware",
+    stage: "request_entry",
+    requestId,
+    timestamp: new Date().toISOString(),
+    url: url.toString(),
+    referer: request.headers.get("Referer") || "",
+    userAgent: request.headers.get("User-Agent") || ""
+  }));
   const rootLanding = path === "/admin" || path === "/admin/" || path === "/account" || path === "/account/";
   const landingRealm = path.startsWith("/admin") ? "admin" : path.startsWith("/account") ? "customer" : "";
   const publicAuthPath = new Set([
@@ -429,7 +439,25 @@ export async function onRequest(context) {
 
   if (rootLanding && landingRealm) {
     try {
+      console.error(JSON.stringify({
+        component: "middleware",
+        stage: "landing_session_check",
+        requestId,
+        url: url.toString(),
+        realm: landingRealm,
+        authenticated: false,
+        getNativeSessionCalled: true
+      }));
       const landingIdentity = await getNativeSession(request, env, landingRealm);
+      console.error(JSON.stringify({
+        component: "middleware",
+        stage: "landing_session_check_result",
+        requestId,
+        url: url.toString(),
+        realm: landingRealm,
+        authenticated: Boolean(landingIdentity),
+        redirectDestination: landingIdentity ? (landingRealm === "admin" ? "/admin/dashboard/" : "/account/dashboard/") : ""
+      }));
       if (landingIdentity) {
         const headers = new Headers({
           Location: landingRealm === "admin" ? "/admin/dashboard/" : "/account/dashboard/",
@@ -453,7 +481,24 @@ export async function onRequest(context) {
   if (realm && !publicAuthPath) {
     let identity;
     try {
+      console.error(JSON.stringify({
+        component: "middleware",
+        stage: "protected_session_check",
+        requestId,
+        url: url.toString(),
+        realm,
+        getNativeSessionCalled: true
+      }));
       identity = await getNativeSession(request, env, realm);
+      console.error(JSON.stringify({
+        component: "middleware",
+        stage: "protected_session_check_result",
+        requestId,
+        url: url.toString(),
+        realm,
+        authenticated: Boolean(identity),
+        redirectDestination: identity ? "" : (realm === "admin" ? "/admin/login" : "/account/login")
+      }));
     } catch (error) {
       console.error(JSON.stringify({
         event: "native_oidc_session_validation_error",
@@ -578,6 +623,16 @@ export async function onRequest(context) {
   }
 
   const response = await next(request);
+  console.error(JSON.stringify({
+    component: "middleware",
+    stage: "next_response",
+    requestId,
+    url: url.toString(),
+    path,
+    status: response.status,
+    contentType: response.headers.get("Content-Type") || "",
+    authenticated: Boolean(request.headers.get("x-ja-auth-email"))
+  }));
   const contentType = response.headers.get("Content-Type") || "";
   if (!contentType.includes("text/html")) return response;
 

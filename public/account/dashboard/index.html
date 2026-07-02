@@ -291,9 +291,30 @@
     };
 
     async function loadProfile() {
+      console.log(JSON.stringify({
+        component: "customer-dashboard",
+        stage: "profile_fetch_start",
+        url: window.location.href,
+        requestUrl: "/account/profile",
+        timestamp: new Date().toISOString()
+      }));
       const response = await fetch("/account/profile", { credentials: "include", cache: "no-store", headers: { Accept: "application/json" } });
+      console.log(JSON.stringify({
+        component: "customer-dashboard",
+        stage: "profile_fetch_response",
+        status: response.status,
+        ok: response.ok,
+        redirected: response.redirected,
+        url: response.url
+      }));
       if (!response.ok) throw new Error("Profile data is unavailable.");
       const payload = await response.json();
+      console.log(JSON.stringify({
+        component: "customer-dashboard",
+        stage: "profile_fetch_payload",
+        keys: Object.keys(payload || {}),
+        hasProfile: Boolean(payload?.profile)
+      }));
       state.profile = payload.profile || payload;
     }
 
@@ -406,6 +427,13 @@
     }
 
     async function loadDashboard() {
+      console.log(JSON.stringify({
+        component: "customer-dashboard",
+        stage: "dashboard_load",
+        url: window.location.href,
+        referrer: document.referrer || "",
+        userAgent: navigator.userAgent
+      }));
       state.profile = window.__JA_NATIVE_IDENTITY__ || state.profile || {};
       renderProfile();
       renderActivity();
