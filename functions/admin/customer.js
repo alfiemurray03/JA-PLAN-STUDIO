@@ -85,6 +85,96 @@ async function ensureCustomerAdminColumns(DB) {
   }
 }
 
+async function ensureCustomerOpsTables(DB) {
+  await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS customer_account_flags (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      flag TEXT NOT NULL,
+      note TEXT,
+      source TEXT NOT NULL DEFAULT 'admin',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+  await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS customer_timeline_events (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      event_type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      detail TEXT,
+      actor_type TEXT NOT NULL DEFAULT 'system',
+      actor_email TEXT,
+      metadata TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+  await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS customer_support_cases (
+      id TEXT PRIMARY KEY,
+      reference TEXT UNIQUE,
+      email TEXT NOT NULL,
+      request_type TEXT NOT NULL,
+      category TEXT NOT NULL,
+      status TEXT DEFAULT 'New',
+      priority TEXT DEFAULT 'Normal',
+      assigned_department TEXT,
+      assigned_admin TEXT,
+      subject TEXT NOT NULL,
+      latest_message TEXT,
+      attachments TEXT DEFAULT '[]',
+      audit_history TEXT DEFAULT '[]',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+  await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS customer_notifications (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      category TEXT NOT NULL,
+      priority TEXT DEFAULT 'Normal',
+      title TEXT NOT NULL,
+      body TEXT,
+      status TEXT DEFAULT 'Unread',
+      archived_at TEXT,
+      reference_type TEXT,
+      reference_id TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+  await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS customer_support_pins (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      pin_hash TEXT NOT NULL,
+      pin_last4 TEXT NOT NULL,
+      status TEXT DEFAULT 'Active',
+      expires_at TEXT NOT NULL,
+      used_at TEXT,
+      revoked_at TEXT,
+      revoked_by TEXT,
+      last_used_at TEXT,
+      audit_history TEXT DEFAULT '[]',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+  await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS customer_account_flags (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      flag TEXT NOT NULL,
+      note TEXT,
+      source TEXT NOT NULL DEFAULT 'admin',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+}
+
 async function ensureAuditLog(DB) {
   await DB.prepare(`
     CREATE TABLE IF NOT EXISTS admin_audit_log (
@@ -193,6 +283,8 @@ export async function onRequest(context) {
 
   if (!email) return json({ error: "Customer email is required." }, 400);
 
+  await ensureCustomerOpsTables(env.DB);
+
   if (request.method === "GET") {
     if (!(permissions.includes("*") || permissions.includes("manage_users") || permissions.includes("manage_crm"))) {
       return json({ error: "Forbidden.", section: "customers" }, 403);
@@ -201,7 +293,15 @@ export async function onRequest(context) {
 
     if (!customer) return json({ error: "Customer not found." }, 404);
 
-    return json({ admin: identity, customer, plans: await getPlans(env.DB) });
+    const [flags, timeline, supportCases, notifications, pins] = await Promise.all([
+      env.DB.prepare(`SELECT * FROM customer_account_flags WHERE lower(email) = lower(?) ORDER BY created_at DESC`).bind(email).all(),
+      env.DB.prepare(`SELECT * FROM customer_timeline_events WHERE lower(email) = lower(?) ORDER BY created_at DESC LIMIT 200`).bind(email).all(),
+      env.DB.prepare(`SELECT * FROM customer_support_cases WHERE lower(email) = lower(?) ORDER BY updated_at DESC LIMIT 100`).bind(email).all(),
+      env.DB.prepare(`SELECT * FROM customer_notifications WHERE lower(email) = lower(?) ORDER BY created_at DESC LIMIT 100`).bind(email).all(),
+      env.DB.prepare(`SELECT id, pin_last4, status, expires_at, used_at, revoked_at, revoked_by, last_used_at, created_at, updated_at FROM customer_support_pins WHERE lower(email) = lower(?) ORDER BY created_at DESC LIMIT 50`).bind(email).all()
+    ]);
+
+    return json({ admin: identity, customer, plans: await getPlans(env.DB), flags: flags.results || [], timeline: timeline.results || [], supportCases: supportCases.results || [], notifications: notifications.results || [], pins: pins.results || [] });
   }
 
   if (request.method === "POST") {
@@ -214,6 +314,7 @@ export async function onRequest(context) {
     const notes = String(body.admin_notes || "").trim().slice(0, 4000);
     const lifetimePlanId = makeLifetime ? String(body.admin_lifetime_plan_id || "").trim().slice(0, 120) : "";
     const status = makeLifetime ? "Lifetime" : "Standard";
+    const flags = String(body.customer_flags || "").split(",").map((item) => item.trim()).filter(Boolean).slice(0, 12);
 
     await env.DB.prepare(`
       UPDATE profiles SET
@@ -231,6 +332,14 @@ export async function onRequest(context) {
       notes,
       email
     ).run();
+
+    await env.DB.prepare(`DELETE FROM customer_account_flags WHERE lower(email) = lower(?) AND source = 'admin'`).bind(email).run();
+    for (const flag of flags) {
+      await env.DB.prepare(`
+        INSERT INTO customer_account_flags (id, email, flag, note, source, updated_at)
+        VALUES (?, ?, ?, ?, 'admin', CURRENT_TIMESTAMP)
+      `).bind(crypto.randomUUID(), email, flag, notes || null).run();
+    }
 
     await env.DB.prepare(`
       INSERT INTO admin_audit_log (id, actor_email, action, entity_type, entity_id, summary, metadata)

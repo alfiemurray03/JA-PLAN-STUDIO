@@ -21,11 +21,17 @@ const PERMISSION_SECTIONS = {
   roles: ["manage_roles", "manage_permissions"],
   sessions: ["manage_admins", "manage_audit", "manage_api"],
   customers: ["manage_users", "manage_crm"],
+  customer: ["manage_users", "manage_crm"],
   datarequests: ["manage_data_requests"],
   systemreports: ["manage_system_reports", "manage_audit"],
   closures: ["manage_closure_requests"],
   support: ["manage_support", "manage_crm"],
   enquiries: ["manage_support", "manage_crm"],
+  notifications: ["manage_email", "manage_support", "manage_crm"],
+  membership: ["manage_plans", "manage_pricing", "manage_crm"],
+  security: ["manage_admins", "manage_audit", "manage_api"],
+  cms: ["manage_content", "manage_branding", "manage_policies"],
+  reports: ["manage_reports", "manage_analytics", "manage_audit"],
   system: ["manage_settings"],
   plans: ["manage_plans", "manage_pricing"],
   stripe: ["manage_stripe"],
@@ -366,15 +372,35 @@ async function ensureTables(DB, env) {
   await DB.prepare(`
     CREATE TABLE IF NOT EXISTS support_tickets (
       id TEXT PRIMARY KEY,
+      reference TEXT UNIQUE,
       customer_email TEXT,
+      customer_name TEXT,
+      category TEXT,
+      department TEXT,
+      assigned_admin TEXT,
       subject TEXT,
       status TEXT,
       priority TEXT,
+      sla_target TEXT,
       notes TEXT,
+      customer_replies TEXT DEFAULT '[]',
+      attachments TEXT DEFAULT '[]',
+      resolution_summary TEXT,
+      audit_log TEXT DEFAULT '[]',
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `).run();
+  await safeAlter(DB, `ALTER TABLE support_tickets ADD COLUMN reference TEXT`);
+  await safeAlter(DB, `ALTER TABLE support_tickets ADD COLUMN customer_name TEXT`);
+  await safeAlter(DB, `ALTER TABLE support_tickets ADD COLUMN category TEXT`);
+  await safeAlter(DB, `ALTER TABLE support_tickets ADD COLUMN department TEXT`);
+  await safeAlter(DB, `ALTER TABLE support_tickets ADD COLUMN assigned_admin TEXT`);
+  await safeAlter(DB, `ALTER TABLE support_tickets ADD COLUMN sla_target TEXT`);
+  await safeAlter(DB, `ALTER TABLE support_tickets ADD COLUMN customer_replies TEXT DEFAULT '[]'`);
+  await safeAlter(DB, `ALTER TABLE support_tickets ADD COLUMN attachments TEXT DEFAULT '[]'`);
+  await safeAlter(DB, `ALTER TABLE support_tickets ADD COLUMN resolution_summary TEXT`);
+  await safeAlter(DB, `ALTER TABLE support_tickets ADD COLUMN audit_log TEXT DEFAULT '[]'`);
 
   await DB.prepare(`
     CREATE TABLE IF NOT EXISTS system_events (
@@ -420,6 +446,8 @@ async function ensureTables(DB, env) {
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `).run();
+  await safeAlter(DB, `ALTER TABLE data_protection_requests ADD COLUMN request_type TEXT`);
+  await safeAlter(DB, `ALTER TABLE data_protection_requests ADD COLUMN statutory_deadline TEXT`);
 
   await DB.prepare(`
     CREATE TABLE IF NOT EXISTS system_reports (
@@ -514,6 +542,21 @@ async function ensureTables(DB, env) {
   await safeAlter(DB, `ALTER TABLE admin_bypass_sessions ADD COLUMN user_agent TEXT`);
   await safeAlter(DB, `ALTER TABLE admin_bypass_sessions ADD COLUMN ip_address TEXT`);
   await safeAlter(DB, `ALTER TABLE admin_bypass_sessions ADD COLUMN location TEXT`);
+
+  await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS customer_internal_notes (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      category TEXT DEFAULT 'General',
+      body TEXT NOT NULL,
+      pinned INTEGER DEFAULT 0,
+      author_email TEXT,
+      attachments TEXT DEFAULT '[]',
+      edit_history TEXT DEFAULT '[]',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
 }
 
 async function isAllowedAdmin(DB, identity, env) {
@@ -841,6 +884,58 @@ async function getAnalytics(DB) {
   };
 }
 
+async function getNotifications(DB) {
+  const [notifications, unread, archived, categories] = await Promise.all([
+    all(DB, `SELECT * FROM customer_notifications ORDER BY updated_at DESC, created_at DESC LIMIT 200`),
+    DB.prepare(`SELECT COUNT(*) AS count FROM customer_notifications WHERE lower(status) = 'unread'`).first().catch(() => ({ count: 0 })),
+    DB.prepare(`SELECT COUNT(*) AS count FROM customer_notifications WHERE archived_at IS NOT NULL`).first().catch(() => ({ count: 0 })),
+    all(DB, `SELECT category, COUNT(*) AS count FROM customer_notifications GROUP BY category ORDER BY count DESC`)
+  ]);
+  return { notifications, unread: unread?.count || 0, archived: archived?.count || 0, categories };
+}
+
+async function getMembership(DB) {
+  const [members, lifetime, suspended, cancelled, trial, complimentary, history] = await Promise.all([
+    all(DB, `SELECT email, display_name, contact_email, admin_customer_status, admin_lifetime, admin_lifetime_plan_id, updated_at FROM profiles ORDER BY updated_at DESC LIMIT 200`),
+    DB.prepare(`SELECT COUNT(*) AS count FROM profiles WHERE admin_lifetime = 1`).first().catch(() => ({ count: 0 })),
+    DB.prepare(`SELECT COUNT(*) AS count FROM profiles WHERE lower(admin_customer_status) = 'suspended'`).first().catch(() => ({ count: 0 })),
+    DB.prepare(`SELECT COUNT(*) AS count FROM profiles WHERE lower(admin_customer_status) = 'cancelled'`).first().catch(() => ({ count: 0 })),
+    DB.prepare(`SELECT COUNT(*) AS count FROM profiles WHERE lower(admin_customer_status) = 'trial'`).first().catch(() => ({ count: 0 })),
+    DB.prepare(`SELECT COUNT(*) AS count FROM profiles WHERE lower(admin_customer_status) = 'complimentary'`).first().catch(() => ({ count: 0 })),
+    all(DB, `SELECT action, entity_id, summary, created_at FROM admin_audit_log WHERE action LIKE '%plan%' OR action LIKE '%lifetime%' ORDER BY created_at DESC LIMIT 50`)
+  ]);
+  return {
+    members,
+    summary: {
+      lifetime: lifetime?.count || 0,
+      suspended: suspended?.count || 0,
+      cancelled: cancelled?.count || 0,
+      trial: trial?.count || 0,
+      complimentary: complimentary?.count || 0
+    },
+    history
+  };
+}
+
+async function getSecurity(DB) {
+  const [pins, sessions, history] = await Promise.all([
+    all(DB, `SELECT email, status, expires_at, used_at, revoked_at, last_used_at, updated_at, created_at FROM customer_support_pins ORDER BY updated_at DESC LIMIT 100`),
+    all(DB, `SELECT admin_email, created_at, expires_at, revoked_at, last_used_at FROM admin_bypass_sessions ORDER BY COALESCE(last_used_at, created_at) DESC LIMIT 50`),
+    all(DB, `SELECT action, entity_type, entity_id, summary, created_at FROM admin_audit_log WHERE action LIKE '%session%' OR action LIKE '%pin%' ORDER BY created_at DESC LIMIT 50`)
+  ]);
+  return { pins, sessions, history };
+}
+
+async function getCms(DB) {
+  const [branding, policies, affiliate, settings] = await Promise.all([
+    DB.prepare(`SELECT * FROM company_branding WHERE id = 'main'`).first(),
+    all(DB, `SELECT slug, title, status, is_published, updated_at FROM policy_pages ORDER BY updated_at DESC`),
+    all(DB, `SELECT id, title, block_type, is_enabled, is_published, sort_order, updated_at FROM affiliate_content_blocks ORDER BY sort_order ASC, updated_at DESC`),
+    all(DB, `SELECT key, value, updated_at FROM site_settings ORDER BY key ASC`)
+  ]);
+  return { branding, policies, affiliate, settings };
+}
+
 async function getAdmins(DB, env) {
   const rows = await all(DB, `SELECT * FROM admin_users ORDER BY email ASC`);
   const defaults = configuredAdmins(env);
@@ -1044,14 +1139,14 @@ async function getRoleSummary(DB) {
 function dashboardPresetForRole(role, permissions) {
   role = canonicalRoleName(role);
   if (role === "Platform Owner" || permissions.includes("*")) {
-    return ["overview", "status", "analytics", "customers", "admins", "roles", "sessions", "plans", "stripe", "enquiries", "support", "systemreports", "datarequests", "closures", "policies", "branding", "comingsoon", "maintenance", "audit", "email"];
+    return ["overview", "status", "analytics", "customers", "customer", "admins", "roles", "sessions", "plans", "stripe", "enquiries", "support", "notifications", "membership", "security", "cms", "systemreports", "datarequests", "closures", "policies", "branding", "comingsoon", "maintenance", "audit", "email", "reports"];
   }
   if (role === "Senior Administrator") {
-    return ["overview", "customers", "users", "plans", "branding", "comingsoon", "maintenance", "status", "analytics", "enquiries", "support", "systemreports", "audit"];
+    return ["overview", "customers", "customer", "users", "plans", "branding", "comingsoon", "maintenance", "status", "analytics", "enquiries", "support", "notifications", "membership", "security", "cms", "systemreports", "audit", "reports"];
   }
   if (role === "Finance") return ["overview", "stripe", "plans", "audit", "reports"];
-  if (role === "Customer Support") return ["overview", "customers", "enquiries", "support", "datarequests", "closures", "systemreports", "audit"];
-  if (role === "Marketing & Content") return ["overview", "branding", "comingsoon", "maintenance", "policies", "affiliate", "email"];
+  if (role === "Customer Support") return ["overview", "customers", "customer", "enquiries", "support", "notifications", "membership", "security", "datarequests", "closures", "systemreports", "audit"];
+  if (role === "Marketing & Content") return ["overview", "branding", "cms", "comingsoon", "maintenance", "policies", "affiliate", "email"];
   if (role === "Compliance & Data Protection") return ["overview", "audit", "datarequests", "closures", "policies", "reports"];
   if (role === "Auditor") return ["overview", "audit"];
   return ["overview", "customers", "plans", "status", "analytics", "enquiries", "support"];
@@ -1456,23 +1551,45 @@ async function saveBranding(DB, body) {
 
 async function saveSupport(DB, body) {
   const id = clean(body.id, 120) || crypto.randomUUID();
+  const reference = clean(body.reference, 80) || (await nextReference(DB, "support_tickets", "SUP"));
+  const auditLog = addAudit(body.audit_log || "[]", { type: body.action === "create" ? "Case created" : "Case updated", actor: body.actor || "admin" });
   await DB.prepare(`
-    INSERT INTO support_tickets (id, customer_email, subject, status, priority, notes, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    INSERT INTO support_tickets (id, reference, customer_email, customer_name, category, department, assigned_admin, subject, status, priority, sla_target, notes, customer_replies, attachments, resolution_summary, audit_log, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     ON CONFLICT(id) DO UPDATE SET
+      reference = excluded.reference,
       customer_email = excluded.customer_email,
+      customer_name = excluded.customer_name,
+      category = excluded.category,
+      department = excluded.department,
+      assigned_admin = excluded.assigned_admin,
       subject = excluded.subject,
       status = excluded.status,
       priority = excluded.priority,
+      sla_target = excluded.sla_target,
       notes = excluded.notes,
+      customer_replies = excluded.customer_replies,
+      attachments = excluded.attachments,
+      resolution_summary = excluded.resolution_summary,
+      audit_log = excluded.audit_log,
       updated_at = CURRENT_TIMESTAMP
   `).bind(
     id,
+    reference,
     clean(body.customer_email, 180),
+    clean(body.customer_name, 180),
+    clean(body.category, 80) || "General Enquiry",
+    clean(body.department, 80) || "Support",
+    clean(body.assigned_admin, 254),
     clean(body.subject, 250),
     clean(body.status, 80) || "Open",
     clean(body.priority, 80) || "Normal",
-    clean(body.notes, 4000)
+    clean(body.sla_target, 80) || "48h",
+    clean(body.notes, 4000),
+    JSON.stringify(Array.isArray(body.customer_replies) ? body.customer_replies : []),
+    JSON.stringify(Array.isArray(body.attachments) ? body.attachments : []),
+    clean(body.resolution_summary, 4000),
+    auditLog
   ).run();
 
   return all(DB, `SELECT * FROM support_tickets ORDER BY updated_at DESC, created_at DESC LIMIT 500`);
@@ -1545,6 +1662,67 @@ async function getSystemReports(DB) {
     ORDER BY submitted_at DESC, created_at DESC
     LIMIT 500
   `);
+}
+
+async function getNotificationsAdmin(DB) {
+  return all(DB, `
+    SELECT id, email, category, priority, title, body, status, archived_at, reference_type, reference_id,
+      template_key, scheduled_for, sent_at, delivery_status, read_at, acknowledged_at, send_history, created_at, updated_at
+    FROM customer_notifications
+    ORDER BY updated_at DESC, created_at DESC
+    LIMIT 500
+  `);
+}
+
+async function saveNotification(DB, body, identity) {
+  const id = clean(body.id, 120) || crypto.randomUUID();
+  const current = await DB.prepare(`SELECT * FROM customer_notifications WHERE id = ?`).bind(id).first();
+  const status = clean(body.status, 40) || "Draft";
+  const deliveryStatus = clean(body.delivery_status, 40) || (status === "Scheduled" ? "Scheduled" : status === "Sent" ? "Sent" : "Draft");
+  const sendHistory = addAudit(current?.send_history || "[]", { type: body.action || "save", actor: auditActor(identity), status, deliveryStatus });
+  await DB.prepare(`
+    INSERT INTO customer_notifications (
+      id, email, category, priority, title, body, status, archived_at, reference_type, reference_id,
+      template_key, scheduled_for, sent_at, delivery_status, read_at, acknowledged_at, send_history, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(id) DO UPDATE SET
+      email = excluded.email,
+      category = excluded.category,
+      priority = excluded.priority,
+      title = excluded.title,
+      body = excluded.body,
+      status = excluded.status,
+      archived_at = excluded.archived_at,
+      reference_type = excluded.reference_type,
+      reference_id = excluded.reference_id,
+      template_key = excluded.template_key,
+      scheduled_for = excluded.scheduled_for,
+      sent_at = excluded.sent_at,
+      delivery_status = excluded.delivery_status,
+      read_at = excluded.read_at,
+      acknowledged_at = excluded.acknowledged_at,
+      send_history = excluded.send_history,
+      updated_at = CURRENT_TIMESTAMP
+  `).bind(
+    id,
+    cleanEmail(body.email),
+    clean(body.category, 80) || "General",
+    clean(body.priority, 40) || "Normal",
+    clean(body.title, 180),
+    clean(body.body, 4000),
+    status,
+    body.archived_at || null,
+    clean(body.reference_type, 80),
+    clean(body.reference_id, 120),
+    clean(body.template_key, 80),
+    clean(body.scheduled_for, 40),
+    clean(body.sent_at, 40),
+    deliveryStatus,
+    clean(body.read_at, 40),
+    clean(body.acknowledged_at, 40),
+    sendHistory
+  ).run();
+  return getNotificationsAdmin(DB);
 }
 
 async function saveDataProtectionRequest(DB, body, identity, env = {}) {
@@ -2421,12 +2599,49 @@ export async function onRequest(context) {
           `)
         });
       }
+      if (section === "customer") {
+        const email = clean(url.searchParams.get("email"), 254);
+        if (!email) return json({ error: "Customer email is required." }, 400);
+        const [customer, flags, timeline, supportCases, notifications, pins, plans, notes] = await Promise.all([
+          DB.prepare(`
+            SELECT
+              email,
+              verified_name,
+              display_name,
+              contact_email,
+              phone,
+              communication_preference,
+              support_notes,
+              admin_notes,
+              admin_lifetime,
+              admin_lifetime_plan_id,
+              admin_customer_status,
+              created_at,
+              updated_at,
+              admin_updated_at
+            FROM profiles
+            WHERE lower(email) = lower(?)
+          `).bind(email).first(),
+          all(env.DB, `SELECT * FROM customer_account_flags WHERE lower(email) = lower(?) ORDER BY updated_at DESC`, [email]),
+          all(env.DB, `SELECT * FROM customer_timeline_events WHERE lower(email) = lower(?) ORDER BY created_at DESC LIMIT 200`, [email]),
+          all(env.DB, `SELECT * FROM customer_support_cases WHERE lower(email) = lower(?) ORDER BY updated_at DESC LIMIT 100`, [email]),
+          all(env.DB, `SELECT * FROM customer_notifications WHERE lower(email) = lower(?) ORDER BY updated_at DESC LIMIT 100`, [email]),
+          all(env.DB, `SELECT * FROM customer_support_pins WHERE lower(email) = lower(?) ORDER BY updated_at DESC LIMIT 20`, [email]),
+          getPlans(env.DB),
+          all(env.DB, `SELECT * FROM customer_internal_notes WHERE lower(email) = lower(?) ORDER BY pinned DESC, updated_at DESC LIMIT 100`, [email])
+        ]);
+        return json({ admin: adminContext, customer: { ...customer, flags, timeline, supportCases, notifications, pins, notes }, plans });
+      }
       if (section === "plans") {
         return json({
           admin: adminContext,
           plans: await all(env.DB, `SELECT * FROM service_plans ORDER BY sort_order ASC, plan_name ASC`)
         });
       }
+      if (section === "notifications") return json({ admin: adminContext, notifications: await getNotifications(env.DB) });
+      if (section === "membership") return json({ admin: adminContext, membership: await getMembership(env.DB) });
+      if (section === "security") return json({ admin: adminContext, security: await getSecurity(env.DB) });
+      if (section === "cms") return json({ admin: adminContext, cms: await getCms(env.DB) });
       if (section === "policies") return json({ admin: adminContext, policies: await all(env.DB, `SELECT * FROM policy_pages ORDER BY title ASC`) });
       if (section === "branding") return json({ admin: adminContext, branding: await env.DB.prepare(`SELECT * FROM company_branding WHERE id = 'main'`).first() });
       if (section === "support") return json({ admin: adminContext, support: await all(env.DB, `SELECT * FROM support_tickets ORDER BY updated_at DESC, created_at DESC LIMIT 500`) });
@@ -2438,8 +2653,10 @@ export async function onRequest(context) {
       }
       if (section === "system") return json({ admin: adminContext, system: await all(env.DB, `SELECT * FROM system_events ORDER BY updated_at DESC, created_at DESC LIMIT 500`) });
       if (section === "datarequests") return json({ admin: adminContext, datarequests: await getDataProtectionRequests(env.DB) });
+      if (section === "notifications") return json({ admin: adminContext, notifications: await getNotificationsAdmin(env.DB) });
       if (section === "systemreports") return json({ admin: adminContext, systemreports: await getSystemReports(env.DB) });
       if (section === "closures") return json({ admin: adminContext, closures: await getClosureRequests(env.DB) });
+      if (section === "reports") return json({ admin: adminContext, overview: await getOverview(env.DB), analytics: await getAnalytics(env.DB), audit: await getAuditLog(env.DB, {}), notifications: await getNotifications(env.DB), membership: await getMembership(env.DB) });
       if (section === "affiliate") return json({ admin: adminContext, affiliate: await getAffiliateContent(env.DB) });
       if (section === "appearance") return json({ admin: adminContext, appearance: await getAppearance(env.DB) });
       if (section === "email") return json({ admin: adminContext, email: await getEmailSettings(env.DB, env) });
@@ -2576,6 +2793,17 @@ export async function onRequest(context) {
         await writeAudit(env.DB, identity, "support_update", "support_tickets", clean(body.id, 120), `Updated support ticket ${clean(body.subject, 250)}.`, { status: clean(body.status, 80), priority: clean(body.priority, 80) });
         return json({ support, saved: true });
       }
+      if (section === "notifications") {
+        if (!ownerAccess && !hasAnyPermission(adminContext.permissions, ["manage_email", "manage_support", "manage_crm"])) return json({ error: "Forbidden.", section }, 403);
+        if (body.action === "delete") {
+          await env.DB.prepare(`DELETE FROM customer_notifications WHERE id = ?`).bind(clean(body.id, 120)).run();
+          await writeAudit(env.DB, identity, "notification_delete", "customer_notifications", clean(body.id, 120), "Deleted notification.", {});
+          return json({ notifications: await getNotificationsAdmin(env.DB), saved: true });
+        }
+        const notifications = await saveNotification(env.DB, body, identity);
+        await writeAudit(env.DB, identity, "notification_update", "customer_notifications", clean(body.id, 120), `Updated notification ${clean(body.title, 180)}.`, { status: clean(body.status, 80), category: clean(body.category, 80) });
+        return json({ notifications, saved: true });
+      }
       if (section === "enquiries") {
         if (!ownerAccess && !hasAnyPermission(adminContext.permissions, ["manage_support", "manage_crm"])) return json({ error: "Forbidden.", section }, 403);
         const thread = await updateEnquiryAsAdmin(env.DB, env, body, identity);
@@ -2638,6 +2866,48 @@ export async function onRequest(context) {
         const stripe = await saveStripe(env.DB, body, env);
         await writeAudit(env.DB, identity, "stripe_settings_update", "site_settings", "stripe", "Updated Stripe API controls.", { tested: Boolean(body.test_connection), mode: stripe.mode });
         return json({ stripe, saved: true });
+      }
+      if (section === "customer") {
+        if (!ownerAccess && !hasAnyPermission(adminContext.permissions, ["manage_users", "manage_crm"])) return json({ error: "Forbidden.", section }, 403);
+        const email = cleanEmail(body.email);
+        if (!email) return json({ error: "Customer email is required." }, 400);
+        if (body.action === "add_note") {
+          const noteId = `note_${Date.now()}`;
+          await DB.prepare(`
+            INSERT INTO customer_internal_notes (id, email, category, body, pinned, author_email, attachments, edit_history, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, '[]', CURRENT_TIMESTAMP)
+          `).bind(noteId, email, clean(body.category, 80) || "General", clean(body.body, 4000), body.pinned ? 1 : 0, identity.email, JSON.stringify(Array.isArray(body.attachments) ? body.attachments : [])).run();
+          await writeAudit(env.DB, identity, "customer_note_create", "customer_internal_notes", email, `Added customer note for ${email}.`, { category: clean(body.category, 80) || "General" });
+        }
+        const [customer, flags, timeline, supportCases, notifications, pins, plans, notes] = await Promise.all([
+          DB.prepare(`
+            SELECT
+              email,
+              verified_name,
+              display_name,
+              contact_email,
+              phone,
+              communication_preference,
+              support_notes,
+              admin_notes,
+              admin_lifetime,
+              admin_lifetime_plan_id,
+              admin_customer_status,
+              created_at,
+              updated_at,
+              admin_updated_at
+            FROM profiles
+            WHERE lower(email) = lower(?)
+          `).bind(email).first(),
+          all(env.DB, `SELECT * FROM customer_account_flags WHERE lower(email) = lower(?) ORDER BY updated_at DESC`, [email]),
+          all(env.DB, `SELECT * FROM customer_timeline_events WHERE lower(email) = lower(?) ORDER BY created_at DESC LIMIT 200`, [email]),
+          all(env.DB, `SELECT * FROM customer_support_cases WHERE lower(email) = lower(?) ORDER BY updated_at DESC LIMIT 100`, [email]),
+          all(env.DB, `SELECT * FROM customer_notifications WHERE lower(email) = lower(?) ORDER BY updated_at DESC LIMIT 100`, [email]),
+          all(env.DB, `SELECT * FROM customer_support_pins WHERE lower(email) = lower(?) ORDER BY updated_at DESC LIMIT 20`, [email]),
+          getPlans(env.DB),
+          all(env.DB, `SELECT * FROM customer_internal_notes WHERE lower(email) = lower(?) ORDER BY pinned DESC, updated_at DESC LIMIT 100`, [email])
+        ]);
+        return json({ customer: { ...customer, flags, timeline, supportCases, notifications, pins, notes }, plans, saved: true });
       }
     }
 

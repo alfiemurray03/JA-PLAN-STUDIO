@@ -23,23 +23,29 @@ const sectionTitles = {
   admins: "Admin Users",
   roles: "Roles",
   customers: "CRM",
+  customer: "Customer Profile",
   plans: "Plans & Prices",
   stripe: "Stripe",
   branding: "Branding",
   policies: "Policies",
   support: "Support",
   enquiries: "Contact Enquiries",
+  notifications: "Notifications",
+  membership: "Membership",
+  security: "Security",
+  cms: "Website CMS",
   system: "System",
   datarequests: "Data Protection Requests",
   systemreports: "System Reports",
   closures: "Closure Requests",
+  reports: "Reports",
   analytics: "Analytics",
   status: "Status Centre",
   affiliate: "Affiliate Content",
   appearance: "Appearance",
   email: "Email",
   audit: "Audit Log",
-  comingsoon: "Coming Soon",
+  comingsoon: "Launch Gate",
   maintenance: "Maintenance Mode",
   sessions: "Sessions"
 };
@@ -54,11 +60,17 @@ const sectionDescriptions = {
   admins: "Manage authorised administrators and access records.",
   roles: "Create, clone and edit roles plus their permissions.",
   customers: "Search customer profiles, memberships and account history.",
+  customer: "Review a single customer record, support history and linked flags.",
   datarequests: "Manage UK GDPR and data rights workflows.",
   systemreports: "Review customer-reported website and account issues.",
   closures: "Process account closure requests safely and consistently.",
   support: "Review and manage customer support enquiries.",
   enquiries: "Manage contact enquiries, assignments, replies and internal notes.",
+  notifications: "Manage customer-facing notifications and operational alerts.",
+  membership: "Review membership status, benefits, changes and entitlement history.",
+  security: "Inspect one-time PINs, support access and session security.",
+  cms: "Manage public website and portal content blocks.",
+  reports: "Operational reporting and platform summaries.",
   plans: "Configure service plans, prices and public availability.",
   stripe: "Review Stripe configuration and connection status.",
   email: "Configure outbound email and test notifications.",
@@ -67,7 +79,7 @@ const sectionDescriptions = {
   appearance: "Control the public website colour theme.",
   affiliate: "Manage affiliate notices, widgets and content blocks.",
   policies: "Maintain legal, privacy and compliance content.",
-  comingsoon: "Control the public pre-launch experience.",
+  comingsoon: "Control the public launch-gate experience.",
   maintenance: "Control maintenance mode and service messaging."
 };
 
@@ -199,6 +211,15 @@ function bindAdminActions() {
       removeAdmin(action.dataset.email);
     }
 
+    if (type === "open-customer") {
+      if (action.dataset.section) loadSection(action.dataset.section);
+      else await openCustomerDrawer(action.dataset.email);
+    }
+
+    if (type === "open-customer-profile") {
+      await openCustomerProfile(action.dataset.email);
+    }
+
     if (type === "suspend-admin") {
       await api("admins", { method: "POST", body: JSON.stringify({ action: "suspend", email: action.dataset.email }) });
       await loadSection("admins");
@@ -274,6 +295,30 @@ function bindAdminActions() {
 
     if (type === "open-support") {
       openSupportModal(action.dataset.id);
+    }
+
+    if (type === "new-support-case") {
+      openSupportModal("");
+    }
+
+    if (type === "new-notification") {
+      openNotificationModal("");
+    }
+
+    if (type === "edit-notification") {
+      openNotificationModal(action.dataset.id);
+    }
+
+    if (type === "duplicate-notification") {
+      duplicateNotification(action.dataset.id);
+    }
+
+    if (type === "archive-notification") {
+      toggleNotificationArchive(action.dataset.id);
+    }
+
+    if (type === "delete-notification") {
+      deleteNotification(action.dataset.id);
     }
 
     if (type === "open-closure") {
@@ -590,7 +635,7 @@ function dashboardQuickCards() {
     ["customers", "users", "View CRM", "Search and manage customer profiles"],
     ["status", "pulse", "Status Centre", "Review live service health and incidents"],
     ["maintenance", "shield", "Maintenance mode", "Manage public maintenance controls"],
-    ["comingsoon", "clock", "Publish website", "Review Coming Soon visibility"],
+    ["comingsoon", "clock", "Publish website", "Review launch-gate visibility"],
     ["stripe", "card", "Stripe dashboard", "Review connection and API controls"],
     ["audit", "clock", "Audit logs", "Review sensitive administrative activity"],
     ["datarequests", "file", "Data requests", "Process UK GDPR rights requests"],
@@ -690,18 +735,24 @@ function renderSection(section, data) {
   if (section === "admins") renderAdmins(data.admins);
   if (section === "roles") renderRoles(data.roles, data.permission_catalog);
   if (section === "customers") renderCustomers(data.customers);
+  if (section === "customer") renderCustomerProfile(data.customer, data.plans);
   if (section === "plans") renderPlans(data.plans);
   if (section === "stripe") renderStripe(data.stripe);
   if (section === "branding") renderBranding(data.branding);
   if (section === "policies") renderPolicies(data.policies);
   if (section === "support") renderSupport(data.support);
   if (section === "enquiries") renderEnquiries(data.enquiries, data.thread, data.filters);
+  if (section === "notifications") renderNotificationCentre(data.notifications);
+  if (section === "membership") renderMembershipCentre(data.membership);
+  if (section === "security") renderSecurityCentre(data.security);
+  if (section === "cms") renderCmsCentre(data.cms);
   if (section === "comingsoon") renderComingSoon(data.comingsoon);
   if (section === "maintenance") renderMaintenance(data.maintenance);
   if (section === "system") renderSystem(data.system);
   if (section === "datarequests") renderDataRequests(data.datarequests);
   if (section === "systemreports") renderSystemReports(data.systemreports);
   if (section === "closures") renderClosures(data.closures);
+  if (section === "reports") renderReportsCentre(data);
   if (section === "affiliate") renderAffiliate(data.affiliate);
   if (section === "appearance") renderAppearance(data.appearance);
   if (section === "email") renderEmail(data.email, data.test);
@@ -723,7 +774,7 @@ function renderOverview(overview) {
   const activeAdmins = Array.isArray(overview.activeAdmins) ? overview.activeAdmins : [];
   const maintenanceOn = String(overview.maintenanceStatus).toLowerCase() === "on";
   const comingSoonOn = String(overview.comingSoonStatus).toLowerCase() === "on";
-  const websiteLabel = maintenanceOn ? "Maintenance" : comingSoonOn ? "Coming soon" : "Online";
+      const websiteLabel = maintenanceOn ? "Maintenance" : comingSoonOn ? "Launch gate" : "Online";
   const websiteTone = maintenanceOn ? "critical" : comingSoonOn ? "warning" : "online";
   const widgetCards = widgets.map((widget) => `
     <article class="admin-card widget-card">
@@ -755,7 +806,7 @@ function renderOverview(overview) {
       ${kpi("Revenue", "Not available", "No revenue API is connected")}
       ${kpi("Pending data requests", overview.dataProtectionRequests, "Active rights requests")}
       ${kpi("Support tickets", overview.supportTickets, "All recorded tickets")}
-      ${kpi("Website status", websiteLabel, maintenanceOn ? "Maintenance mode enabled" : comingSoonOn ? "Coming Soon enabled" : "Public site available")}
+      ${kpi("Website status", websiteLabel, maintenanceOn ? "Maintenance mode enabled" : comingSoonOn ? "Launch gate enabled" : "Public site available")}
       ${kpi("Worker status", "Online", "Admin API responded successfully")}
     </section>
 
@@ -781,7 +832,7 @@ function renderOverview(overview) {
 
         <section class="admin-card">
           <div class="section-head">
-            <div><h2>Recent activity</h2><p>Platform events will appear here when an activity feed is available.</p></div>
+            <div><h2>Recent activity</h2><p>Platform events will appear here once activity tracking is enabled.</p></div>
             <button class="mini-button" type="button" data-action="load-section" data-section="audit">View audit log</button>
           </div>
           <div class="activity-empty">
@@ -1550,11 +1601,16 @@ function renderCustomers(customers = []) {
     const name = c.display_name || c.verified_name || c.email;
     const lifetime = Number(c.admin_lifetime || 0) === 1;
     const planSuffix = lifetime && c.admin_lifetime_plan_id ? ` (${c.admin_lifetime_plan_id})` : "";
+    const flags = Array.isArray(c.flags) ? c.flags : [];
     return `
-      <tr class="customer-row-click" data-action="open-customer" data-email="${escapeAttr(c.email)}">
+      <tr class="customer-row-click" data-action="open-customer-profile" data-email="${escapeAttr(c.email)}">
+        <td><input type="checkbox" class="customer-select" data-customer-select="${escapeAttr(c.email)}" aria-label="Select ${escapeAttr(name)}"></td>
         <td><strong>${escapeHtml(name)}</strong><span>${escapeHtml(c.email || "")}</span></td>
         <td>${escapeHtml(c.contact_email || c.email || "")}</td>
         <td>${lifetime ? badge(`Lifetime${planSuffix}`, "amber") : badge(c.admin_customer_status || "Standard")}</td>
+        <td>${badge((c.country || "Unknown"), "blue")}</td>
+        <td>${badge(flags[0]?.flag || "None", flags.length ? "violet" : "")}</td>
+        <td>${escapeHtml(c.last_activity || formatDate(c.updated_at || c.created_at))}</td>
         <td>${escapeHtml(c.phone || "Not added")}</td>
         <td>${escapeHtml(c.communication_preference || "Email")}</td>
         <td>${escapeHtml(formatDate(c.updated_at || c.created_at))}</td>
@@ -1575,14 +1631,20 @@ function renderCustomers(customers = []) {
         <div class="table-filters">
           <label class="table-search"><span class="sr-only">Search customers</span><input id="customerSearch" type="search" placeholder="Search name, email or phone" autocomplete="off"></label>
           <label><span class="sr-only">Filter by membership</span><select id="customerStatusFilter"><option value="all">All customers</option><option value="lifetime">Lifetime members</option><option value="standard">Standard customers</option></select></label>
+          <label><span class="sr-only">Filter by support status</span><select id="customerSupportFilter"><option value="all">All support statuses</option><option value="open">Open support</option><option value="awaiting">Awaiting staff</option><option value="closed">Closed</option></select></label>
+          <label><span class="sr-only">Sort customers</span><select id="customerSortFilter"><option value="updated_desc">Last activity</option><option value="created_desc">Registration date</option><option value="name_asc">Name</option></select></label>
         </div>
         <span class="table-count" id="customerResultCount"></span>
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Customer</th><th>Contact email</th><th>Status</th><th>Phone</th><th>Preference</th><th>Updated</th></tr></thead>
+          <thead><tr><th></th><th>Customer</th><th>Contact email</th><th>Status</th><th>Country</th><th>Flag</th><th>Last activity</th><th>Phone</th><th>Preference</th><th>Updated</th></tr></thead>
           <tbody id="customerTableBody"></tbody>
         </table>
+      </div>
+      <div class="section-actions" style="margin-top:1rem;">
+        <button class="mini-button" type="button" id="customerBulkExport">Export selected</button>
+        <button class="mini-button" type="button" id="customerBulkClear">Clear selection</button>
       </div>
       <div class="table-pagination" aria-label="Customer table pagination">
         <button class="mini-button" id="customerPreviousPage" type="button">Previous</button>
@@ -1594,37 +1656,348 @@ function renderCustomers(customers = []) {
 
   const pageSize = 12;
   let currentPage = 1;
+  const selectedCustomers = new Set();
   const search = document.getElementById("customerSearch");
   const status = document.getElementById("customerStatusFilter");
+  const support = document.getElementById("customerSupportFilter");
+  const sort = document.getElementById("customerSortFilter");
   const previous = document.getElementById("customerPreviousPage");
   const next = document.getElementById("customerNextPage");
+  const exportButton = document.getElementById("customerBulkExport");
+  const clearButton = document.getElementById("customerBulkClear");
 
   const refresh = () => {
     const query = search.value.trim().toLowerCase();
     const selectedStatus = status.value;
-    const filtered = customers.filter((customer) => {
+    const selectedSupport = support.value;
+    let filtered = customers.filter((customer) => {
       const searchable = [customer.display_name, customer.verified_name, customer.email, customer.contact_email, customer.phone]
         .filter(Boolean).join(" ").toLowerCase();
       const lifetime = Number(customer.admin_lifetime || 0) === 1;
+      const supportStatus = String(customer.support_status || customer.admin_customer_status || "").toLowerCase();
       const matchesStatus = selectedStatus === "all" || (selectedStatus === "lifetime" && lifetime) || (selectedStatus === "standard" && !lifetime);
-      return matchesStatus && (!query || searchable.includes(query));
+      const matchesSupport = selectedSupport === "all" || (selectedSupport === "open" && supportStatus.includes("open")) || (selectedSupport === "awaiting" && supportStatus.includes("awaiting")) || (selectedSupport === "closed" && supportStatus.includes("closed"));
+      return matchesStatus && matchesSupport && (!query || searchable.includes(query));
+    });
+    filtered = filtered.sort((a, b) => {
+      if (sort.value === "name_asc") return String(a.display_name || a.email || "").localeCompare(String(b.display_name || b.email || ""));
+      if (sort.value === "created_desc") return String(b.created_at || "").localeCompare(String(a.created_at || ""));
+      return String(b.updated_at || b.last_activity || "").localeCompare(String(a.updated_at || a.last_activity || ""));
     });
     const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
     currentPage = Math.min(currentPage, pages);
     const start = (currentPage - 1) * pageSize;
     const visible = filtered.slice(start, start + pageSize);
-    document.getElementById("customerTableBody").innerHTML = visible.map(customerRow).join("") || `<tr><td colspan="6">No customers match these filters.</td></tr>`;
+    document.getElementById("customerTableBody").innerHTML = visible.map(customerRow).join("") || `<tr><td colspan="10">No customers match these filters.</td></tr>`;
     document.getElementById("customerResultCount").textContent = `${filtered.length} ${filtered.length === 1 ? "customer" : "customers"}`;
     document.getElementById("customerPageStatus").textContent = `Page ${currentPage} of ${pages}`;
     previous.disabled = currentPage <= 1;
     next.disabled = currentPage >= pages;
+    visible.forEach((customer) => {
+      const checkbox = document.querySelector(`[data-customer-select="${CSS.escape(customer.email)}"]`);
+      if (checkbox) checkbox.checked = selectedCustomers.has(customer.email);
+    });
   };
 
   search.addEventListener("input", () => { currentPage = 1; refresh(); });
   status.addEventListener("change", () => { currentPage = 1; refresh(); });
+  support.addEventListener("change", () => { currentPage = 1; refresh(); });
+  sort.addEventListener("change", () => { currentPage = 1; refresh(); });
   previous.addEventListener("click", () => { currentPage = Math.max(1, currentPage - 1); refresh(); });
   next.addEventListener("click", () => { currentPage += 1; refresh(); });
+  document.addEventListener("change", (event) => {
+    const checkbox = event.target.closest("[data-customer-select]");
+    if (!checkbox) return;
+    const email = checkbox.dataset.customerSelect;
+    if (checkbox.checked) selectedCustomers.add(email);
+    else selectedCustomers.delete(email);
+  });
+  exportButton?.addEventListener("click", async () => {
+    const rows = customers.filter((customer) => selectedCustomers.has(customer.email));
+    if (!rows.length) return window.alert("Select one or more customers first.");
+    const csv = ["email,display_name,status,country,last_activity"].concat(rows.map((customer) => [
+      customer.email,
+      customer.display_name || "",
+      customer.admin_customer_status || "",
+      customer.country || "",
+      customer.last_activity || customer.updated_at || ""
+    ].map((value) => `"${String(value).replaceAll('"', '""')}"`).join(","))).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "customers-export.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+  clearButton?.addEventListener("click", () => { selectedCustomers.clear(); refresh(); });
   refresh();
+}
+
+function customerTimeline(items = []) {
+  const rows = Array.isArray(items) ? items : [];
+  return rows.length
+    ? `<div class="timeline-stack">${rows.map((item) => `
+        <article class="timeline-item">
+          <strong>${escapeHtml(item.title || item.event_type || "Event")}</strong>
+          <span>${escapeHtml(item.detail || item.summary || formatDate(item.created_at))}</span>
+          <small>${escapeHtml(formatDate(item.created_at))}</small>
+        </article>
+      `).join("")}</div>`
+    : emptyCard("No timeline events recorded.");
+}
+
+function auditTimeline(items = []) {
+  const rows = Array.isArray(items) ? items : [];
+  return rows.length
+    ? `<div class="timeline-stack">${rows.map((item) => `
+        <article class="timeline-item">
+          <strong>${escapeHtml(item.type || item.action || "Event")}</strong>
+          <span>${escapeHtml(item.actor || item.actor_email || "system")} ${item.previousValue || item.newValue ? `: ${escapeHtml(item.previousValue || "")} -> ${escapeHtml(item.newValue || "")}` : ""}</span>
+          <small>${escapeHtml(item.timestamp || item.created_at || "")}</small>
+        </article>
+      `).join("")}</div>`
+    : emptyCard("No audit history recorded.");
+}
+
+function renderCustomerProfile(customer, plans = []) {
+  if (!customer) {
+    document.getElementById("adminPanel").innerHTML = `<div class="admin-card">${emptyCard("Select a customer from CRM to open the profile.")}</div>`;
+    return;
+  }
+  const flags = Array.isArray(customer.flags) ? customer.flags : [];
+  const timeline = Array.isArray(customer.timeline) ? customer.timeline : [];
+  const supportCases = Array.isArray(customer.supportCases) ? customer.supportCases : [];
+  const notifications = Array.isArray(customer.notifications) ? customer.notifications : [];
+  const pins = Array.isArray(customer.pins) ? customer.pins : [];
+  const notes = Array.isArray(customer.notes) ? customer.notes : [];
+  document.getElementById("adminPanel").innerHTML = `
+    <section class="admin-card">
+      <div class="section-head">
+        <div>
+          <h2>${escapeHtml(customer.display_name || customer.verified_name || customer.email)}</h2>
+          <p>${escapeHtml(customer.email || "")}</p>
+        </div>
+        <div class="section-actions">
+          ${badge(customer.admin_customer_status || "Standard")}
+          ${Number(customer.admin_lifetime || 0) === 1 ? badge("Lifetime", "amber") : ""}
+          <button class="admin-button secondary" type="button" data-action="load-section" data-section="customers">Back to CRM</button>
+        </div>
+      </div>
+      <div class="admin-grid">
+        ${stat("Contact email", customer.contact_email || "Not added")}
+        ${stat("Phone", customer.phone || "Not added")}
+        ${stat("Preference", customer.communication_preference || "Email")}
+        ${stat("Flags", flags.length || 0)}
+        ${stat("Support cases", supportCases.length || 0)}
+        ${stat("Notifications", notifications.length || 0)}
+        ${stat("Internal notes", notes.length || 0)}
+      </div>
+    </section>
+    <div class="dashboard-layout">
+      <div class="dashboard-stack">
+        <section class="admin-card">
+          <div class="section-head"><div><h2>Membership status</h2><p>Current record, entitlement and plan context.</p></div></div>
+          <div class="drawer-grid">
+            <div class="drawer-field"><span>Status</span><strong>${escapeHtml(customer.admin_customer_status || "Standard")}</strong></div>
+            <div class="drawer-field"><span>Lifetime</span><strong>${Number(customer.admin_lifetime || 0) === 1 ? "Enabled" : "Disabled"}</strong></div>
+            <div class="drawer-field"><span>Lifetime plan</span><strong>${escapeHtml(customer.admin_lifetime_plan_id || "Not assigned")}</strong></div>
+            <div class="drawer-field"><span>Updated</span><strong>${escapeHtml(formatDate(customer.updated_at || customer.created_at))}</strong></div>
+          </div>
+        </section>
+        <section class="admin-card">
+          <div class="section-head"><div><h2>Editable support fields</h2><p>Use the existing customer record editor for lifetime access, notes and flags.</p></div></div>
+          <div class="section-actions">
+            <button class="admin-button" type="button" data-action="open-customer" data-email="${escapeAttr(customer.email)}">Open support drawer</button>
+            <button class="admin-button secondary" type="button" data-action="load-section" data-section="notifications">View notifications</button>
+          </div>
+        </section>
+      </div>
+      <div class="dashboard-stack">
+        <section class="admin-card">
+          <div class="section-head"><div><h2>Timeline</h2><p>Customer history and operational events.</p></div></div>
+          ${customerTimeline(timeline)}
+        </section>
+        <section class="admin-card">
+          <div class="section-head"><div><h2>Support / GDPR / security</h2><p>Linked records across the operational workspaces.</p></div></div>
+          <div class="drawer-section-grid">
+            <section class="drawer-section-card"><h3>Support cases</h3>${supportCases.length ? `<p>${supportCases.length} linked cases available.</p>` : "<p>No support cases recorded.</p>"}</section>
+            <section class="drawer-section-card"><h3>Notifications</h3>${notifications.length ? `<p>${notifications.length} linked notifications available.</p>` : "<p>No notifications recorded.</p>"}</section>
+            <section class="drawer-section-card"><h3>Security PINs</h3>${pins.length ? `<p>${pins.length} PIN records available.</p>` : "<p>No PIN records stored.</p>"}</section>
+            <section class="drawer-section-card"><h3>Flags</h3><p>${escapeHtml(flags.map((flag) => flag.flag).join(", ") || "None")}</p></section>
+          </div>
+        </section>
+        <section class="admin-card">
+          <div class="section-head"><div><h2>Internal notes</h2><p>Non-customer-visible operational record.</p></div></div>
+          ${notes.length ? `<div class="timeline-stack">${notes.map((note) => `<article class="timeline-item"><strong>${escapeHtml(note.category || "General")}${note.pinned ? " · Pinned" : ""}</strong><span>${escapeHtml(note.body || "")}</span><small>${escapeHtml(note.author_email || "System")} · ${escapeHtml(formatDate(note.updated_at || note.created_at))}</small></article>`).join("")}</div>` : "<p>No internal notes recorded.</p>"}
+          <form class=\"admin-form\" id=\"customerNoteForm\" style=\"margin-top:1rem;\">
+            ${input("Note category", "customer_note_category")}
+            ${textarea("Internal note", "customer_note_body")}
+            <label class=\"check\"><input id=\"customer_note_pinned\" type=\"checkbox\"> Pin note</label>
+            <button class=\"admin-button\" type=\"submit\">Add internal note</button>
+          </form>
+        </section>
+      </div>
+    </div>
+  `;
+  setValue("customer_note_category", "General");
+  document.getElementById("customerNoteForm")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const data = await api("customer", {
+      method: "POST",
+      body: JSON.stringify({
+        action: "add_note",
+        email: customer.email,
+        category: getValue("customer_note_category"),
+        body: getValue("customer_note_body"),
+        pinned: document.getElementById("customer_note_pinned").checked
+      })
+    });
+    state.data.customer = data;
+    renderCustomerProfile(data.customer, data.plans || plans);
+  });
+}
+
+function renderNotificationCentre(data = {}) {
+  const notifications = Array.isArray(data.notifications) ? data.notifications : [];
+  const filteredRows = notifications.map((item) => `
+    <tr>
+      <td><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.body || "")}</span></td>
+      <td>${badge(item.category || "General")}</td>
+      <td>${badge(item.priority || "Normal", priorityColour(item.priority))}</td>
+      <td>${badge(item.delivery_status || item.status || "Draft", item.delivery_status === "Sent" ? "green" : "amber")}</td>
+      <td>${escapeHtml(item.scheduled_for || item.sent_at || formatDate(item.updated_at || item.created_at))}</td>
+      <td>
+        <button class="mini-button" type="button" data-action="edit-notification" data-id="${escapeAttr(item.id)}">Edit</button>
+        <button class="mini-button" type="button" data-action="duplicate-notification" data-id="${escapeAttr(item.id)}">Duplicate</button>
+        <button class="mini-button" type="button" data-action="archive-notification" data-id="${escapeAttr(item.id)}">${item.archived_at ? "Restore" : "Archive"}</button>
+        <button class="mini-button danger" type="button" data-action="delete-notification" data-id="${escapeAttr(item.id)}">Delete</button>
+      </td>
+    </tr>
+  `).join("");
+  document.getElementById("adminPanel").innerHTML = `
+    <section class="admin-card">
+      <div class="section-head">
+        <div><h2>Notification Centre</h2><p>Drafts, scheduled sends, broadcasts and templates.</p></div>
+        <div class="section-actions">
+          <button class="admin-button" type="button" data-action="new-notification">New notification</button>
+        </div>
+      </div>
+      <div class="admin-grid">
+        ${stat("Drafts", notifications.filter((item) => item.delivery_status === "Draft").length)}
+        ${stat("Scheduled", notifications.filter((item) => item.delivery_status === "Scheduled").length)}
+        ${stat("Sent", notifications.filter((item) => item.delivery_status === "Sent").length)}
+        ${stat("Archived", notifications.filter((item) => item.archived_at).length)}
+      </div>
+      ${table(["Notification", "Category", "Priority", "Status", "Send time", "Actions"], filteredRows)}
+    </section>
+  `;
+}
+
+function renderMembershipCentre(data = {}) {
+  const members = Array.isArray(data.members) ? data.members : [];
+  const rows = members.map((item) => `
+    <tr>
+      <td><strong>${escapeHtml(item.display_name || item.email)}</strong><span>${escapeHtml(item.contact_email || item.email || "")}</span></td>
+      <td>${badge(item.admin_customer_status || "Standard")}</td>
+      <td>${Number(item.admin_lifetime || 0) === 1 ? badge("Lifetime", "amber") : badge("Active", "green")}</td>
+      <td>${escapeHtml(item.admin_lifetime_plan_id || "Not assigned")}</td>
+      <td>${escapeHtml(formatDate(item.updated_at))}</td>
+    </tr>
+  `).join("");
+  document.getElementById("adminPanel").innerHTML = `
+    <section class="admin-card">
+      <div class="section-head"><div><h2>Membership Centre</h2><p>Plan status, lifetime access and entitlement history.</p></div></div>
+      <div class="admin-grid">
+        ${stat("Lifetime", data.summary?.lifetime || 0)}
+        ${stat("Suspended", data.summary?.suspended || 0)}
+        ${stat("Cancelled", data.summary?.cancelled || 0)}
+        ${stat("Trial", data.summary?.trial || 0)}
+        ${stat("Complimentary", data.summary?.complimentary || 0)}
+      </div>
+      ${table(["Customer", "Status", "Access", "Plan", "Updated"], rows)}
+      <div class="admin-card" style="margin-top:1rem;">
+        <h3>Membership history</h3>
+        ${customerTimeline(data.history || [])}
+      </div>
+    </section>
+  `;
+}
+
+function renderSecurityCentre(data = {}) {
+  const pins = Array.isArray(data.pins) ? data.pins : [];
+  const sessions = Array.isArray(data.sessions) ? data.sessions : [];
+  const rows = pins.map((item) => `
+    <tr>
+      <td><strong>${escapeHtml(item.email)}</strong><span>${escapeHtml(item.status || "")}</span></td>
+      <td>${escapeHtml(item.expires_at || "")}</td>
+      <td>${escapeHtml(item.last_used_at || item.used_at || "Not used")}</td>
+      <td>${escapeHtml(item.revoked_at || "Active")}</td>
+    </tr>
+  `).join("");
+  document.getElementById("adminPanel").innerHTML = `
+    <section class="admin-card">
+      <div class="section-head"><div><h2>Security Centre</h2><p>Support PINs, sessions and security history.</p></div></div>
+      <div class="admin-grid">
+        ${stat("PIN records", pins.length)}
+        ${stat("Active sessions", sessions.length)}
+        ${stat("Security events", Array.isArray(data.history) ? data.history.length : 0)}
+      </div>
+      ${table(["Customer", "Expires", "Last used", "Revoked"], rows)}
+      <div class="admin-card" style="margin-top:1rem;">
+        <h3>Session history</h3>
+        ${customerTimeline(data.history || [])}
+      </div>
+    </section>
+  `;
+}
+
+function renderCmsCentre(data = {}) {
+  const policies = Array.isArray(data.policies) ? data.policies : [];
+  const affiliate = Array.isArray(data.affiliate) ? data.affiliate : [];
+  const settings = Array.isArray(data.settings) ? data.settings : [];
+  document.getElementById("adminPanel").innerHTML = `
+    <section class="admin-card">
+      <div class="section-head"><div><h2>Website CMS</h2><p>Public content, policy pages and branding.</p></div></div>
+      <div class="admin-grid">
+        ${stat("Policies", policies.length)}
+        ${stat("Affiliate blocks", affiliate.length)}
+        ${stat("Settings", settings.length)}
+      </div>
+      <div class="dashboard-layout">
+        <div class="dashboard-stack">
+          <section class="admin-card"><h3>Branding</h3><p>${escapeHtml(data.branding?.service_name || data.branding?.business_name || "Not configured")}</p></section>
+          <section class="admin-card"><h3>Settings</h3>${table(["Key", "Value", "Updated"], settings.map((item) => `<tr><td><strong>${escapeHtml(item.key)}</strong></td><td>${escapeHtml(item.value || "")}</td><td>${escapeHtml(formatDate(item.updated_at))}</td></tr>`).join(""))}</section>
+        </div>
+        <div class="dashboard-stack">
+          <section class="admin-card"><h3>Policies</h3>${table(["Title", "Status", "Published", "Updated"], policies.map((item) => `<tr><td><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.slug)}</span></td><td>${escapeHtml(item.status || "")}</td><td>${Number(item.is_published || 0) === 1 ? "Yes" : "No"}</td><td>${escapeHtml(formatDate(item.updated_at))}</td></tr>`).join(""))}</section>
+          <section class="admin-card"><h3>Affiliate content</h3>${table(["Title", "Type", "Enabled", "Updated"], affiliate.map((item) => `<tr><td><strong>${escapeHtml(item.title)}</strong></td><td>${escapeHtml(item.block_type || "")}</td><td>${Number(item.is_enabled || 0) === 1 ? "Yes" : "No"}</td><td>${escapeHtml(formatDate(item.updated_at))}</td></tr>`).join(""))}</section>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderReportsCentre(data = {}) {
+  const overview = data.overview || {};
+  const analytics = data.analytics || {};
+  document.getElementById("adminPanel").innerHTML = `
+    <section class="admin-card">
+      <div class="section-head"><div><h2>Reports</h2><p>Operational summary and compliance signals.</p></div></div>
+      <div class="admin-grid">
+        ${stat("Customers", overview.customers || 0)}
+        ${stat("Support tickets", overview.supportTickets || 0)}
+        ${stat("Data requests", overview.dataProtectionRequests || 0)}
+        ${stat("System reports", overview.systemReports || 0)}
+        ${stat("Enquiries", analytics.totalEnquiries || 0)}
+        ${stat("Plan changes", analytics.planChanges || 0)}
+      </div>
+      <div class="admin-card" style="margin-top:1rem;">
+        <h3>Recent audit</h3>
+        ${customerTimeline(data.audit || [])}
+      </div>
+    </section>
+  `;
 }
 
 function renderPlans(plans = []) {
@@ -2220,81 +2593,82 @@ function openEnquiryWorkspace(thread) {
 function renderSupport(items = []) {
   const rows = items.map((item) => `
     <tr>
-      <td><strong>${escapeHtml(item.subject || "Support request")}</strong><span>${escapeHtml(item.customer_email || "No customer email")}</span></td>
+      <td><strong>${escapeHtml(item.reference || item.id)}</strong><span>${escapeHtml(item.subject || "Support case")}</span></td>
+      <td>${escapeHtml(item.customer_name || item.customer_email || "Customer")}</td>
+      <td>${escapeHtml(item.category || "General Enquiry")}</td>
+      <td>${escapeHtml(item.department || "Support")}</td>
       <td>${badge(item.status || "Open", statusColour(item.status || "Open"))}</td>
-      <td>${escapeHtml(item.priority || "Normal")}</td>
-      <td>${escapeHtml(formatDate(item.created_at || item.updated_at))}</td>
-      <td><button class="mini-button" type="button" data-action="open-support" data-id="${escapeAttr(item.id)}">Open / reply</button></td>
+      <td>${badge(item.priority || "Normal", priorityColour(item.priority))}</td>
+      <td>${escapeHtml(item.assigned_admin || "Unassigned")}</td>
+      <td>${escapeHtml(item.sla_target || "48h")}</td>
+      <td>${escapeHtml(formatDate(item.updated_at || item.created_at))}</td>
+      <td><button class="mini-button" type="button" data-action="open-support" data-id="${escapeAttr(item.id)}">Open</button></td>
     </tr>
+    <tr><td colspan="10">${auditTimeline(parseAudit(item.audit_log))}</td></tr>
   `).join("");
 
   document.getElementById("adminPanel").innerHTML = `
     <div class="admin-card">
       <div class="section-head">
-        <div><h2>Support requests</h2><p>Review customer requests, manage their workflow status and prepare staff replies.</p></div>
+        <div><h2>Support Operations</h2><p>Service desk queue with assignment, escalation and resolution workflow.</p></div>
+        <div class="section-actions">
+          <button class="admin-button" type="button" data-action="new-support-case">New case</button>
+        </div>
       </div>
-      ${table(["Request", "Status", "Priority", "Submitted", "Actions"], rows)}
-    </div>
-    <div class="admin-card">
-      <div class="section-head"><div><h2>Create internal support record</h2><p>Add a support item received through another approved channel.</p></div></div>
-      <form class="admin-form" id="supportForm">
-        ${input("Customer email", "support_customer_email", "email")}
-        ${input("Subject", "support_subject", "text")}
-        <label class="admin-label">Status<select id="support_status"><option>Open</option><option>In Progress</option><option>Resolved</option><option>Closed</option></select></label>
-        <label class="admin-label">Priority<select id="support_priority"><option>Low</option><option selected>Normal</option><option>High</option><option>Urgent</option></select></label>
-        ${textarea("Request details / notes", "support_notes")}
-        <button class="admin-button" type="submit">Save support record</button>
-      </form>
+      <div class="admin-grid">
+        ${stat("Open", items.filter((item) => !["Closed", "Archived"].includes(String(item.status || ""))).length)}
+        ${stat("Awaiting customer", items.filter((item) => String(item.status || "").toLowerCase().includes("await")).length)}
+        ${stat("Escalated", items.filter((item) => String(item.priority || "").toLowerCase() === "urgent").length)}
+      </div>
+      ${table(["Reference", "Customer", "Category", "Department", "Status", "Priority", "Assigned", "SLA", "Updated", "Actions"], rows)}
     </div>
   `;
 
-  document.getElementById("supportForm").addEventListener("submit", async (event) => {
-    event.preventDefault();
-    await api("support", {
-      method: "POST",
-      body: JSON.stringify({
-        customer_email: getValue("support_customer_email"),
-        subject: getValue("support_subject"),
-        status: getValue("support_status"),
-        priority: getValue("support_priority"),
-        notes: getValue("support_notes")
-      })
-    });
-    loadSection("support");
-  });
+  document.querySelectorAll('[data-action="new-support-case"]').forEach((button) => button.addEventListener("click", () => openSupportModal("")));
 }
 
 function openSupportModal(id) {
-  const item = (state.data.support?.support || []).find((record) => record.id === id);
-  if (!item) return;
+  const item = id ? (state.data.support?.support || []).find((record) => record.id === id) : {};
+  const supportCase = item || {};
+  const isNew = !id;
 
   openModal(`
     <div class="modal-head">
-      <div><h2>${escapeHtml(item.subject || "Support request")}</h2><p>Staff support workspace</p></div>
+      <div><h2>${escapeHtml(supportCase.subject || "Support case")}</h2><p>Modern helpdesk workspace</p></div>
       <button class="drawer-close" type="button" data-action="close-modal">×</button>
     </div>
     <div class="support-request-summary">
       <div class="drawer-grid">
-        <div class="drawer-field"><span>Customer</span><strong>${escapeHtml(item.customer_email || "Not supplied")}</strong></div>
-        <div class="drawer-field"><span>Submitted</span><strong>${escapeHtml(formatDate(item.created_at || item.updated_at))}</strong></div>
-        <div class="drawer-field"><span>Current status</span><strong>${escapeHtml(item.status || "Open")}</strong></div>
-        <div class="drawer-field"><span>Priority</span><strong>${escapeHtml(item.priority || "Normal")}</strong></div>
+        <div class="drawer-field"><span>Reference</span><strong>${escapeHtml(supportCase.reference || "New case")}</strong></div>
+        <div class="drawer-field"><span>Customer</span><strong>${escapeHtml(supportCase.customer_name || supportCase.customer_email || "Not supplied")}</strong></div>
+        <div class="drawer-field"><span>Department</span><strong>${escapeHtml(supportCase.department || "Support")}</strong></div>
+        <div class="drawer-field"><span>Current status</span><strong>${escapeHtml(supportCase.status || "Open")}</strong></div>
+        <div class="drawer-field"><span>Priority</span><strong>${escapeHtml(supportCase.priority || "Normal")}</strong></div>
+        <div class="drawer-field"><span>SLA target</span><strong>${escapeHtml(supportCase.sla_target || "48h")}</strong></div>
       </div>
       <section class="support-message-panel">
-        <span>Request details</span>
-        <p>${escapeHtml(item.notes || "No request message is stored on this record.")}</p>
+        <span>Case details</span>
+        <p>${escapeHtml(supportCase.notes || "No request message is stored on this record.")}</p>
       </section>
     </div>
     <form class="admin-form single support-workspace-form" id="supportWorkspaceForm">
       <div class="admin-form two-column-form">
-        <label class="admin-label">Status<select id="support_workspace_status">${["Open", "In Progress", "Resolved", "Closed"].map((status) => `<option value="${status}" ${status === item.status ? "selected" : ""}>${status}</option>`).join("")}</select></label>
-        <label class="admin-label">Priority<select id="support_workspace_priority">${priorities.map((priority) => `<option value="${priority}" ${priority === item.priority ? "selected" : ""}>${priority}</option>`).join("")}</select></label>
+        <label class="admin-label">Customer<input id="support_workspace_customer" value="${escapeAttr(supportCase.customer_email || "")}" ${isNew ? "" : "readonly"}></label>
+        <label class="admin-label">Category<input id="support_workspace_category" value="${escapeAttr(supportCase.category || "General Enquiry")}"></label>
+        <label class="admin-label">Department<input id="support_workspace_department" value="${escapeAttr(supportCase.department || "Support")}"></label>
+        <label class="admin-label">Assigned admin<input id="support_workspace_assigned" value="${escapeAttr(supportCase.assigned_admin || "")}"></label>
+        <label class="admin-label">Status<select id="support_workspace_status">${["Open", "Awaiting Customer", "Awaiting Staff", "Escalated", "Closed", "Archived"].map((status) => `<option value="${status}" ${status === supportCase.status ? "selected" : ""}>${status}</option>`).join("")}</select></label>
+        <label class="admin-label">Priority<select id="support_workspace_priority">${priorities.map((priority) => `<option value="${priority}" ${priority === supportCase.priority ? "selected" : ""}>${priority}</option>`).join("")}</select></label>
+        <label class="admin-label">SLA target<input id="support_workspace_sla" value="${escapeAttr(supportCase.sla_target || "48h")}"></label>
       </div>
-      <label class="admin-label">Reply draft (not saved)<textarea id="support_reply_draft" placeholder="Draft a reply to copy into your approved email channel"></textarea></label>
-      <div class="admin-alert">This draft is for internal use only and is not sent directly from the Admin Centre. Use your approved customer communications channel to send replies.</div>
+      <label class="admin-label">Customer conversation<textarea id="support_reply_draft" placeholder="Draft a reply or note to the customer">${escapeHtml((supportCase.customer_replies || []).map((reply) => reply.message).join("\n"))}</textarea></label>
+      <label class="admin-label">Internal notes<textarea id="support_internal_notes" placeholder="Internal notes only">${escapeHtml(supportCase.notes || "")}</textarea></label>
+      <div class="admin-alert">Replies remain stored in the case record. Attachments are represented as case metadata until the file workflow is connected.</div>
       <div class="section-actions">
-        <button class="admin-button" type="submit">Save status</button>
-        <button class="admin-button secondary" type="button" disabled>Send reply</button>
+        <button class="admin-button" type="submit">${isNew ? "Create case" : "Save changes"}</button>
+        <button class="admin-button secondary" type="button" data-support-action="escalate">Escalate</button>
+        <button class="admin-button secondary" type="button" data-support-action="reopen">Reopen</button>
+        <button class="admin-button secondary" type="button" data-support-action="close">Close</button>
       </div>
       <div id="supportWorkspaceSaved" class="admin-success" hidden></div>
     </form>
@@ -2306,12 +2680,22 @@ function openSupportModal(id) {
       const data = await api("support", {
         method: "POST",
         body: JSON.stringify({
-          id: item.id,
-          customer_email: item.customer_email || "",
-          subject: item.subject || "",
+          id: supportCase.id || "",
+          reference: supportCase.reference || "",
+          customer_email: getValue("support_workspace_customer"),
+          customer_name: supportCase.customer_name || "",
+          subject: supportCase.subject || "",
+          category: getValue("support_workspace_category"),
+          department: getValue("support_workspace_department"),
+          assigned_admin: getValue("support_workspace_assigned"),
           status: getValue("support_workspace_status"),
           priority: getValue("support_workspace_priority"),
-          notes: item.notes || ""
+          sla_target: getValue("support_workspace_sla"),
+          notes: getValue("support_internal_notes"),
+          customer_replies: [{ message: getValue("support_reply_draft"), created_at: new Date().toISOString() }],
+          attachments: supportCase.attachments || [],
+          resolution_summary: supportCase.resolution_summary || "",
+          audit_log: supportCase.audit_log || "[]"
         })
       });
       state.data.support = { ...(state.data.support || {}), support: data.support || [] };
@@ -2321,6 +2705,124 @@ function openSupportModal(id) {
       setSaved("supportWorkspaceSaved", error.message, true);
     }
   });
+
+  document.querySelectorAll("[data-support-action]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const action = button.dataset.supportAction;
+      const nextStatus = action === "close" ? "Closed" : action === "reopen" ? "Open" : "Escalated";
+      setValue("support_workspace_status", nextStatus);
+      if (!isNew) document.getElementById("supportWorkspaceForm").requestSubmit();
+    });
+  });
+}
+
+function openNotificationModal(id = "") {
+  const item = id ? (state.data.notifications?.notifications || []).find((record) => record.id === id) : {};
+  const notification = item || {};
+  openModal(`
+    <div class="modal-head">
+      <div><h2>${escapeHtml(notification.title || "Notification")}</h2><p>Communications workspace</p></div>
+      <button class="drawer-close" type="button" data-action="close-modal">×</button>
+    </div>
+    <form class="admin-form single" id="notificationForm">
+      <div class="admin-form two-column-form">
+        ${input("Target email", "notification_email", "email")}
+        ${input("Category", "notification_category")}
+        ${input("Priority", "notification_priority")}
+        ${input("Template key", "notification_template")}
+        ${input("Schedule", "notification_schedule", "datetime-local")}
+        ${input("Title", "notification_title")}
+      </div>
+      ${textarea("Body", "notification_body")}
+      <label class="admin-label">Status<select id="notification_status"><option>Draft</option><option>Scheduled</option><option>Sent</option><option>Archived</option></select></label>
+      <div class="section-actions">
+        <button class="admin-button" type="submit">Save notification</button>
+        <button class="admin-button secondary" type="button" data-action="send-notification-now">Send now</button>
+      </div>
+      <div id="notificationSaved" class="admin-success" hidden></div>
+    </form>
+  `);
+
+  setValue("notification_email", notification.email || "");
+  setValue("notification_category", notification.category || "General");
+  setValue("notification_priority", notification.priority || "Normal");
+  setValue("notification_template", notification.template_key || "");
+  setValue("notification_schedule", notification.scheduled_for || "");
+  setValue("notification_title", notification.title || "");
+  setValue("notification_body", notification.body || "");
+  setValue("notification_status", notification.delivery_status || notification.status || "Draft");
+
+  document.getElementById("notificationForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const data = await api("notifications", {
+      method: "POST",
+      body: JSON.stringify({
+        id: notification.id || "",
+        email: getValue("notification_email"),
+        category: getValue("notification_category"),
+        priority: getValue("notification_priority"),
+        template_key: getValue("notification_template"),
+        scheduled_for: getValue("notification_schedule"),
+        title: getValue("notification_title"),
+        body: getValue("notification_body"),
+        status: getValue("notification_status"),
+        delivery_status: getValue("notification_status"),
+        archived_at: notification.archived_at || null
+      })
+    });
+    state.data.notifications = data;
+    renderNotificationCentre(data);
+    closeModal();
+  });
+
+  document.querySelector('[data-action="send-notification-now"]')?.addEventListener("click", async () => {
+    const data = await api("notifications", {
+      method: "POST",
+      body: JSON.stringify({
+        id: notification.id || "",
+        email: getValue("notification_email"),
+        category: getValue("notification_category"),
+        priority: getValue("notification_priority"),
+        template_key: getValue("notification_template"),
+        scheduled_for: "",
+        sent_at: new Date().toISOString(),
+        title: getValue("notification_title"),
+        body: getValue("notification_body"),
+        status: "Sent",
+        delivery_status: "Sent"
+      })
+    });
+    state.data.notifications = data;
+    renderNotificationCentre(data);
+    closeModal();
+  });
+}
+
+async function duplicateNotification(id) {
+  const item = (state.data.notifications?.notifications || []).find((record) => record.id === id);
+  if (!item) return;
+  await api("notifications", {
+    method: "POST",
+    body: JSON.stringify({ ...item, id: "", title: `${item.title || "Notification"} copy`, status: "Draft", delivery_status: "Draft" })
+  });
+  loadSection("notifications");
+}
+
+async function toggleNotificationArchive(id) {
+  const item = (state.data.notifications?.notifications || []).find((record) => record.id === id);
+  if (!item) return;
+  await api("notifications", {
+    method: "POST",
+    body: JSON.stringify({ ...item, archived_at: item.archived_at ? null : new Date().toISOString(), status: item.archived_at ? "Draft" : "Archived", delivery_status: item.archived_at ? "Draft" : "Archived" })
+  });
+  loadSection("notifications");
+}
+
+async function deleteNotification(id) {
+  const ok = window.confirm("Delete this notification?");
+  if (!ok) return;
+  await api("notifications", { method: "POST", body: JSON.stringify({ action: "delete", id }) });
+  loadSection("notifications");
 }
 
 function renderSystem(items = []) {
@@ -2397,24 +2899,34 @@ async function updateRecordStatus(section, id, status) {
 }
 
 function renderDataRequests(items = []) {
+  const rows = items.map((item) => {
+    const due = item.statutory_deadline || item.due_at;
+    const daysRemaining = due ? Math.ceil((new Date(due) - new Date()) / 86400000) : null;
+    const urgent = daysRemaining !== null && daysRemaining <= 3;
+    return `
+      <tr>
+        <td><strong>${escapeHtml(item.reference)}</strong><span>${escapeHtml(formatDate(item.submitted_at || item.created_at))}</span></td>
+        <td><strong>${escapeHtml(item.customer_name || "Customer")}</strong><span>${escapeHtml(item.customer_email || item.user_id || "")}</span></td>
+        <td>${escapeHtml(item.request_type || "")}</td>
+        <td>${badge(item.status || "New", statusColour(item.status))}</td>
+        <td>${escapeHtml(item.assigned_admin_id || "Unassigned")}</td>
+        <td>${urgent ? badge(daysRemaining < 0 ? "Overdue" : `${daysRemaining} days`, daysRemaining < 0 ? "red" : "amber") : escapeHtml(formatDate(due))}</td>
+        <td><button class="mini-button" type="button" data-action="open-admin-record" data-section="datarequests" data-id="${escapeAttr(item.id)}">Open</button></td>
+      </tr>
+      <tr><td colspan="7">${auditTimeline(parseAudit(item.audit_log))}</td></tr>
+    `;
+  }).join("");
   renderAdminRecordSection({
     section: "datarequests",
     title: "Data Protection Requests",
     description: "Review and manage formal UK GDPR and Data Protection Act 2018 customer requests.",
     items,
     statuses: dprStatuses,
-    columns: ["Reference", "Customer", "Type", "Status", "Due", "Updated"],
-    row: (item) => `
-      <tr>
-        <td><strong>${escapeHtml(item.reference)}</strong><span>${escapeHtml(formatDate(item.submitted_at || item.created_at))}</span></td>
-        <td><strong>${escapeHtml(item.customer_name || "Customer")}</strong><span>${escapeHtml(item.customer_email || item.user_id || "")}</span></td>
-        <td>${escapeHtml(item.request_type || "")}</td>
-        <td>${badge(item.status || "New", statusColour(item.status))}</td>
-        <td>${escapeHtml(formatDate(item.due_at))}</td>
-        <td><button class="mini-button" type="button" data-action="open-admin-record" data-section="datarequests" data-id="${escapeAttr(item.id)}">Open</button></td>
-      </tr>
-    `
+    columns: ["Reference", "Customer", "Type", "Status", "Assigned", "Deadline", "Actions"],
+    row: (item) => rows.includes(item.reference) ? "" : ""
   });
+  const tableHost = document.getElementById("datarequests_table");
+  if (tableHost) tableHost.innerHTML = table(["Reference", "Customer", "Type", "Status", "Assigned", "Deadline", "Actions"], rows);
 }
 
 function renderSystemReports(items = []) {
@@ -2633,7 +3145,7 @@ function renderAudit(items = []) {
         <label class="admin-label">To<input id="audit_filter_to" type="date"></label>
         <label class="admin-label">Outcome<input id="audit_filter_outcome" type="search" placeholder="success / failure"></label>
       </div>
-      <div id="auditResults">${table(["Action", "Actor", "Entity", "Record", "Date"], rows)}</div>
+      <div id="auditResults">${auditTimeline(baseItems)}</div>
     </div>
   `;
 
@@ -3012,15 +3524,15 @@ function priorityColour(priority = "") {
 
 function renderComingSoon(settings = {}) {
   renderStatusForm("comingsoon", settings, {
-    title: "Coming Soon Page",
+    title: "Launch Gate Page",
     description: "Switch the public website into a pre-launch page while keeping the admin portal available.",
     enabledKey: "comingsoon_enabled",
     modeKey: "comingsoon_content_mode",
     contentKey: "comingsoon_content",
-    enabledLabel: "Enable Coming Soon page",
-    contentLabel: "Coming Soon page content",
-    previewLabel: "Preview Coming Soon Page",
-    saveLabel: "Save Coming Soon Page"
+    enabledLabel: "Enable launch gate page",
+    contentLabel: "Launch gate page content",
+    previewLabel: "Preview launch gate page",
+    saveLabel: "Save launch gate page"
   });
 }
 
@@ -3148,6 +3660,18 @@ async function openCustomerDrawer(email) {
   }
 }
 
+async function openCustomerProfile(email) {
+  const panel = document.getElementById("adminPanel");
+  panel.innerHTML = `<div class="admin-loading">Loading customer profile...</div>`;
+  try {
+    const data = await api("customer", { query: { email } });
+    state.data.customer = data;
+    renderCustomerProfile(data.customer, data.plans || []);
+  } catch (error) {
+    panel.innerHTML = `<div class="admin-card">${renderInlineStatus("error", error.message || "Unable to load customer profile.")}</div>`;
+  }
+}
+
 function closeCustomerDrawer() {
   document.getElementById("customerDrawer")?.remove();
 }
@@ -3158,6 +3682,11 @@ function renderCustomerDrawer(customer, plans = []) {
 
   const displayName = customer.display_name || customer.verified_name || customer.email;
   const isLifetime = Number(customer.admin_lifetime || 0) === 1;
+  const flags = Array.isArray(customer.flags) ? customer.flags : [];
+  const timeline = Array.isArray(customer.timeline) ? customer.timeline : [];
+  const supportCases = Array.isArray(customer.supportCases) ? customer.supportCases : [];
+  const notifications = Array.isArray(customer.notifications) ? customer.notifications : [];
+  const pins = Array.isArray(customer.pins) ? customer.pins : [];
   const planOptions = plans.map((plan) => {
     const label = `${plan.plan_name || plan.id} - ${plan.plan_type || "Service plan"}${Number(plan.is_active || 0) === 1 ? "" : " (inactive)"}`;
     return `<option value="${escapeAttr(plan.id)}" ${customer.admin_lifetime_plan_id === plan.id ? "selected" : ""}>${escapeHtml(label)}</option>`;
@@ -3165,6 +3694,7 @@ function renderCustomerDrawer(customer, plans = []) {
 
   drawer.querySelector(".drawer-head p").textContent = customer.email || "";
   drawer.querySelector(".drawer-body").innerHTML = `
+    <div class="admin-alert">Support viewing mode ready. Use the drawer for read-only customer review and audited account actions.</div>
     <div class="customer-profile-head">
       <div class="customer-avatar">${escapeHtml((displayName || "C").slice(0, 1).toUpperCase())}</div>
       <div><strong>${escapeHtml(displayName)}</strong><span>${escapeHtml(customer.email || "")}</span></div>
@@ -3176,6 +3706,7 @@ function renderCustomerDrawer(customer, plans = []) {
       <div class="drawer-field"><span>Communication</span><strong>${escapeHtml(customer.communication_preference || "Email")}</strong></div>
       <div class="drawer-field"><span>Verified name</span><strong>${escapeHtml(customer.verified_name || "Not added")}</strong></div>
       <div class="drawer-field"><span>Support notes</span><strong>${escapeHtml(customer.support_notes || "None recorded")}</strong></div>
+      <div class="drawer-field"><span>Flags</span><strong>${escapeHtml(flags.map((flag) => flag.flag).join(", ") || "None")}</strong></div>
       <div class="drawer-field"><span>Lifetime plan</span><strong>${escapeHtml(customer.admin_lifetime_plan_id || "Not assigned")}</strong></div>
       <div class="drawer-field"><span>Updated</span><strong>${escapeHtml(formatDate(customer.updated_at || customer.created_at))}</strong></div>
     </div>
@@ -3185,17 +3716,29 @@ function renderCustomerDrawer(customer, plans = []) {
         <p>${isLifetime ? `Lifetime access is enabled${customer.admin_lifetime_plan_id ? ` on ${escapeHtml(customer.admin_lifetime_plan_id)}` : ""}.` : "This customer has standard account access."}</p>
       </section>
       <section class="drawer-section-card">
-        <h3>Orders</h3>
-        <p>No order history is exposed by the current customer API.</p>
+        <h3>Support cases</h3>
+        <p>${supportCases.length ? `${supportCases.length} support cases loaded.` : "No support cases recorded."}</p>
       </section>
       <section class="drawer-section-card">
         <h3>Timeline</h3>
-        <p>Profile last updated ${escapeHtml(formatDate(customer.updated_at || customer.created_at))}.</p>
+        <p>${timeline.length ? `${timeline.length} activity events loaded.` : `Profile last updated ${escapeHtml(formatDate(customer.updated_at || customer.created_at))}.`}</p>
+      </section>
+      <section class="drawer-section-card">
+        <h3>Notifications</h3>
+        <p>${notifications.length ? `${notifications.length} notifications available.` : "No notifications recorded."}</p>
+      </section>
+      <section class="drawer-section-card">
+        <h3>Security PINs</h3>
+        <p>${pins.length ? `${pins.length} support PIN records available.` : "No support PINs recorded."}</p>
       </section>
       <section class="drawer-section-card">
         <h3>GDPR &amp; support</h3>
         <p>${escapeHtml(customer.support_notes || "No linked support history is available on this profile.")}</p>
       </section>
+    </div>
+    <div class="drawer-section-card">
+      <h3>Customer timeline</h3>
+      ${timeline.length ? `<div class="timeline-stack">${timeline.map((item) => `<div class="timeline-item"><strong>${escapeHtml(item.title || item.event_type || "Event")}</strong><span>${escapeHtml(item.detail || formatDate(item.created_at))}</span></div>`).join("")}</div>` : "<p>No customer timeline has been loaded yet.</p>"}
     </div>
     <form class="admin-form single" id="customerAdminForm">
       <label class="check"><input id="customer_lifetime" type="checkbox" ${isLifetime ? "checked" : ""}> Mark this customer as Lifetime</label>
@@ -3205,6 +3748,10 @@ function renderCustomerDrawer(customer, plans = []) {
           <option value="">Select a Lifetime plan</option>
           ${planOptions}
         </select>
+      </label>
+      <label>
+        Customer flags
+        <input id="customer_flags" type="text" placeholder="VIP, Accessibility, Payment Review" value="${escapeAttr(flags.map((flag) => flag.flag).join(", "))}">
       </label>
       ${textarea("Internal admin notes", "customer_admin_notes")}
       <button class="admin-button" type="submit">Save customer changes</button>
@@ -3234,7 +3781,8 @@ function renderCustomerDrawer(customer, plans = []) {
       body: JSON.stringify({
         admin_lifetime: lifetimeChecked,
         admin_lifetime_plan_id: lifetimeChecked ? getValue("customer_lifetime_plan") : "",
-        admin_notes: getValue("customer_admin_notes")
+        admin_notes: getValue("customer_admin_notes"),
+        customer_flags: getValue("customer_flags")
       })
     });
     const data = await response.json();

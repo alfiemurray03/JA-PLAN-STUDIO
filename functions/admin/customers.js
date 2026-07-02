@@ -90,6 +90,20 @@ async function ensureProfileTable(DB) {
   `).run();
 }
 
+async function ensureCustomerOpsTables(DB) {
+  await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS customer_account_flags (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      flag TEXT NOT NULL,
+      note TEXT,
+      source TEXT NOT NULL DEFAULT 'admin',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+}
+
 async function ensureRoleTables(DB) {
   await DB.prepare(`
     CREATE TABLE IF NOT EXISTS admin_roles (
@@ -142,6 +156,7 @@ export async function onRequest(context) {
   }
 
   await ensureProfileTable(env.DB);
+  await ensureCustomerOpsTables(env.DB);
 
   const result = await env.DB.prepare(`
     SELECT

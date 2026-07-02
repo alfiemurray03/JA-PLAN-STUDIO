@@ -194,6 +194,70 @@ async function ensureTables(DB) {
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `).run();
+
+  await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS customer_support_cases (
+      id TEXT PRIMARY KEY,
+      reference TEXT UNIQUE,
+      email TEXT NOT NULL,
+      request_type TEXT NOT NULL,
+      category TEXT NOT NULL,
+      status TEXT DEFAULT 'New',
+      priority TEXT DEFAULT 'Normal',
+      assigned_department TEXT,
+      assigned_admin TEXT,
+      subject TEXT NOT NULL,
+      latest_message TEXT,
+      attachments TEXT DEFAULT '[]',
+      audit_history TEXT DEFAULT '[]',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+
+  await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS customer_support_messages (
+      id TEXT PRIMARY KEY,
+      case_reference TEXT NOT NULL,
+      author_type TEXT NOT NULL,
+      author_email TEXT,
+      message TEXT NOT NULL,
+      is_internal INTEGER DEFAULT 0,
+      attachments TEXT DEFAULT '[]',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+
+  await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS customer_notifications (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      category TEXT NOT NULL,
+      priority TEXT DEFAULT 'Normal',
+      title TEXT NOT NULL,
+      body TEXT,
+      status TEXT DEFAULT 'Unread',
+      archived_at TEXT,
+      reference_type TEXT,
+      reference_id TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+
+  await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS customer_timeline_events (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      event_type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      detail TEXT,
+      actor_type TEXT DEFAULT 'system',
+      actor_email TEXT,
+      metadata TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
 }
 
 async function settingMap(DB, keys, defaults = {}) {
@@ -362,6 +426,52 @@ function auditEvent(type, actor, detail = {}) {
   }]);
 }
 
+function supportReference(prefix = "SUP") {
+  return `${prefix}-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${String(Math.floor(Math.random() * 900000) + 100000)}`;
+}
+
+async function createSupportCase(DB, identity, profile, body, kind) {
+  const subject = clean(body.subject || kind, 180);
+  const message = clean(body.customer_message || body.message || body.description, 4000);
+  const category = clean(body.category || kind, 80);
+  if (!subject || !message || !category) return json({ error: "Subject, category and message are required." }, 400);
+  const reference = supportReference("SUP");
+  const createdAt = new Date().toISOString();
+  const attachments = JSON.stringify(Array.isArray(body.attachments) ? body.attachments.slice(0, 10) : []);
+  const audit = JSON.stringify([{ event: "created", at: createdAt, actor: identity.email, kind }]);
+  await DB.prepare(`
+    INSERT INTO customer_support_cases
+    (id, reference, email, request_type, category, status, priority, assigned_department, subject, latest_message, attachments, audit_history, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, 'New', ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+  `).bind(
+    crypto.randomUUID(), reference, identity.email, kind, category,
+    clean(body.priority || "Normal", 20), kind === "gdpr" ? "Data Protection" : kind === "billing" ? "Billing" : kind === "website" ? "Technical" : "Support",
+    subject, message, attachments, audit
+  ).run();
+  await DB.prepare(`INSERT INTO customer_support_messages (id, case_reference, author_type, author_email, message, is_internal, attachments) VALUES (?, ?, 'customer', ?, ?, 0, ?)`)
+    .bind(crypto.randomUUID(), reference, identity.email, message, attachments).run();
+  await DB.prepare(`
+    INSERT INTO customer_timeline_events (id, email, event_type, title, detail, actor_type, actor_email, metadata)
+    VALUES (?, ?, ?, ?, ?, 'customer', ?, ?)
+  `).bind(crypto.randomUUID(), identity.email, `${kind}_submitted`, subject, message, identity.email, JSON.stringify({ reference, kind })).run();
+  return { reference };
+}
+
+async function listSupportCases(DB, email) {
+  const result = await DB.prepare(`SELECT * FROM customer_support_cases WHERE lower(email) = lower(?) ORDER BY updated_at DESC`).bind(email).all();
+  return result.results || [];
+}
+
+async function listNotifications(DB, email) {
+  const result = await DB.prepare(`SELECT * FROM customer_notifications WHERE lower(email) = lower(?) ORDER BY created_at DESC LIMIT 200`).bind(email).all();
+  return result.results || [];
+}
+
+async function listTimeline(DB, email) {
+  const result = await DB.prepare(`SELECT * FROM customer_timeline_events WHERE lower(email) = lower(?) ORDER BY created_at DESC LIMIT 200`).bind(email).all();
+  return result.results || [];
+}
+
 async function createDataProtectionRequest(DB, identity, profile, body) {
   const requestType = clean(body.request_type, 160);
   const message = clean(body.customer_message, 4000);
@@ -517,7 +627,12 @@ export async function onRequest(context) {
   }
 
   if (request.method === "GET") {
-    return json(await listOwnRecords(env.DB, identity.email));
+    return json({
+      ...await listOwnRecords(env.DB, identity.email),
+      supportCases: await listSupportCases(env.DB, identity.email),
+      notifications: await listNotifications(env.DB, identity.email),
+      timeline: await listTimeline(env.DB, identity.email)
+    });
   }
 
   if (request.method === "POST") {
@@ -526,6 +641,11 @@ export async function onRequest(context) {
     body.env = env;
     if (type === "data_protection") return createDataProtectionRequest(env.DB, identity, profile, body);
     if (type === "system_report") return createSystemReport(env.DB, identity, profile, body);
+    if (type === "general_enquiry") return createSupportCase(env.DB, identity, profile, body, "general_enquiry");
+    if (type === "website_issue") return createSupportCase(env.DB, identity, profile, body, "website_issue");
+    if (type === "account_support") return createSupportCase(env.DB, identity, profile, body, "account_support");
+    if (type === "billing_support") return createSupportCase(env.DB, identity, profile, body, "billing_support");
+    if (type === "gdpr_request") return createSupportCase(env.DB, identity, profile, body, "gdpr_request");
     return json({ error: "Unknown request type." }, 400);
   }
 

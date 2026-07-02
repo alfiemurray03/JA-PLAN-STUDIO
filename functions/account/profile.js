@@ -107,6 +107,11 @@ async function ensureProfileTable(DB) {
   await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN stripe_customer_id TEXT`);
   await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN stripe_customer_created_at TEXT`);
   await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN stripe_customer_synced_at TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN account_flags TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN membership_status TEXT DEFAULT 'Standard'`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN membership_renewal_at TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN support_notes TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN privacy_preferences TEXT`);
 }
 
 async function ensureNotificationTables(DB) {

@@ -71,10 +71,11 @@ Production sends `Content-Security-Policy: script-src 'self'` and does not permi
 
 The correction keeps the strict CSP in place:
 
-- the dashboard renderer now lives at `/assets/js/account-dashboard.js`;
+- the customer portal now renders through the shared runtime at `/assets/js/account-portal.js`;
 - middleware injects the authenticated identity as inert `<meta>` data rather than executable inline JavaScript;
-- the external dashboard and profile scripts parse that metadata and render the signed-in identity immediately;
-- the subsequent profile JSON response enriches the display with stored Microsoft, customer and Stripe fields.
+- the shared portal runtime parses that metadata and renders the signed-in identity immediately;
+- page-specific data is requested only where required (for example profile, requests or security data), reducing unnecessary network requests;
+- the subsequent profile JSON response enriches the display with stored Microsoft Entra, customer and Stripe fields.
 
 ## Middleware decisions
 
