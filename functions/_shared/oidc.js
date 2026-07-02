@@ -703,7 +703,6 @@ export async function completeLogin(context, realm) {
 export async function getNativeSession(request, env, realm) {
   const config = realmConfig(realm, env);
   if (!env.DB) return null;
-  await ensureTables(env.DB);
   const token = readCookie(request, config.cookie);
   if (!token) return null;
   const tokenHash = await hashToken(token);
