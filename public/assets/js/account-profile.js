@@ -2,44 +2,6 @@ async function loadAccessProfile() {
   bindDashboardShell();
   await applyAccountBranding();
 
-  const params = new URLSearchParams(window.location.search);
-  const shouldHydrateProfile = params.get("signedin") === "1" || params.get("hydrate") === "1";
-  if (!shouldHydrateProfile) {
-    // Silent check: sometimes the account portal returns to /account/ without
-    // the signedin=1 query parameter. In that case, try a JSON fetch to
-    // /account/profile to see if a valid session/profile exists and hydrate
-    // the page client-side.
-    try {
-      const check = await fetch("/account/profile", {
-        credentials: "include",
-        cache: "no-store",
-        headers: { "Accept": "application/json" }
-      });
-
-      if (check.ok) {
-        const data = await check.json();
-        const profile = data.profile;
-
-        updateProfile(profile);
-        populateForm(profile);
-        populateConsent(data.consent || {});
-        if (hasEligibleAccess(profile)) {
-          bindProfileForm(profile);
-          await loadAccountRequests();
-          bindAccountRequestForms();
-        } else {
-          renderRestrictedLists();
-        }
-        return;
-      }
-    } catch (e) {
-      // ignore and fall back to signed-out landing
-    }
-
-    showSignedOutLanding();
-    return;
-  }
-
   try {
     const response = await fetch("/account/profile", {
       credentials: "include",

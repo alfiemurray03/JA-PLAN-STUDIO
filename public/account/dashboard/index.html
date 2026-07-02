@@ -406,16 +406,24 @@
     }
 
     async function loadDashboard() {
-      try {
-        await Promise.all([loadProfile(), loadRequests()]);
-        renderProfile();
-        renderActivity();
-      } catch (error) {
-        state.profile = state.profile || {};
-        renderProfile();
-        document.getElementById("activityList").innerHTML = '<li class="activity-row"><div class="activity-meta"><strong>Unable to load dashboard</strong><small>Please refresh the page or contact support if the problem continues.</small></div><span>Error</span></li>';
-        setText("activityNote", error.message || "Dashboard data could not be loaded.");
-      }
+      state.profile = state.profile || {};
+      renderProfile();
+
+      const profileTask = loadProfile()
+        .then(() => renderProfile())
+        .catch((error) => {
+          document.getElementById("activityList").innerHTML = '<li class="activity-row"><div class="activity-meta"><strong>Profile data could not be loaded</strong><small>Please refresh the page or contact support if the problem continues.</small></div><span>Error</span></li>';
+          setText("activityNote", error.message || "Profile data could not be loaded.");
+        });
+
+      const requestsTask = loadRequests()
+        .then(() => renderActivity())
+        .catch((error) => {
+          document.getElementById("activityList").innerHTML = '<li class="activity-row"><div class="activity-meta"><strong>Unable to load recent activity</strong><small>Please refresh the page or contact support if the problem continues.</small></div><span>Error</span></li>';
+          setText("activityNote", error.message || "Recent activity could not be loaded.");
+        });
+
+      await Promise.allSettled([profileTask, requestsTask]);
     }
 
     document.addEventListener("DOMContentLoaded", loadDashboard);
