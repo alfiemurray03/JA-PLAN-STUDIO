@@ -739,7 +739,7 @@ export async function onRequest(context) {
     const profile = await getProfile(env.DB, identity, env);
     await ensureStripeCustomer(env.DB, env, identity, profile).catch(() => {});
     if (!wantsJson(request)) {
-      return redirect("/account/?signedin=1");
+      return redirect("/account/profile/index.html");
     }
     const consent = await getLatestConsent(env.DB, identity.email);
     const refreshedProfile = await getProfile(env.DB, identity, env);

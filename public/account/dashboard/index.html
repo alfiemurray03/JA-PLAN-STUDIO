@@ -408,11 +408,11 @@
     async function loadDashboard() {
       state.profile = window.__JA_NATIVE_IDENTITY__ || state.profile || {};
       renderProfile();
+      renderActivity();
 
       const profileTask = loadProfile()
         .then(() => renderProfile())
         .catch((error) => {
-          document.getElementById("activityList").innerHTML = '<li class="activity-row"><div class="activity-meta"><strong>Profile data could not be loaded</strong><small>Please refresh the page or contact support if the problem continues.</small></div><span>Error</span></li>';
           setText("activityNote", error.message || "Profile data could not be loaded.");
         });
 
