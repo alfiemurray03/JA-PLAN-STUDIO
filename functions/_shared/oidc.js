@@ -44,6 +44,14 @@ function realmConfig(realm, env) {
   };
 }
 
+function firstClaim(claims, ...keys) {
+  for (const key of keys) {
+    const value = claims?.[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
+
 function boundedNumber(value, fallback, minimum, maximum) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? Math.min(maximum, Math.max(minimum, parsed)) : fallback;
@@ -223,8 +231,23 @@ async function ensureTables(DB) {
       token_hash TEXT PRIMARY KEY, subject TEXT NOT NULL, tenant_id TEXT, email TEXT NOT NULL, name TEXT,
       refresh_token_encrypted TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP, last_seen_at TEXT DEFAULT CURRENT_TIMESTAMP,
       idle_expires_at TEXT NOT NULL, absolute_expires_at TEXT NOT NULL, refresh_after TEXT NOT NULL,
-      revoked_at TEXT, ip_hash TEXT, user_agent TEXT
+      revoked_at TEXT, ip_hash TEXT, user_agent TEXT,
+      microsoft_object_id TEXT, microsoft_given_name TEXT, microsoft_family_name TEXT,
+      microsoft_preferred_username TEXT, microsoft_locale TEXT
     )`).run();
+    for (const column of [
+      "microsoft_object_id TEXT",
+      "microsoft_given_name TEXT",
+      "microsoft_family_name TEXT",
+      "microsoft_preferred_username TEXT",
+      "microsoft_locale TEXT"
+    ]) {
+      try {
+        await DB.prepare(`ALTER TABLE ${table} ADD COLUMN ${column}`).run();
+      } catch {
+        // Existing sessions tables may already include the column.
+      }
+    }
   }
   readyDatabases.add(DB);
 }
@@ -232,6 +255,102 @@ async function ensureTables(DB) {
 function emailFromClaims(claims) {
   const emails = Array.isArray(claims.emails) ? claims.emails : [];
   return String(claims.email || claims.preferred_username || claims.upn || emails[0] || "").trim().toLowerCase();
+}
+
+async function ensureProfileColumns(DB) {
+  await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS profiles (
+      email TEXT PRIMARY KEY,
+      verified_name TEXT,
+      display_name TEXT,
+      contact_email TEXT,
+      phone TEXT,
+      communication_preference TEXT,
+      support_notes TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+
+  for (const column of [
+    "microsoft_object_id TEXT",
+    "microsoft_tenant_id TEXT",
+    "microsoft_display_name TEXT",
+    "microsoft_given_name TEXT",
+    "microsoft_family_name TEXT",
+    "microsoft_email TEXT",
+    "microsoft_preferred_username TEXT",
+    "microsoft_locale TEXT",
+    "microsoft_updated_at TEXT",
+    "stripe_customer_id TEXT",
+    "stripe_customer_created_at TEXT",
+    "stripe_customer_synced_at TEXT"
+  ]) {
+    try {
+      await DB.prepare(`ALTER TABLE profiles ADD COLUMN ${column}`).run();
+    } catch {
+      // Existing databases may already have the column.
+    }
+  }
+}
+
+async function syncCustomerProfileFromClaims(context, claims, email) {
+  if (!context.env.DB || !email) return;
+  await ensureProfileColumns(context.env.DB);
+
+  const profileEmail = String(email || "").trim().toLowerCase();
+  const displayName = firstClaim(claims, "name") || profileEmail;
+  const givenName = firstClaim(claims, "given_name");
+  const familyName = firstClaim(claims, "family_name");
+  const preferredUsername = firstClaim(claims, "preferred_username", "upn", "email");
+  const locale = firstClaim(claims, "locale");
+
+  await context.env.DB.prepare(`
+    INSERT INTO profiles (
+      email,
+      verified_name,
+      display_name,
+      contact_email,
+      microsoft_object_id,
+      microsoft_tenant_id,
+      microsoft_display_name,
+      microsoft_given_name,
+      microsoft_family_name,
+      microsoft_email,
+      microsoft_preferred_username,
+      microsoft_locale,
+      microsoft_updated_at,
+      updated_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    ON CONFLICT(email) DO UPDATE SET
+      verified_name = COALESCE(excluded.verified_name, profiles.verified_name),
+      display_name = COALESCE(NULLIF(excluded.display_name, ''), profiles.display_name, excluded.verified_name, profiles.email),
+      contact_email = COALESCE(NULLIF(excluded.contact_email, ''), profiles.contact_email, excluded.email),
+      microsoft_object_id = COALESCE(NULLIF(excluded.microsoft_object_id, ''), profiles.microsoft_object_id),
+      microsoft_tenant_id = COALESCE(NULLIF(excluded.microsoft_tenant_id, ''), profiles.microsoft_tenant_id),
+      microsoft_display_name = COALESCE(NULLIF(excluded.microsoft_display_name, ''), profiles.microsoft_display_name),
+      microsoft_given_name = COALESCE(NULLIF(excluded.microsoft_given_name, ''), profiles.microsoft_given_name),
+      microsoft_family_name = COALESCE(NULLIF(excluded.microsoft_family_name, ''), profiles.microsoft_family_name),
+      microsoft_email = COALESCE(NULLIF(excluded.microsoft_email, ''), profiles.microsoft_email),
+      microsoft_preferred_username = COALESCE(NULLIF(excluded.microsoft_preferred_username, ''), profiles.microsoft_preferred_username),
+      microsoft_locale = COALESCE(NULLIF(excluded.microsoft_locale, ''), profiles.microsoft_locale),
+      microsoft_updated_at = CURRENT_TIMESTAMP,
+      updated_at = CURRENT_TIMESTAMP
+  `).bind(
+    profileEmail,
+    displayName,
+    displayName,
+    profileEmail,
+    firstClaim(claims, "oid", "sub"),
+    firstClaim(claims, "tid"),
+    displayName,
+    givenName,
+    familyName,
+    firstClaim(claims, "email"),
+    preferredUsername,
+    locale
+  ).run();
 }
 
 export function nativeOidcEnabled(env) {
@@ -319,6 +438,9 @@ export async function completeLogin(context, realm) {
   const claims = await verifyIdToken(tokens.id_token, config, metadata, transaction.nonce);
   const email = emailFromClaims(claims);
   if (!email) throw new Error("Microsoft did not provide an email identity.");
+  if (realm === "customer") {
+    await syncCustomerProfileFromClaims(context, claims, email);
+  }
 
   const sessionToken = randomValue(48);
   const sessionHash = await hashToken(sessionToken);
@@ -327,8 +449,9 @@ export async function completeLogin(context, realm) {
   await context.env.DB.prepare(`
     INSERT INTO ${config.sessionTable} (
       token_hash, subject, tenant_id, email, name, refresh_token_encrypted,
-      idle_expires_at, absolute_expires_at, refresh_after, ip_hash, user_agent
-    ) VALUES (?, ?, ?, ?, ?, ?, datetime('now', ?), datetime('now', ?), datetime('now', '+50 minutes'), ?, ?)
+      idle_expires_at, absolute_expires_at, refresh_after, ip_hash, user_agent,
+      microsoft_object_id, microsoft_given_name, microsoft_family_name, microsoft_preferred_username, microsoft_locale
+    ) VALUES (?, ?, ?, ?, ?, ?, datetime('now', ?), datetime('now', ?), datetime('now', '+50 minutes'), ?, ?, ?, ?, ?, ?, ?)
   `).bind(
     sessionHash,
     claims.sub,
@@ -339,7 +462,12 @@ export async function completeLogin(context, realm) {
     `+${config.idleMinutes} minutes`,
     `+${config.absoluteMinutes} minutes`,
     ipHash,
-    String(context.request.headers.get("User-Agent") || "").slice(0, 500)
+    String(context.request.headers.get("User-Agent") || "").slice(0, 500),
+    firstClaim(claims, "oid", "sub"),
+    firstClaim(claims, "given_name"),
+    firstClaim(claims, "family_name"),
+    firstClaim(claims, "preferred_username", "upn", "email"),
+    firstClaim(claims, "locale")
   ).run();
 
   const headers = new Headers({
@@ -361,6 +489,7 @@ export async function getNativeSession(request, env, realm) {
   const tokenHash = await hashToken(token);
   const row = await env.DB.prepare(`
     SELECT token_hash, subject, tenant_id, email, name, refresh_token_encrypted, refresh_after,
+      microsoft_object_id, microsoft_given_name, microsoft_family_name, microsoft_preferred_username, microsoft_locale,
       datetime(refresh_after) <= datetime('now') AS refresh_due,
       created_at, last_seen_at, idle_expires_at, absolute_expires_at
     FROM ${config.sessionTable}
@@ -407,27 +536,40 @@ export async function getNativeSession(request, env, realm) {
           throw new Error("Microsoft refresh-token exchange failed.");
         }
         let refreshed = { email: row.email, name: row.name, subject: row.subject, tenantId: row.tenant_id };
+        let refreshedClaims = null;
         if (tokens.id_token) {
-          let claims;
           try {
-            claims = await verifyIdToken(tokens.id_token, config, metadata, "");
+            refreshedClaims = await verifyIdToken(tokens.id_token, config, metadata, "");
           } catch (error) {
             fatalRefreshFailure = true;
             throw error;
           }
           refreshed = {
-            email: emailFromClaims(claims) || row.email,
-            name: String(claims.name || row.name || row.email),
-            subject: claims.sub,
-            tenantId: claims.tid || row.tenant_id
+            email: emailFromClaims(refreshedClaims) || row.email,
+            name: String(refreshedClaims.name || row.name || row.email),
+            subject: refreshedClaims.sub,
+            tenantId: refreshedClaims.tid || row.tenant_id
           };
         }
         const encryptedRefresh = tokens.refresh_token ? await encryptSecret(tokens.refresh_token, env) : row.refresh_token_encrypted;
         await env.DB.prepare(`
           UPDATE ${config.sessionTable}
-          SET subject = ?, tenant_id = ?, email = ?, name = ?, refresh_token_encrypted = ?, refresh_after = datetime('now', '+50 minutes')
+          SET subject = ?, tenant_id = ?, email = ?, name = ?, refresh_token_encrypted = ?, refresh_after = datetime('now', '+50 minutes'),
+            microsoft_object_id = ?, microsoft_given_name = ?, microsoft_family_name = ?, microsoft_preferred_username = ?, microsoft_locale = ?
           WHERE token_hash = ? AND revoked_at IS NULL
-        `).bind(refreshed.subject, refreshed.tenantId, refreshed.email, refreshed.name, encryptedRefresh, tokenHash).run();
+        `).bind(
+          refreshed.subject,
+          refreshed.tenantId,
+          refreshed.email,
+          refreshed.name,
+          encryptedRefresh,
+          firstClaim(refreshedClaims || {}, "oid", "sub"),
+          firstClaim(refreshedClaims || {}, "given_name"),
+          firstClaim(refreshedClaims || {}, "family_name"),
+          firstClaim(refreshedClaims || {}, "preferred_username", "upn", "email"),
+          firstClaim(refreshedClaims || {}, "locale"),
+          tokenHash
+        ).run();
         Object.assign(row, {
           subject: refreshed.subject,
           tenant_id: refreshed.tenantId,
@@ -451,7 +593,19 @@ export async function getNativeSession(request, env, realm) {
     SET last_seen_at = CURRENT_TIMESTAMP, idle_expires_at = MIN(datetime('now', ?), absolute_expires_at)
     WHERE token_hash = ?
   `).bind(`+${config.idleMinutes} minutes`, tokenHash).run();
-  return { realm, tokenHash, subject: row.subject, tenantId: row.tenant_id, email: row.email, name: row.name || row.email };
+  return {
+    realm,
+    tokenHash,
+    subject: row.subject,
+    tenantId: row.tenant_id,
+    email: row.email,
+    name: row.name || row.email,
+    objectId: row.microsoft_object_id || "",
+    givenName: row.microsoft_given_name || "",
+    familyName: row.microsoft_family_name || "",
+    preferredUsername: row.microsoft_preferred_username || "",
+    locale: row.microsoft_locale || ""
+  };
 }
 
 export async function revokeNativeSession(request, env, realm) {
@@ -467,7 +621,7 @@ export async function revokeNativeSession(request, env, realm) {
 export async function nativeLogout(context, realm, additionalCookies = []) {
   const config = realmConfig(realm, context.env);
   await revokeNativeSession(context.request, context.env, realm);
-  const signedOut = `${new URL(context.request.url).origin}/signed-out/?realm=${encodeURIComponent(realm)}`;
+  const signedOut = `${new URL(context.request.url).origin}/signed-out/${realm}/`;
   let destination = signedOut;
   try {
     const metadata = await discover(config);
@@ -518,11 +672,25 @@ export function withIdentity(request, identity) {
   headers.delete("x-ja-auth-email");
   headers.delete("x-ja-auth-name");
   headers.delete("x-ja-auth-realm");
+  headers.delete("x-ja-auth-subject");
+  headers.delete("x-ja-auth-tenant");
+  headers.delete("x-ja-auth-object-id");
+  headers.delete("x-ja-auth-given-name");
+  headers.delete("x-ja-auth-family-name");
+  headers.delete("x-ja-auth-preferred-username");
+  headers.delete("x-ja-auth-locale");
   headers.delete("x-ja-auth-session");
   if (identity) {
     headers.set("x-ja-auth-email", identity.email);
     headers.set("x-ja-auth-name", identity.name);
     headers.set("x-ja-auth-realm", identity.realm);
+    if (identity.subject) headers.set("x-ja-auth-subject", identity.subject);
+    if (identity.tenantId) headers.set("x-ja-auth-tenant", identity.tenantId);
+    if (identity.objectId) headers.set("x-ja-auth-object-id", identity.objectId);
+    if (identity.givenName) headers.set("x-ja-auth-given-name", identity.givenName);
+    if (identity.familyName) headers.set("x-ja-auth-family-name", identity.familyName);
+    if (identity.preferredUsername) headers.set("x-ja-auth-preferred-username", identity.preferredUsername);
+    if (identity.locale) headers.set("x-ja-auth-locale", identity.locale);
     if (identity.tokenHash) headers.set("x-ja-auth-session", identity.tokenHash);
   }
   return new Request(request, { headers });
@@ -532,6 +700,13 @@ export function nativeIdentity(request) {
   return {
     email: String(request.headers.get("x-ja-auth-email") || "").trim().toLowerCase(),
     name: String(request.headers.get("x-ja-auth-name") || "").trim(),
-    realm: String(request.headers.get("x-ja-auth-realm") || "").trim()
+    realm: String(request.headers.get("x-ja-auth-realm") || "").trim(),
+    subject: String(request.headers.get("x-ja-auth-subject") || "").trim(),
+    tenantId: String(request.headers.get("x-ja-auth-tenant") || "").trim(),
+    objectId: String(request.headers.get("x-ja-auth-object-id") || "").trim(),
+    givenName: String(request.headers.get("x-ja-auth-given-name") || "").trim(),
+    familyName: String(request.headers.get("x-ja-auth-family-name") || "").trim(),
+    preferredUsername: String(request.headers.get("x-ja-auth-preferred-username") || "").trim(),
+    locale: String(request.headers.get("x-ja-auth-locale") || "").trim()
   };
 }

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Account | JA Experiences &amp; Discovery</title>
+  <meta name="description" content="Secure account area for JA Experiences & Discovery customers.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#0b1220;--panel:#1d2a3c;--panel-soft:#223149;--line:rgba(148,163,184,.2);--text:#f8fafc;--muted:#9fb8d8;--blue:#3b82f6;--blue-soft:rgba(59,130,246,.16);--green:#22c55e;--green-soft:rgba(34,197,94,.15);--amber:#fbbf24;--amber-soft:rgba(251,191,36,.15);--radius:14px;--shadow:0 24px 70px rgba(0,0,0,.24)}
+    *{box-sizing:border-box} body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font-family:Inter,Arial,sans-serif} a{color:inherit;text-decoration:none}
+    .shell{min-height:100vh;display:grid;grid-template-columns:320px minmax(0,1fr)} .sidebar{position:sticky;top:0;height:100vh;background:#1b2738;border-right:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden}
+    .brand,.user-card,.sidebar-footer{padding:1.25rem;border-bottom:1px solid var(--line)} .brand{display:flex;gap:.85rem;align-items:center;min-height:92px}.brand-mark,.avatar{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:var(--blue);color:#fff;font-weight:900}.user-card{display:flex;gap:.85rem;align-items:center}.avatar{width:44px;height:44px;border-radius:999px;background:#1d4ed8;color:#bfdbfe}.sidebar-nav{padding:1rem .85rem;overflow:auto} .nav-heading{margin:1.05rem 0 .45rem;padding:0 .8rem;color:#7d97b9;font-size:.72rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase}
+    .nav-link{width:100%;min-height:50px;border-radius:12px;display:flex;align-items:center;gap:.75rem;padding:0 .8rem;color:#bdd0ea;font-weight:700}.nav-link.active,.nav-link:hover{background:var(--blue);color:#fff;box-shadow:0 14px 34px rgba(59,130,246,.22)} .button{min-height:50px;display:inline-flex;align-items:center;justify-content:center;padding:0 1rem;border-radius:10px;background:var(--blue);color:#fff;font-weight:850;border:1px solid var(--blue)}
+    .main{min-width:0;padding:2rem clamp(1rem,3vw,3rem) 3rem}.wrap{width:min(1180px,100%);margin:0 auto;display:grid;gap:1rem}.hero,.card,.panel{background:var(--panel);border:1px solid #334761;border-radius:var(--radius);padding:1.5rem}.hero{display:flex;justify-content:space-between;gap:1rem;align-items:flex-start}.eyebrow{display:block;color:var(--blue);font-size:.75rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase;margin-bottom:.65rem} h1,h2,p{margin-top:0} h1{margin-bottom:.45rem;font-size:clamp(2rem,4vw,3.1rem);letter-spacing:-.045em;line-height:1.04} p{color:var(--muted);line-height:1.6;margin-bottom:1rem}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem}.stat{min-height:116px;padding:1.1rem;background:var(--panel);border:1px solid #334761;border-radius:var(--radius)}.stat span{display:block;color:var(--muted);font-weight:700;margin-bottom:.75rem}.stat strong{display:block;font-size:2rem;letter-spacing:-.04em}.badge{display:inline-flex;align-items:center;gap:.35rem;width:fit-content;border-radius:999px;background:var(--blue-soft);color:#60a5fa;padding:.35rem .65rem;font-size:.76rem;font-weight:900}.badge.green{background:var(--green-soft);color:var(--green)}.badge.amber{background:var(--amber-soft);color:var(--amber)}
+    .quick{display:grid;gap:.65rem}.quick a{min-height:54px;display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.85rem 1rem;border:1px solid #334761;border-radius:12px;background:var(--panel-soft);font-weight:800}.footer{margin-top:1rem;color:var(--muted);font-size:.92rem}.logout{margin-top:auto;background:#152033}
+    @media (max-width:1180px){.shell{grid-template-columns:280px minmax(0,1fr)}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.grid{grid-template-columns:1fr}} @media (max-width:860px){.shell{display:block}.sidebar{position:relative;height:auto}.main{padding:1rem}.hero{display:grid}.stats{grid-template-columns:1fr}} 
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark">JA Experiences &amp; Discovery</div><div><strong>JA Experiences &amp; Discovery</strong><span class="muted">Customer account</span></div></div>
+      <div class="user-card"><div class="avatar">JA Experiences</div><div><strong>Account hub</strong><span>Profile, plans and support</span></div></div>
+      <nav class="sidebar-nav" aria-label="Customer dashboard navigation">
+        <div class="nav-heading">Account</div>
+        <a class="nav-link active" href="/account/dashboard/"><span>Overview</span></a>
+        <a class="nav-link" href="/account/profile/"><span>Profile</span></a>
+        <a class="nav-link" href="/account/settings/"><span>Settings</span></a>
+        <a class="nav-link" href="/account/subscription/"><span>Subscription</span></a>
+        <a class="nav-link" href="/account/enquiries/"><span>My Enquiries</span></a>
+        <div class="nav-heading">Quick links</div>
+        <a class="nav-link" href="/pricing/"><span>Plans &amp; billing</span></a>
+        <a class="nav-link" href="/enquiry/"><span>New enquiry</span></a>
+      </nav>
+      <div class="sidebar-footer"><a class="button logout" href="/account/logout">Sign out</a></div>
+    </aside>
+    <main class="main">
+      <div class="wrap">
+        <section class="hero">
+          <div>
+            <span class="eyebrow">Customer account</span>
+            <h1>Account hub</h1>
+            <p>Manage your Microsoft sign-in, profile, plans and support from a single customer hub designed to stay clear and easy to use.</p>
+          </div>
+          <div class="badge green">Secure access</div>
+        </section>
+        <section class="stats" aria-label="Account summary">
+          <article class="stat"><span>Security</span><strong>On</strong><span>Microsoft Entra ID protected</span></article>
+          <article class="stat"><span>Profile</span><strong>Live</strong><span>Name and contact details</span></article>
+          <article class="stat"><span>Settings</span><strong>Ready</strong><span>Preferences and privacy</span></article>
+          <article class="stat"><span>Sessions</span><strong>1</strong><span>Current browser session</span></article>
+        </section>
+        <section class="grid">
+          <article class="card">
+            <h2>Account</h2>
+            <p>Security, sign-in and active sessions.</p>
+            <div class="quick">
+              <a href="/account/dashboard/"><strong>Open account</strong><span>Sign-in and security</span></a>
+            </div>
+          </article>
+          <article class="card">
+            <h2>Profile</h2>
+            <p>Name, avatar and contact details.</p>
+            <div class="quick">
+              <a href="/account/profile/"><strong>Open profile</strong><span>Edit personal details</span></a>
+            </div>
+          </article>
+          <article class="card">
+            <h2>Settings</h2>
+            <p>Appearance, notifications and privacy.</p>
+            <div class="quick">
+              <a href="/account/settings/"><strong>Open settings</strong><span>Adjust preferences</span></a>
+            </div>
+          </article>
+          <article class="card">
+            <h2>Support</h2>
+            <p>View enquiries, replies, data protection requests and system reports.</p>
+            <div class="quick">
+              <a href="/account/enquiries/"><strong>My Enquiries</strong><span>View and continue conversations</span></a>
+              <a href="/account/profile/#privacy"><strong>View requests</strong><span>Privacy and support</span></a>
+            </div>
+          </article>
+        </section>
+        <div class="footer">Protected by Microsoft Entra ID • © JA Group Services Ltd</div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

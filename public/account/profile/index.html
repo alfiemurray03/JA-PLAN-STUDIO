@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>My Account | JA Experiences &amp; Discovery</title>
-  <meta name="description" content="Secure JA Experiences & Discovery customer account dashboard protected by JA Secure Access.">
+  <meta name="description" content="Secure JA Experiences & Discovery customer account dashboard protected by Microsoft Entra ID.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -627,7 +627,7 @@
   <div class="account-shell">
     <aside class="account-sidebar" id="accountSidebar">
       <div class="brand">
-        <div class="brand-mark">JA</div>
+        <div class="brand-mark">JA Experiences &amp; Discovery</div>
         <div>
           <strong>JA Experiences</strong>
           <span>Customer account</span>
@@ -644,7 +644,7 @@
 
       <nav class="nav-wrap" aria-label="Customer dashboard navigation">
         <div class="nav-heading">Dashboard</div>
-        <a class="nav-link" href="/account/"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>Overview</a>
+ <a class="nav-link" href="/account/dashboard/"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>Overview</a>
         <a class="nav-link active" href="/account/profile/"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>My account</a>
         <a class="nav-link" href="/account/settings/"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6V21a2 2 0 1 1-4 0v-.2a1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1H4a2 2 0 1 1 0-4h.2a1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6V4a2 2 0 1 1 4 0v.2a1.65 1.65 0 0 0 1 .6 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.18.31.38.63.6 1H21a2 2 0 1 1 0 4h-.2a1.65 1.65 0 0 0-.6 1z"></path></svg>Settings</a>
         <a class="nav-link" href="/account/subscription/"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 10h18"></path></svg>Subscription</a>
@@ -726,10 +726,34 @@
               <div class="profile-row"><span>Display name</span><strong id="profileNameDetail">Loading...</strong></div>
               <div class="profile-row"><span>Microsoft account name</span><strong id="profileLegalName">Loading...</strong></div>
               <div class="profile-row"><span>Sign-in email</span><strong id="profileEmailDetail">Loading...</strong></div>
+              <div class="profile-row"><span>Verification status</span><strong id="profileVerificationStatus">Loading...</strong></div>
+              <div class="profile-row"><span>Account creation date</span><strong id="profileCreatedAt">Loading...</strong></div>
+              <div class="profile-row"><span>Last sign-in</span><strong id="profileLastSignIn">Loading...</strong></div>
+              <div class="profile-row"><span>Profile photo</span><strong id="profilePhoto">Loading...</strong></div>
               <div class="profile-row"><span>Preferred contact email</span><strong id="profileContactEmail">Loading...</strong></div>
               <div class="profile-row"><span>Phone</span><strong id="profilePhone">Loading...</strong></div>
+              <div class="profile-row"><span>Country</span><strong id="profileCountry">Loading...</strong></div>
+              <div class="profile-row"><span>Preferred language</span><strong id="profileLanguage">Loading...</strong></div>
               <div class="profile-row"><span>Communication preference</span><strong id="profileComms">Loading...</strong></div>
-              <div class="profile-row"><span>Access provider</span><strong id="profileProvider">JA Secure Access / Microsoft Entra</strong></div>
+              <div class="profile-row"><span>Access provider</span><strong id="profileProvider">Microsoft Entra ID</strong></div>
+              <div class="profile-row"><span>Stripe Customer ID</span><strong id="profileStripeCustomer">Loading...</strong></div>
+            </div>
+          </article>
+
+          <article class="account-panel">
+            <div class="section-head">
+              <div><h2>Microsoft identity sync</h2><p>Read-only data synced from your Microsoft Entra account at sign-in.</p></div>
+            </div>
+            <div class="profile-details">
+              <div class="profile-row"><span>Microsoft display name</span><strong id="profileMicrosoftDisplayName">Loading...</strong></div>
+              <div class="profile-row"><span>Given name</span><strong id="profileMicrosoftGivenName">Loading...</strong></div>
+              <div class="profile-row"><span>Family name</span><strong id="profileMicrosoftFamilyName">Loading...</strong></div>
+              <div class="profile-row"><span>Preferred username</span><strong id="profileMicrosoftUsername">Loading...</strong></div>
+              <div class="profile-row"><span>Tenant ID</span><strong id="profileMicrosoftTenant">Loading...</strong></div>
+              <div class="profile-row"><span>Object ID</span><strong id="profileMicrosoftObjectId">Loading...</strong></div>
+              <div class="profile-row"><span>Locale</span><strong id="profileMicrosoftLocale">Loading...</strong></div>
+              <div class="profile-row"><span>Last sync</span><strong id="profileMicrosoftUpdated">Loading...</strong></div>
+              <div class="profile-row"><span>Stripe customer</span><strong id="profileStripeCustomer">Loading...</strong></div>
             </div>
           </article>
 

@@ -1,7 +1,6 @@
-import { beginLogin, nativeOidcEnabled } from "../_shared/oidc.js";
+import { beginLogin } from "../_shared/oidc.js";
 
 export async function onRequestGet(context) {
-  if (!nativeOidcEnabled(context.env)) return new Response("Native authentication is not enabled.", { status: 404 });
   try {
     return await beginLogin(context, "customer");
   } catch (error) {

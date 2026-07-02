@@ -22,7 +22,20 @@ function decodeJwtPayload(jwt) {
 
 function getAccessIdentity(request) {
   const nativeEmail = request.headers.get("x-ja-auth-email") || "";
-  if (nativeEmail) return { email: nativeEmail.trim().toLowerCase(), name: (request.headers.get("x-ja-auth-name") || nativeEmail).trim() };
+  if (nativeEmail) {
+    return {
+      email: nativeEmail.trim().toLowerCase(),
+      name: (request.headers.get("x-ja-auth-name") || nativeEmail).trim(),
+      realm: (request.headers.get("x-ja-auth-realm") || "").trim(),
+      subject: (request.headers.get("x-ja-auth-subject") || "").trim(),
+      tenantId: (request.headers.get("x-ja-auth-tenant") || "").trim(),
+      objectId: (request.headers.get("x-ja-auth-object-id") || "").trim(),
+      givenName: (request.headers.get("x-ja-auth-given-name") || "").trim(),
+      familyName: (request.headers.get("x-ja-auth-family-name") || "").trim(),
+      preferredUsername: (request.headers.get("x-ja-auth-preferred-username") || "").trim(),
+      locale: (request.headers.get("x-ja-auth-locale") || "").trim()
+    };
+  }
   const emailHeader =
     request.headers.get("cf-access-authenticated-user-email") ||
     request.headers.get("CF-Access-Authenticated-User-Email") ||
@@ -100,6 +113,18 @@ async function ensureTables(DB) {
       phone TEXT,
       communication_preference TEXT,
       support_notes TEXT,
+      microsoft_object_id TEXT,
+      microsoft_tenant_id TEXT,
+      microsoft_display_name TEXT,
+      microsoft_given_name TEXT,
+      microsoft_family_name TEXT,
+      microsoft_email TEXT,
+      microsoft_preferred_username TEXT,
+      microsoft_locale TEXT,
+      microsoft_updated_at TEXT,
+      stripe_customer_id TEXT,
+      stripe_customer_created_at TEXT,
+      stripe_customer_synced_at TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
@@ -112,6 +137,18 @@ async function ensureTables(DB) {
   await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN signup_notification_status TEXT`);
   await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN signup_notification_provider TEXT`);
   await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN signup_notification_to TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN microsoft_object_id TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN microsoft_tenant_id TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN microsoft_display_name TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN microsoft_given_name TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN microsoft_family_name TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN microsoft_email TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN microsoft_preferred_username TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN microsoft_locale TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN microsoft_updated_at TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN stripe_customer_id TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN stripe_customer_created_at TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN stripe_customer_synced_at TEXT`);
 
   await DB.prepare(`
     CREATE TABLE IF NOT EXISTS site_settings (
@@ -291,7 +328,7 @@ async function notifyCustomerSignup(DB, env, identity, profile) {
         `Customer email: ${identity.email}`,
         `Signup date/time: ${createdAt}`,
         `Account/customer ID: ${identity.email}`,
-        "Source/provider: Cloudflare Access / JA customer CIAM"
+        "Source/provider: Microsoft Entra ID / JA customer CIAM"
       ].join("\n")
     });
 

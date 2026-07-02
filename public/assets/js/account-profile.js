@@ -5,10 +5,10 @@ async function loadAccessProfile() {
   const params = new URLSearchParams(window.location.search);
   const shouldHydrateProfile = params.get("signedin") === "1" || params.get("hydrate") === "1";
   if (!shouldHydrateProfile) {
-    // Silent check: sometimes Cloudflare Access authenticates and returns the user
-    // to /account/ without the signedin=1 query parameter. In that case, try a
-    // JSON fetch to /account/profile to see if a valid session/profile exists
-    // and hydrate the page client-side. This avoids touching Access settings.
+    // Silent check: sometimes the account portal returns to /account/ without
+    // the signedin=1 query parameter. In that case, try a JSON fetch to
+    // /account/profile to see if a valid session/profile exists and hydrate
+    // the page client-side.
     try {
       const check = await fetch("/account/profile", {
         credentials: "include",
@@ -74,7 +74,7 @@ async function loadAccessProfile() {
 function showSignedOutLanding() {
   setAccountSignedInState(false, false);
   setText("accountHeroTitle", "Customer account access");
-  setText("accountHeroText", "Sign in with JA Group Services CIAM to access eligible customer services, data requests and support reports.");
+  setText("accountHeroText", "Sign in with Microsoft Entra ID to access eligible customer services, data requests and support reports.");
   setText("secureAccountBadge", "Secure access");
 }
 
@@ -98,7 +98,7 @@ async function applyAccountBranding() {
   document.title = `My Account | ${serviceName}`;
   const metaDescription = document.querySelector('meta[name="description"]');
   if (metaDescription) {
-    metaDescription.content = `Secure ${serviceName} customer account dashboard protected by JA Secure Access.`;
+    metaDescription.content = `Secure ${serviceName} customer account dashboard protected by Microsoft Entra ID.`;
   }
 
   document.querySelectorAll(".brand strong, .mobile-topbar strong").forEach((element) => {
@@ -157,10 +157,25 @@ function updateProfile(profile) {
   setText("profileNameDetail", profile.displayName);
   setText("profileLegalName", profile.verifiedName);
   setText("profileEmailDetail", profile.email);
+  setText("profileVerificationStatus", profile.microsoftEmail ? "Verified" : "Unknown");
+  setText("profileCreatedAt", formatDate(profile.createdAt));
+  setText("profileLastSignIn", formatDate(profile.microsoftUpdatedAt || profile.updatedAt));
+  setText("profilePhoto", profile.photoUrl ? "Available" : "Not available");
   setText("profileContactEmail", profile.contactEmail);
   setText("profilePhone", profile.phone || "Not added");
+  setText("profileCountry", profile.country || "United Kingdom");
+  setText("profileLanguage", profile.microsoftLocale || "English (UK)");
   setText("profileComms", profile.communicationPreference || "Email");
-  setText("profileProvider", "JA Secure Access / Microsoft Entra");
+  setText("profileProvider", "Microsoft Entra ID");
+  setText("profileMicrosoftDisplayName", profile.microsoftDisplayName || profile.verifiedName || profile.displayName);
+  setText("profileMicrosoftGivenName", profile.microsoftGivenName || "Not provided");
+  setText("profileMicrosoftFamilyName", profile.microsoftFamilyName || "Not provided");
+  setText("profileMicrosoftTenant", profile.microsoftTenantId || "Not provided");
+  setText("profileMicrosoftObjectId", profile.microsoftObjectId || "Not provided");
+  setText("profileMicrosoftLocale", profile.microsoftLocale || "Not provided");
+  setText("profileMicrosoftUsername", profile.microsoftPreferredUsername || profile.email);
+  setText("profileMicrosoftUpdated", formatDate(profile.microsoftUpdatedAt));
+  setText("profileStripeCustomer", profile.stripeCustomerId || "Not provisioned yet");
   setText("profileInitials", initials(profile.displayName, profile.email));
   setText("sidebarInitials", initials(profile.displayName, profile.email));
   setText("currentPlanName", profile.currentPlan || "Standard");
@@ -309,7 +324,7 @@ function bindProfileForm(profile) {
         populateConsent(data.consent || {});
 
         if (savedMessage) {
-          savedMessage.textContent = "Profile saved successfully. These details now sync through your JA Secure Access account.";
+          savedMessage.textContent = "Profile saved successfully. These details now sync through your Microsoft Entra account.";
           savedMessage.hidden = false;
         }
       } catch (error) {
@@ -475,19 +490,34 @@ function renderSystemReports(records) {
 function showProfileError(error) {
   setAccountSignedInState(false, false);
   setText("accountHeroTitle", "Customer account access");
-  setText("accountHeroText", "Sign in with JA Group Services CIAM to access eligible customer account services.");
+  setText("accountHeroText", "Sign in with Microsoft Entra ID to access eligible customer account services.");
   setText("secureAccountBadge", "Secure access");
   setText("profileName", "Sign in required");
-  setText("profileEmail", "Use JA Group Services CIAM to access your customer dashboard.");
+  setText("profileEmail", "Use Microsoft Entra ID to access your customer dashboard.");
   setText("sidebarName", "Customer access");
   setText("sidebarEmail", "Sign in required");
   setText("welcomeName", "there");
   setText("profileNameDetail", "Unavailable");
   setText("profileLegalName", "Unavailable");
   setText("profileEmailDetail", "Unavailable");
+  setText("profileVerificationStatus", "Unavailable");
+  setText("profileCreatedAt", "Unavailable");
+  setText("profileLastSignIn", "Unavailable");
+  setText("profilePhoto", "Unavailable");
   setText("profileContactEmail", "Unavailable");
   setText("profilePhone", "Unavailable");
+  setText("profileCountry", "Unavailable");
+  setText("profileLanguage", "Unavailable");
   setText("profileComms", "Unavailable");
+  setText("profileMicrosoftDisplayName", "Unavailable");
+  setText("profileMicrosoftGivenName", "Unavailable");
+  setText("profileMicrosoftFamilyName", "Unavailable");
+  setText("profileMicrosoftTenant", "Unavailable");
+  setText("profileMicrosoftObjectId", "Unavailable");
+  setText("profileMicrosoftLocale", "Unavailable");
+  setText("profileMicrosoftUsername", "Unavailable");
+  setText("profileMicrosoftUpdated", "Unavailable");
+  setText("profileStripeCustomer", "Unavailable");
   setText("dprList", "Sign in to view your data protection requests.");
   setText("sysList", "Sign in to view your system reports.");
   setBadge("profilePlanBadge", "Sign-in required", "amber");
@@ -495,7 +525,7 @@ function showProfileError(error) {
 
   const savedMessage = document.getElementById("profileSavedMessage");
   if (savedMessage) {
-    savedMessage.textContent = error?.message || "Please sign in with JA Group Services CIAM to continue.";
+    savedMessage.textContent = error?.message || "Please sign in with Microsoft Entra ID to continue.";
     savedMessage.hidden = false;
   }
 }

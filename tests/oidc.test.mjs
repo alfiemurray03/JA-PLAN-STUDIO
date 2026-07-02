@@ -240,7 +240,7 @@ test("logout clears application cookies even when Microsoft discovery is unavail
       env: { ...customerEnv, DB }
     }, "customer", ["ja_customer_session=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax"]);
     assert.equal(response.status, 302);
-    assert.equal(response.headers.get("location"), "https://experiences.example.test/signed-out/?realm=customer");
+    assert.equal(response.headers.get("location"), "https://experiences.example.test/signed-out/customer/");
     assert.match(response.headers.get("set-cookie"), /ja_customer_oidc_session=;/);
     assert.match(response.headers.get("set-cookie"), /ja_customer_session=;/);
   } finally {

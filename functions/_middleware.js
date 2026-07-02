@@ -371,9 +371,9 @@ export async function onRequest(context) {
     "/admin/login", "/admin/login/", "/admin/auth/callback", "/admin/auth/callback/", "/admin/logout", "/admin/logout/",
     "/account/login", "/account/login/", "/account/auth/callback", "/account/auth/callback/", "/account/logout", "/account/logout/"
   ]).has(path);
-  const realm = path === "/admin" || path.startsWith("/admin/")
+  const realm = path.startsWith("/admin/") || path === "/admin/dashboard"
     ? "admin"
-    : path === "/account" || path.startsWith("/account/")
+    : path.startsWith("/account/") || path === "/account/dashboard"
       ? "customer"
       : "";
 
@@ -433,7 +433,7 @@ export async function onRequest(context) {
     }
   }
 
-  if (path === "/admin" || path === "/admin/" || path.startsWith("/admin/index")) {
+  if (path === "/admin/dashboard" || path === "/admin/dashboard/" || path.startsWith("/admin/index")) {
     if (!(await isAdminRequest(request, env))) {
       return new Response("Forbidden", {
         status: 403,
@@ -458,9 +458,14 @@ export async function onRequest(context) {
   }
 
   const bypass =
-    path.startsWith("/admin") ||
+    path === "/admin" ||
+    path === "/admin/" ||
+    path.startsWith("/admin/dashboard") ||
     path === "/account/logout" ||
     path === "/account/logout/" ||
+    path === "/account" ||
+    path === "/account/" ||
+    path.startsWith("/account/dashboard") ||
     path === "/status" ||
     path.startsWith("/status/") ||
     path === "/api/status" ||

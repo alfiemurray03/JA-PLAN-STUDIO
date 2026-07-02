@@ -12,21 +12,8 @@
     status.textContent = "Ending your secure access session.";
 
     try {
-      // Cloudflare Access does not support a post-logout redirect parameter.
-      // Await its managed endpoint before starting the Microsoft Entra logout.
-      const response = await fetch("/cdn-cgi/access/logout", {
-        method: "GET",
-        credentials: "same-origin",
-        cache: "no-store",
-        redirect: "manual"
-      });
-
-      if (response.type !== "opaqueredirect" && !response.ok) {
-        throw new Error("Cloudflare Access logout failed.");
-      }
-
       status.textContent = "Opening Microsoft sign-out…";
-      window.location.replace("/signed-out/microsoft-logout");
+      window.location.replace("/account/logout");
     } catch {
       logoutInProgress = false;
       status.textContent = "We could not complete secure sign-out. Check your connection and try again.";

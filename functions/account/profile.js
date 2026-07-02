@@ -25,7 +25,20 @@ function wantsJson(request) {
 
 function getAccessIdentity(request) {
   const nativeEmail = request.headers.get("x-ja-auth-email") || "";
-  if (nativeEmail) return { email: nativeEmail.trim().toLowerCase(), verifiedName: (request.headers.get("x-ja-auth-name") || nativeEmail).trim() };
+  if (nativeEmail) {
+    return {
+      email: nativeEmail.trim().toLowerCase(),
+      verifiedName: (request.headers.get("x-ja-auth-name") || nativeEmail).trim(),
+      realm: (request.headers.get("x-ja-auth-realm") || "").trim(),
+      subject: (request.headers.get("x-ja-auth-subject") || "").trim(),
+      tenantId: (request.headers.get("x-ja-auth-tenant") || "").trim(),
+      objectId: (request.headers.get("x-ja-auth-object-id") || "").trim(),
+      givenName: (request.headers.get("x-ja-auth-given-name") || "").trim(),
+      familyName: (request.headers.get("x-ja-auth-family-name") || "").trim(),
+      preferredUsername: (request.headers.get("x-ja-auth-preferred-username") || "").trim(),
+      locale: (request.headers.get("x-ja-auth-locale") || "").trim()
+    };
+  }
   const emailHeader =
     request.headers.get("cf-access-authenticated-user-email") ||
     request.headers.get("CF-Access-Authenticated-User-Email") ||
@@ -118,6 +131,18 @@ async function ensureProfileTable(DB) {
   await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN signup_notification_status TEXT`);
   await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN signup_notification_provider TEXT`);
   await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN signup_notification_to TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN microsoft_object_id TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN microsoft_tenant_id TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN microsoft_display_name TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN microsoft_given_name TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN microsoft_family_name TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN microsoft_email TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN microsoft_preferred_username TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN microsoft_locale TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN microsoft_updated_at TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN stripe_customer_id TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN stripe_customer_created_at TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN stripe_customer_synced_at TEXT`);
 }
 
 async function ensureNotificationTables(DB) {
@@ -264,7 +289,7 @@ async function notifyCustomerSignup(DB, env, identity, profile) {
         `Customer email: ${identity.email}`,
         `Signup date/time: ${createdAt}`,
         `Account/customer ID: ${identity.email}`,
-        "Source/provider: Cloudflare Access / JA customer CIAM"
+        "Source/provider: Microsoft Entra ID / JA customer CIAM"
       ].join("\n")
     });
 
@@ -337,6 +362,18 @@ async function getProfile(DB, identity, env = {}) {
       admin_lifetime,
       admin_lifetime_plan_id,
       admin_customer_status,
+      microsoft_object_id,
+      microsoft_tenant_id,
+      microsoft_display_name,
+      microsoft_given_name,
+      microsoft_family_name,
+      microsoft_email,
+      microsoft_preferred_username,
+      microsoft_locale,
+      microsoft_updated_at,
+      stripe_customer_id,
+      stripe_customer_created_at,
+      stripe_customer_synced_at,
       created_at,
       updated_at
     FROM profiles
@@ -360,6 +397,21 @@ async function getProfile(DB, identity, env = {}) {
       currentPlan: plan?.plan_name || existing.admin_customer_status || "Standard",
       currentPlanType: plan?.plan_type || existing.admin_customer_status || "Standard",
       hasEligibleAccess: eligibleAccess,
+      microsoftObjectId: existing.microsoft_object_id || identity.objectId || "",
+      microsoftTenantId: existing.microsoft_tenant_id || identity.tenantId || "",
+      microsoftDisplayName: existing.microsoft_display_name || existing.verified_name || identity.name || "",
+      microsoftGivenName: existing.microsoft_given_name || identity.givenName || "",
+      microsoftFamilyName: existing.microsoft_family_name || identity.familyName || "",
+      microsoftEmail: existing.microsoft_email || identity.email || "",
+      microsoftPreferredUsername: existing.microsoft_preferred_username || identity.preferredUsername || identity.email || "",
+      microsoftLocale: existing.microsoft_locale || identity.locale || "",
+      country: countryFromLocale(existing.microsoft_locale || identity.locale || ""),
+      photoUrl: "",
+      verificationStatus: existing.microsoft_email || existing.microsoft_object_id ? "Verified" : "Unverified",
+      microsoftUpdatedAt: existing.microsoft_updated_at || "",
+      stripeCustomerId: existing.stripe_customer_id || "",
+      stripeCustomerCreatedAt: existing.stripe_customer_created_at || "",
+      stripeCustomerSyncedAt: existing.stripe_customer_synced_at || "",
       createdAt: existing.created_at,
       updatedAt: existing.updated_at
     };
@@ -379,6 +431,21 @@ async function getProfile(DB, identity, env = {}) {
     currentPlan: "Standard",
     currentPlanType: "Standard",
     hasEligibleAccess: false,
+    microsoftObjectId: identity.objectId || "",
+    microsoftTenantId: identity.tenantId || "",
+    microsoftDisplayName: identity.name || identity.verifiedName || "",
+    microsoftGivenName: identity.givenName || "",
+    microsoftFamilyName: identity.familyName || "",
+    microsoftEmail: identity.email || "",
+      microsoftPreferredUsername: identity.preferredUsername || identity.email || "",
+      microsoftLocale: identity.locale || "",
+      country: countryFromLocale(identity.locale || ""),
+      photoUrl: "",
+      verificationStatus: identity.email ? "Verified" : "Unverified",
+      microsoftUpdatedAt: "",
+    stripeCustomerId: "",
+    stripeCustomerCreatedAt: "",
+    stripeCustomerSyncedAt: "",
     createdAt: null,
     updatedAt: null
   };
@@ -391,9 +458,18 @@ async function getProfile(DB, identity, env = {}) {
       contact_email,
       phone,
       communication_preference,
-      support_notes
+      support_notes,
+      microsoft_object_id,
+      microsoft_tenant_id,
+      microsoft_display_name,
+      microsoft_given_name,
+      microsoft_family_name,
+      microsoft_email,
+      microsoft_preferred_username,
+      microsoft_locale,
+      microsoft_updated_at
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
   `).bind(
     nowProfile.email,
     nowProfile.verifiedName,
@@ -401,10 +477,20 @@ async function getProfile(DB, identity, env = {}) {
     nowProfile.contactEmail,
     nowProfile.phone,
     nowProfile.communicationPreference,
-    nowProfile.supportNotes
+    nowProfile.supportNotes,
+    identity.objectId || "",
+    identity.tenantId || "",
+    identity.name || identity.verifiedName || identity.email,
+    identity.givenName || "",
+    identity.familyName || "",
+    identity.email || "",
+    identity.preferredUsername || identity.email || "",
+    identity.locale || ""
   ).run();
 
   await notifyCustomerSignup(DB, env, identity, nowProfile).catch(() => {});
+
+  await ensureStripeCustomer(DB, env, identity, nowProfile).catch(() => {});
 
   return getProfile(DB, identity, env);
 }
@@ -436,6 +522,7 @@ async function saveProfile(DB, identity, body, request, env = {}) {
     communicationPreference: clean(body.communicationPreference, 80) || "Email",
     supportNotes: clean(body.supportNotes, 1000)
   };
+  const locale = identity.locale || current.microsoftLocale || "";
 
   await DB.prepare(`
     INSERT INTO profiles (
@@ -446,9 +533,18 @@ async function saveProfile(DB, identity, body, request, env = {}) {
       phone,
       communication_preference,
       support_notes,
+      microsoft_object_id,
+      microsoft_tenant_id,
+      microsoft_display_name,
+      microsoft_given_name,
+      microsoft_family_name,
+      microsoft_email,
+      microsoft_preferred_username,
+      microsoft_locale,
+      microsoft_updated_at,
       updated_at
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     ON CONFLICT(email) DO UPDATE SET
       verified_name = excluded.verified_name,
       display_name = excluded.display_name,
@@ -456,6 +552,15 @@ async function saveProfile(DB, identity, body, request, env = {}) {
       phone = excluded.phone,
       communication_preference = excluded.communication_preference,
       support_notes = excluded.support_notes,
+      microsoft_object_id = COALESCE(profiles.microsoft_object_id, excluded.microsoft_object_id),
+      microsoft_tenant_id = COALESCE(profiles.microsoft_tenant_id, excluded.microsoft_tenant_id),
+      microsoft_display_name = COALESCE(profiles.microsoft_display_name, excluded.microsoft_display_name),
+      microsoft_given_name = COALESCE(profiles.microsoft_given_name, excluded.microsoft_given_name),
+      microsoft_family_name = COALESCE(profiles.microsoft_family_name, excluded.microsoft_family_name),
+      microsoft_email = COALESCE(profiles.microsoft_email, excluded.microsoft_email),
+      microsoft_preferred_username = COALESCE(profiles.microsoft_preferred_username, excluded.microsoft_preferred_username),
+      microsoft_locale = COALESCE(profiles.microsoft_locale, excluded.microsoft_locale),
+      microsoft_updated_at = COALESCE(profiles.microsoft_updated_at, excluded.microsoft_updated_at),
       updated_at = CURRENT_TIMESTAMP
   `).bind(
     identity.email,
@@ -464,7 +569,16 @@ async function saveProfile(DB, identity, body, request, env = {}) {
     updated.contactEmail,
     updated.phone,
     updated.communicationPreference,
-    updated.supportNotes
+    updated.supportNotes,
+    identity.objectId || "",
+    identity.tenantId || "",
+    identity.name || identity.verifiedName || identity.email,
+    identity.givenName || "",
+    identity.familyName || "",
+    identity.email || "",
+    identity.preferredUsername || identity.email || "",
+    locale,
+    new Date().toISOString()
   ).run();
 
   await storeConsent(DB, {
@@ -476,6 +590,8 @@ async function saveProfile(DB, identity, body, request, env = {}) {
     ipHash: await hashValue(request.headers.get("cf-connecting-ip") || ""),
     userAgent: clean(request.headers.get("user-agent") || "", 500)
   });
+
+  await ensureStripeCustomer(DB, env, identity, current).catch(() => {});
 
   return getProfile(DB, identity, env);
 }
@@ -514,6 +630,66 @@ async function hashValue(value) {
   return Array.from(new Uint8Array(hash)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+function firstText(...values) {
+  for (const value of values) {
+    const text = String(value || "").trim();
+    if (text) return text;
+  }
+  return "";
+}
+
+function countryFromLocale(locale) {
+  const value = String(locale || "").trim().toLowerCase();
+  if (value === "en-gb" || value.endsWith("-gb")) return "United Kingdom";
+  if (value === "en-us" || value.endsWith("-us")) return "United States";
+  return "";
+}
+
+async function ensureStripeCustomer(DB, env, identity, profile) {
+  if (!env.STRIPE_SECRET_KEY) return null;
+
+  const current = await DB.prepare(`
+    SELECT stripe_customer_id, stripe_customer_synced_at
+    FROM profiles
+    WHERE lower(email) = lower(?)
+  `).bind(identity.email).first();
+
+  if (current?.stripe_customer_id && current.stripe_customer_synced_at) {
+    return current.stripe_customer_id;
+  }
+
+  const customerResponse = await fetch("https://api.stripe.com/v1/customers", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.STRIPE_SECRET_KEY}`,
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: new URLSearchParams({
+      email: profile.contactEmail || identity.email,
+      name: profile.displayName || profile.verifiedName || identity.verifiedName || identity.email,
+      "metadata[service_line]": "JA Experiences & Discovery",
+      "metadata[customer_email]": identity.email,
+      "metadata[profile_email]": profile.contactEmail || identity.email
+    }).toString()
+  });
+
+  const payload = await customerResponse.json().catch(() => ({}));
+  if (!customerResponse.ok || !payload.id) {
+    throw new Error(payload?.error?.message || "Stripe customer provisioning failed.");
+  }
+
+  await DB.prepare(`
+    UPDATE profiles
+    SET stripe_customer_id = ?,
+      stripe_customer_created_at = COALESCE(stripe_customer_created_at, CURRENT_TIMESTAMP),
+      stripe_customer_synced_at = CURRENT_TIMESTAMP,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE lower(email) = lower(?)
+  `).bind(payload.id, identity.email).run();
+
+  return payload.id;
+}
+
 export async function onRequest(context) {
   const { request, env } = context;
 
@@ -533,11 +709,13 @@ export async function onRequest(context) {
 
   if (request.method === "GET") {
     const profile = await getProfile(env.DB, identity, env);
+    await ensureStripeCustomer(env.DB, env, identity, profile).catch(() => {});
     if (!wantsJson(request)) {
       return redirect("/account/?signedin=1");
     }
     const consent = await getLatestConsent(env.DB, identity.email);
-    return json({ profile, consent });
+    const refreshedProfile = await getProfile(env.DB, identity, env);
+    return json({ profile: refreshedProfile, consent });
   }
 
   if (request.method === "POST") {
