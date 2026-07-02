@@ -312,8 +312,6 @@ async function getLatestConsent(DB, email) {
 }
 
 async function getProfile(DB, identity, env = {}) {
-  await ensureProfileTable(DB);
-
   const existing = await DB.prepare(`
     SELECT
       email,
