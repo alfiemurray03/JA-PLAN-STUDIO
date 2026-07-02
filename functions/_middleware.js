@@ -438,26 +438,6 @@ export async function onRequest(context) {
         return new Response(null, { status: 302, headers });
       }
     } catch (error) {
-      if (String(env.JA_DEBUG_AUTH_LOGGING || "").trim().toLowerCase() === "true") {
-        return new Response(JSON.stringify({
-          stage: "getNativeSession",
-          requestId: request.headers.get("x-request-id") || request.headers.get("cf-ray") || "",
-          error: error instanceof Error ? error.message : String(error || "Unknown session error"),
-          stack: error instanceof Error ? error.stack || "" : "",
-          sql: error?.sql || "",
-          table: error?.table || "",
-          selectedColumns: error?.selectedColumns || [],
-          detectedColumns: error?.detectedColumns || [],
-          fallbackColumns: error?.fallbackColumns || [],
-          boundValues: error?.boundValues || []
-        }, null, 2), {
-          status: 500,
-          headers: {
-            "Content-Type": "application/json; charset=utf-8",
-            "Cache-Control": "no-store"
-          }
-        });
-      }
       console.error(JSON.stringify({
         event: "native_oidc_session_validation_error",
         realm: landingRealm,
@@ -475,26 +455,6 @@ export async function onRequest(context) {
     try {
       identity = await getNativeSession(request, env, realm);
     } catch (error) {
-      if (String(env.JA_DEBUG_AUTH_LOGGING || "").trim().toLowerCase() === "true") {
-        return new Response(JSON.stringify({
-          stage: "getNativeSession",
-          requestId: request.headers.get("x-request-id") || request.headers.get("cf-ray") || "",
-          error: error instanceof Error ? error.message : String(error || "Unknown session error"),
-          stack: error instanceof Error ? error.stack || "" : "",
-          sql: error?.sql || "",
-          table: error?.table || "",
-          selectedColumns: error?.selectedColumns || [],
-          detectedColumns: error?.detectedColumns || [],
-          fallbackColumns: error?.fallbackColumns || [],
-          boundValues: error?.boundValues || []
-        }, null, 2), {
-          status: 500,
-          headers: {
-            "Content-Type": "application/json; charset=utf-8",
-            "Cache-Control": "no-store"
-          }
-        });
-      }
       console.error(JSON.stringify({
         event: "native_oidc_session_validation_error",
         realm,
