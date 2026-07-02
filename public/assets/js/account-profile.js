@@ -23,6 +23,15 @@ async function loadAccessProfile() {
       microsoftPreferredLanguage: bootstrap.preferredLanguage || "",
       microsoftPhotoUrl: bootstrap.photoUrl || ""
     });
+    populateForm({
+      displayName: bootstrap.name || bootstrap.displayName || bootstrap.email,
+      contactEmail: bootstrap.email || "",
+      phone: bootstrap.mobilePhone || bootstrap.businessPhone || "",
+      communicationPreference: "Email",
+      supportNotes: ""
+    });
+    populateConsent({});
+    renderRestrictedLists();
   }
 
   try {
@@ -39,7 +48,7 @@ async function loadAccessProfile() {
     }
 
     const data = await response.json();
-    const profile = data.profile;
+    const profile = { ...(bootstrap || {}), ...(data.profile || {}) };
 
     updateProfile(profile);
     populateForm(profile);
@@ -52,6 +61,11 @@ async function loadAccessProfile() {
       renderRestrictedLists();
     }
   } catch (error) {
+    if (bootstrap) {
+      bindProfileForm(bootstrap);
+      bindAccountRequestForms();
+      return;
+    }
     showProfileError(error);
   }
 }
