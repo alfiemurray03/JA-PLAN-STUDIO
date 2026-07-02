@@ -364,14 +364,19 @@ async function renderPage(page) {
         <article class="portal-card portal-span-6">
           <h2>One-time PINs</h2>
           <div class="portal-note inline">Support staff may request this PIN to verify identity before discussing the account. The backend stores only hashed PINs.</div>
-          <div class="portal-actions">
-            <button class="portal-action" type="button" data-pin-action="generate"><strong>Generate PIN</strong><span>6-digit, 10 minute expiry</span></button>
-            <button class="portal-action" type="button" data-pin-action="rotate"><strong>Rotate PIN</strong><span>Refresh an existing PIN</span></button>
-            <button class="portal-action" type="button" data-pin-action="revoke"><strong>Revoke PIN</strong><span>Disable a support PIN</span></button>
-            <button class="portal-action" type="button" data-pin-action="copy"><strong>Copy PIN</strong><span>Copy the active PIN to your clipboard</span></button>
+          <div class="portal-surface" style="background:rgba(9,14,30,.82);border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:1.25rem;color:#fff;box-shadow:0 20px 50px rgba(3,8,25,.2)">
+            <div class="portal-eyebrow" style="color:rgba(255,255,255,.68);">ONE TIME SUPPORT PIN</div>
+            <div style="font-size:2rem;font-weight:800;letter-spacing:.2em;margin:.25rem 0 1rem;">
+              ${(pins.pins || []).find((pin) => pin.active_pin)?.active_pin ? escapeHtml((pins.pins || []).find((pin) => pin.active_pin)?.active_pin) : "PIN UNAVAILABLE"}
+            </div>
+            <div class="portal-stack" id="pinHistory">
+              ${(pins.pins || []).map((pin) => `<div class="portal-entry" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);color:#fff"><strong>${escapeHtml(pin.active_pin || `${pin.status || "Active"} PIN`)}</strong><small>Status: ${escapeHtml(pin.status || "Active")} · Created ${escapeHtml(fmt(pin.created_at))} · Expires ${escapeHtml(fmt(pin.expires_at))}</small></div>`).join("") || '<div class="portal-note inline">Your support PIN will appear here automatically.</div>'}
+            </div>
           </div>
-          <div class="portal-stack" id="pinHistory">
-            ${(pins.pins || []).map((pin) => `<div class="portal-entry"><strong>${escapeHtml(pin.active_pin || `${pin.status || "Active"} PIN`)}</strong><small>Status: ${escapeHtml(pin.status || "Active")} · Created ${escapeHtml(fmt(pin.created_at))} · Expires ${escapeHtml(fmt(pin.expires_at))}</small></div>`).join("") || '<div class="portal-note inline">No support PINs generated yet.</div>'}
+          <div class="portal-actions" style="margin-top:1rem">
+            <button class="portal-action" type="button" data-pin-action="rotate"><strong>Rotate PIN</strong><span>Refresh the active PIN</span></button>
+            <button class="portal-action" type="button" data-pin-action="revoke"><strong>Revoke PIN</strong><span>Disable this PIN</span></button>
+            <button class="portal-action" type="button" data-pin-action="copy"><strong>Copy PIN</strong><span>Copy the active PIN to your clipboard</span></button>
           </div>
         </article>
         <article class="portal-card portal-span-12">

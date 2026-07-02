@@ -16,6 +16,8 @@ async function ensureTables(DB) {
       id TEXT PRIMARY KEY,
       email TEXT NOT NULL,
       pin_hash TEXT NOT NULL,
+      pin_ciphertext TEXT,
+      pin_iv TEXT,
       pin_last4 TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'Active',
       expires_at TEXT NOT NULL,
@@ -40,9 +42,51 @@ function generatePin() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
+function bytesToBase64(bytes) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
+function base64ToBytes(value) {
+  const binary = atob(String(value || ""));
+  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+}
+
+async function getEncryptionKey(env) {
+  const source = env.SUPPORT_PIN_ENCRYPTION_KEY || env.SESSION_SECRET || env.ACCESS_COOKIE_SECRET || env.SECRET_KEY || env.APP_SECRET || "";
+  if (!source) return null;
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(source));
+  return crypto.subtle.importKey("raw", digest, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+}
+
+async function encryptPin(env, pin) {
+  const key = await getEncryptionKey(env);
+  if (!key) return { ciphertext: "", iv: "" };
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(pin));
+  return {
+    ciphertext: bytesToBase64(new Uint8Array(ciphertext)),
+    iv: bytesToBase64(iv)
+  };
+}
+
+async function decryptPin(env, ciphertext, iv) {
+  if (!ciphertext || !iv) return "";
+  const key = await getEncryptionKey(env);
+  if (!key) return "";
+  const plaintext = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: base64ToBytes(iv) },
+    key,
+    base64ToBytes(ciphertext)
+  );
+  return new TextDecoder().decode(plaintext);
+}
+
 function serializePinRow(row) {
   return row ? {
     id: row.id,
+    active_pin: row.active_pin || "",
     pin_last4: row.pin_last4,
     status: row.status,
     expires_at: row.expires_at,
@@ -63,19 +107,25 @@ export async function onRequest(context) {
   await ensureTables(env.DB);
 
   if (request.method === "GET") {
-    const result = await env.DB.prepare(`SELECT id, pin_hash, pin_last4, status, expires_at, used_at, revoked_at, revoked_by, last_used_at, created_at, updated_at FROM customer_support_pins WHERE lower(email) = lower(?) ORDER BY created_at DESC LIMIT 50`).bind(identity.email).all();
+    const result = await env.DB.prepare(`SELECT id, pin_hash, pin_ciphertext, pin_iv, pin_last4, status, expires_at, used_at, revoked_at, revoked_by, last_used_at, created_at, updated_at FROM customer_support_pins WHERE lower(email) = lower(?) ORDER BY created_at DESC LIMIT 50`).bind(identity.email).all();
     let pins = result.results || [];
-    if (!pins.length) {
+    let active = pins.find((pin) => pin.status === "Active" && !pin.revoked_at) || pins[0] || null;
+    if (active) {
+      active.active_pin = await decryptPin(env, active.pin_ciphertext, active.pin_iv);
+    }
+    if (!active || !active.active_pin) {
       const pin = generatePin();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
       const payload = JSON.stringify([{ event: "generated", at: new Date().toISOString(), actor: identity.email }]);
-      await env.DB.prepare(`INSERT INTO customer_support_pins (id, email, pin_hash, pin_last4, status, expires_at, audit_history) VALUES (?, ?, ?, ?, 'Active', ?, ?)`).bind(
-        crypto.randomUUID(), identity.email, await hashPin(pin), pin.slice(-4), expiresAt, payload
+      const encrypted = await encryptPin(env, pin);
+      await env.DB.prepare(`INSERT INTO customer_support_pins (id, email, pin_hash, pin_ciphertext, pin_iv, pin_last4, status, expires_at, audit_history) VALUES (?, ?, ?, ?, ?, ?, 'Active', ?, ?)`).bind(
+        crypto.randomUUID(), identity.email, await hashPin(pin), encrypted.ciphertext, encrypted.iv, pin.slice(-4), expiresAt, payload
       ).run();
-      pins = [{ id: null, pin_last4: pin.slice(-4), status: "Active", expires_at: expiresAt, used_at: null, revoked_at: null, revoked_by: null, last_used_at: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), active_pin: pin, generated: true }];
+      active = { id: null, pin_last4: pin.slice(-4), status: "Active", expires_at: expiresAt, used_at: null, revoked_at: null, revoked_by: null, last_used_at: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), active_pin: pin, generated: true };
+      pins = [active];
       return json({ pins });
     }
-    return json({ pins: pins.map(serializePinRow) });
+    return json({ pins: pins.map((pin) => ({ ...serializePinRow(pin), active_pin: pin.id === active?.id ? active.active_pin : "" })) });
   }
 
   if (request.method === "POST") {
@@ -86,8 +136,9 @@ export async function onRequest(context) {
       const pin = generatePin();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
       const payload = JSON.stringify([{ event: "generated", at: new Date().toISOString(), actor: identity.email }]);
-      await env.DB.prepare(`INSERT INTO customer_support_pins (id, email, pin_hash, pin_last4, status, expires_at, audit_history) VALUES (?, ?, ?, ?, 'Active', ?, ?)`).bind(
-        crypto.randomUUID(), identity.email, await hashPin(pin), pin.slice(-4), expiresAt, payload
+      const encrypted = await encryptPin(env, pin);
+      await env.DB.prepare(`INSERT INTO customer_support_pins (id, email, pin_hash, pin_ciphertext, pin_iv, pin_last4, status, expires_at, audit_history) VALUES (?, ?, ?, ?, ?, ?, 'Active', ?, ?)`).bind(
+        crypto.randomUUID(), identity.email, await hashPin(pin), encrypted.ciphertext, encrypted.iv, pin.slice(-4), expiresAt, payload
       ).run();
       return json({ pin, expiresAt });
     }
@@ -100,7 +151,8 @@ export async function onRequest(context) {
     if (action === "rotate") {
       const pin = generatePin();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-      await env.DB.prepare(`UPDATE customer_support_pins SET pin_hash = ?, pin_last4 = ?, status = 'Active', expires_at = ?, revoked_at = NULL, revoked_by = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(await hashPin(pin), pin.slice(-4), expiresAt, id).run();
+      const encrypted = await encryptPin(env, pin);
+      await env.DB.prepare(`UPDATE customer_support_pins SET pin_hash = ?, pin_ciphertext = ?, pin_iv = ?, pin_last4 = ?, status = 'Active', expires_at = ?, revoked_at = NULL, revoked_by = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(await hashPin(pin), encrypted.ciphertext, encrypted.iv, pin.slice(-4), expiresAt, id).run();
       return json({ pin, expiresAt });
     }
     return json({ error: "Unknown action." }, 400);
