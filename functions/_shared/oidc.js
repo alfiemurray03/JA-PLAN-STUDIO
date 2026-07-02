@@ -803,13 +803,39 @@ export async function getNativeSession(request, env, realm) {
   ]) {
     if (columns.has(column)) selectColumns.splice(selectColumns.length - 1, 0, column);
   }
-  const row = await env.DB.prepare(`
+  const selectSql = `
     SELECT ${selectColumns.join(", ")}
     FROM ${config.sessionTable}
     WHERE token_hash = ? AND revoked_at IS NULL
       AND datetime(idle_expires_at) > datetime('now')
       AND datetime(absolute_expires_at) > datetime('now')
-  `).bind(tokenHash).first();
+  `;
+  let row;
+  try {
+    row = await env.DB.prepare(selectSql).bind(tokenHash).first();
+  } catch (error) {
+    error.sql = selectSql.trim();
+    error.table = config.sessionTable;
+    error.selectedColumns = selectColumns;
+    error.detectedColumns = Array.from(columns);
+    error.fallbackColumns = Array.from(sessionTableColumns.get(config.sessionTable) || []);
+    error.boundValues = [tokenHash];
+    console.error(JSON.stringify({
+      event: "native_oidc_session_lookup_error",
+      realm,
+      requestId: request.headers.get("x-request-id") || request.headers.get("cf-ray") || "",
+      tableName: config.sessionTable,
+      selectedColumns: selectColumns,
+      detectedTableColumns: Array.from(columns),
+      fallbackColumns: Array.from(sessionTableColumns.get(config.sessionTable) || []),
+      sql: selectSql.trim(),
+      boundValues: [tokenHash],
+      sqliteErrorCode: error?.code || error?.cause?.code || error?.name || "",
+      sqliteErrorMessage: error?.message || "Unknown D1 session lookup error",
+      stack: error?.stack || ""
+    }));
+    throw error;
+  }
   if (!row) {
     if (hasColumn("revoked_at")) {
       await env.DB.prepare(`UPDATE ${config.sessionTable} SET revoked_at = COALESCE(revoked_at, CURRENT_TIMESTAMP) WHERE token_hash = ?`).bind(tokenHash).run();
