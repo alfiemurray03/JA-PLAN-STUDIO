@@ -23,6 +23,66 @@ const discoveryCache = new Map();
 const jwksCache = new Map();
 const readyDatabases = new WeakSet();
 const tableColumnsCache = new WeakMap();
+const sessionTableColumns = new Map([
+  ["admin_oidc_sessions", new Set([
+    "token_hash",
+    "subject",
+    "tenant_id",
+    "email",
+    "name",
+    "refresh_token_encrypted",
+    "created_at",
+    "last_seen_at",
+    "idle_expires_at",
+    "absolute_expires_at",
+    "refresh_after",
+    "revoked_at",
+    "ip_hash",
+    "user_agent",
+    "microsoft_object_id",
+    "microsoft_given_name",
+    "microsoft_family_name",
+    "microsoft_preferred_username",
+    "microsoft_locale",
+    "microsoft_job_title",
+    "microsoft_department",
+    "microsoft_company_name",
+    "microsoft_mobile_phone",
+    "microsoft_business_phone",
+    "microsoft_country",
+    "microsoft_preferred_language",
+    "microsoft_photo_url"
+  ])],
+  ["customer_oidc_sessions", new Set([
+    "token_hash",
+    "subject",
+    "tenant_id",
+    "email",
+    "name",
+    "refresh_token_encrypted",
+    "created_at",
+    "last_seen_at",
+    "idle_expires_at",
+    "absolute_expires_at",
+    "refresh_after",
+    "revoked_at",
+    "ip_hash",
+    "user_agent",
+    "microsoft_object_id",
+    "microsoft_given_name",
+    "microsoft_family_name",
+    "microsoft_preferred_username",
+    "microsoft_locale",
+    "microsoft_job_title",
+    "microsoft_department",
+    "microsoft_company_name",
+    "microsoft_mobile_phone",
+    "microsoft_business_phone",
+    "microsoft_country",
+    "microsoft_preferred_language",
+    "microsoft_photo_url"
+  ])]
+]);
 
 function realmConfig(realm, env) {
   const definition = REALMS[realm];
@@ -286,13 +346,16 @@ async function getTableColumns(DB, table) {
   try {
     const result = await DB.prepare(`PRAGMA table_info(${table})`).all();
     const columns = new Set((result.results || []).map((row) => String(row.name || "").trim()).filter(Boolean));
-    cache.set(table, columns);
-    return columns;
+    if (columns.size > 0) {
+      cache.set(table, columns);
+      return columns;
+    }
   } catch {
-    const columns = new Set();
-    cache.set(table, columns);
-    return columns;
+    // Fall through to the known schema defaults below.
   }
+  const fallback = sessionTableColumns.get(table) || new Set();
+  cache.set(table, fallback);
+  return fallback;
 }
 
 function emailFromClaims(claims) {
@@ -707,6 +770,7 @@ export async function getNativeSession(request, env, realm) {
   if (!token) return null;
   const tokenHash = await hashToken(token);
   const columns = await getTableColumns(env.DB, config.sessionTable);
+  const hasColumn = (name) => columns.has(name);
   const selectColumns = [
     "token_hash",
     "subject",
@@ -747,15 +811,22 @@ export async function getNativeSession(request, env, realm) {
       AND datetime(absolute_expires_at) > datetime('now')
   `).bind(tokenHash).first();
   if (!row) {
-    await env.DB.prepare(`UPDATE ${config.sessionTable} SET revoked_at = COALESCE(revoked_at, CURRENT_TIMESTAMP) WHERE token_hash = ?`).bind(tokenHash).run();
+    if (hasColumn("revoked_at")) {
+      await env.DB.prepare(`UPDATE ${config.sessionTable} SET revoked_at = COALESCE(revoked_at, CURRENT_TIMESTAMP) WHERE token_hash = ?`).bind(tokenHash).run();
+    }
     return null;
   }
   if (row.refresh_token_encrypted && Number(row.refresh_due || 0) === 1) {
-    const refreshClaim = await env.DB.prepare(`
+    const refreshClaimQuery = hasColumn("refresh_after")
+      ? `
       UPDATE ${config.sessionTable}
       SET refresh_after = datetime('now', '+2 minutes')
-      WHERE token_hash = ? AND revoked_at IS NULL AND datetime(refresh_after) <= datetime('now')
-    `).bind(tokenHash).run();
+      WHERE token_hash = ? ${hasColumn("revoked_at") ? "AND revoked_at IS NULL" : ""} AND datetime(refresh_after) <= datetime('now')
+    `
+      : null;
+    const refreshClaim = refreshClaimQuery
+      ? await env.DB.prepare(refreshClaimQuery).bind(tokenHash).run()
+      : { meta: { changes: 1 } };
     const claimed = Number(refreshClaim?.meta?.changes ?? 1) > 0;
     if (claimed) {
       let fatalRefreshFailure = false;
@@ -801,34 +872,48 @@ export async function getNativeSession(request, env, realm) {
           };
         }
         const encryptedRefresh = tokens.refresh_token ? await encryptSecret(tokens.refresh_token, env) : row.refresh_token_encrypted;
-        await env.DB.prepare(`
-          UPDATE ${config.sessionTable}
-          SET subject = ?, tenant_id = ?, email = ?, name = ?, refresh_token_encrypted = ?, refresh_after = datetime('now', '+50 minutes'),
-            microsoft_object_id = ?, microsoft_given_name = ?, microsoft_family_name = ?, microsoft_preferred_username = ?, microsoft_locale = ?,
-            microsoft_job_title = ?, microsoft_department = ?, microsoft_company_name = ?, microsoft_mobile_phone = ?, microsoft_business_phone = ?,
-            microsoft_country = ?, microsoft_preferred_language = ?, microsoft_photo_url = ?
-          WHERE token_hash = ? AND revoked_at IS NULL
-        `).bind(
-          refreshed.subject,
-          refreshed.tenantId,
-          refreshed.email,
-          refreshed.name,
-          encryptedRefresh,
-          firstClaim(refreshedClaims || {}, "oid", "sub"),
-          firstClaim(refreshedClaims || {}, "given_name"),
-          firstClaim(refreshedClaims || {}, "family_name"),
-          firstClaim(refreshedClaims || {}, "preferred_username", "upn", "email"),
-          firstClaim(refreshedClaims || {}, "locale"),
-          firstClaim(refreshedClaims || {}, "job_title", "jobTitle"),
-          firstClaim(refreshedClaims || {}, "department"),
-          firstClaim(refreshedClaims || {}, "company_name", "companyName", "organization", "organisation"),
-          firstClaimValue(refreshedClaims || {}, "mobile_phone", "mobilePhone"),
-          firstClaimValue(refreshedClaims || {}, "businessPhones", "business_phone", "businessPhone"),
-          firstClaim(refreshedClaims || {}, "country", "country_region", "countryRegion"),
-          firstClaim(refreshedClaims || {}, "preferred_language", "preferredLanguage"),
-          firstClaim(refreshedClaims || {}, "picture", "photo_url", "photoUrl"),
-          tokenHash
-        ).run();
+        const updateAssignments = [];
+        const updateBindings = [];
+        for (const [column, value] of [
+          ["subject", refreshed.subject],
+          ["tenant_id", refreshed.tenantId],
+          ["email", refreshed.email],
+          ["name", refreshed.name],
+          ["refresh_token_encrypted", encryptedRefresh]
+        ]) {
+          if (hasColumn(column)) {
+            updateAssignments.push(`${column} = ?`);
+            updateBindings.push(value);
+          }
+        }
+        for (const [column, value] of [
+          ["microsoft_object_id", firstClaim(refreshedClaims || {}, "oid", "sub")],
+          ["microsoft_given_name", firstClaim(refreshedClaims || {}, "given_name")],
+          ["microsoft_family_name", firstClaim(refreshedClaims || {}, "family_name")],
+          ["microsoft_preferred_username", firstClaim(refreshedClaims || {}, "preferred_username", "upn", "email")],
+          ["microsoft_locale", firstClaim(refreshedClaims || {}, "locale")],
+          ["microsoft_job_title", firstClaim(refreshedClaims || {}, "job_title", "jobTitle")],
+          ["microsoft_department", firstClaim(refreshedClaims || {}, "department")],
+          ["microsoft_company_name", firstClaim(refreshedClaims || {}, "company_name", "companyName", "organization", "organisation")],
+          ["microsoft_mobile_phone", firstClaimValue(refreshedClaims || {}, "mobile_phone", "mobilePhone")],
+          ["microsoft_business_phone", firstClaimValue(refreshedClaims || {}, "businessPhones", "business_phone", "businessPhone")],
+          ["microsoft_country", firstClaim(refreshedClaims || {}, "country", "country_region", "countryRegion")],
+          ["microsoft_preferred_language", firstClaim(refreshedClaims || {}, "preferred_language", "preferredLanguage")],
+          ["microsoft_photo_url", firstClaim(refreshedClaims || {}, "picture", "photo_url", "photoUrl")]
+        ]) {
+          if (hasColumn(column)) {
+            updateAssignments.push(`${column} = ?`);
+            updateBindings.push(value);
+          }
+        }
+        if (hasColumn("refresh_after")) updateAssignments.push(`refresh_after = datetime('now', '+50 minutes')`);
+        if (updateAssignments.length) {
+          await env.DB.prepare(`
+            UPDATE ${config.sessionTable}
+            SET ${updateAssignments.join(", ")}
+            WHERE token_hash = ? ${hasColumn("revoked_at") ? "AND revoked_at IS NULL" : ""}
+          `).bind(...updateBindings, tokenHash).run();
+        }
         Object.assign(row, {
           subject: refreshed.subject,
           tenant_id: refreshed.tenantId,
@@ -837,21 +922,37 @@ export async function getNativeSession(request, env, realm) {
         });
       } catch {
         if (fatalRefreshFailure) {
-          await env.DB.prepare(`UPDATE ${config.sessionTable} SET revoked_at = CURRENT_TIMESTAMP WHERE token_hash = ?`).bind(tokenHash).run();
+          if (hasColumn("revoked_at")) {
+            await env.DB.prepare(`UPDATE ${config.sessionTable} SET revoked_at = CURRENT_TIMESTAMP WHERE token_hash = ?`).bind(tokenHash).run();
+          }
           return null;
         }
-        await env.DB.prepare(`
-          UPDATE ${config.sessionTable} SET refresh_after = datetime('now', '+5 minutes')
-          WHERE token_hash = ? AND revoked_at IS NULL
-        `).bind(tokenHash).run();
+        if (hasColumn("refresh_after")) {
+          await env.DB.prepare(`
+            UPDATE ${config.sessionTable} SET refresh_after = datetime('now', '+5 minutes')
+            WHERE token_hash = ? ${hasColumn("revoked_at") ? "AND revoked_at IS NULL" : ""}
+          `).bind(tokenHash).run();
+        }
       }
     }
   }
-  await env.DB.prepare(`
-    UPDATE ${config.sessionTable}
-    SET last_seen_at = CURRENT_TIMESTAMP, idle_expires_at = MIN(datetime('now', ?), absolute_expires_at)
-    WHERE token_hash = ?
-  `).bind(`+${config.idleMinutes} minutes`, tokenHash).run();
+  const lastSeenUpdates = [];
+  const lastSeenBindings = [];
+  if (hasColumn("last_seen_at")) lastSeenUpdates.push("last_seen_at = CURRENT_TIMESTAMP");
+  if (hasColumn("idle_expires_at") && hasColumn("absolute_expires_at")) {
+    lastSeenUpdates.push("idle_expires_at = MIN(datetime('now', ?), absolute_expires_at)");
+    lastSeenBindings.push(`+${config.idleMinutes} minutes`);
+  } else if (hasColumn("idle_expires_at")) {
+    lastSeenUpdates.push("idle_expires_at = datetime('now', ?)");
+    lastSeenBindings.push(`+${config.idleMinutes} minutes`);
+  }
+  if (lastSeenUpdates.length) {
+    await env.DB.prepare(`
+      UPDATE ${config.sessionTable}
+      SET ${lastSeenUpdates.join(", ")}
+      WHERE token_hash = ?
+    `).bind(...lastSeenBindings, tokenHash).run();
+  }
   return {
     realm,
     tokenHash,
