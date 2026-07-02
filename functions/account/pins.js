@@ -126,17 +126,40 @@ export async function onRequest(context) {
 
   if (request.method === "GET") {
     const result = await env.DB.prepare(`SELECT id, pin_hash, pin_ciphertext, pin_iv, pin_last4, status, expires_at, used_at, revoked_at, revoked_by, last_used_at, created_at, updated_at FROM customer_support_pins WHERE lower(email) = lower(?) ORDER BY created_at DESC LIMIT 50`).bind(identity.email).all();
-    let pins = result.results || [];
+    const pins = result.results || [];
     let active = pins.find((pin) => pin.status === "Active" && !pin.revoked_at) || pins[0] || null;
+    let activePin = "";
+
     if (active) {
-      active.active_pin = await decryptPin(env, active.pin_ciphertext, active.pin_iv);
+      try {
+        activePin = await decryptPin(env, active.pin_ciphertext, active.pin_iv);
+      } catch {
+        activePin = "";
+      }
     }
-    if (!active || !active.active_pin) {
+
+    if (!active || !activePin) {
       const created = await createSupportPinRecord(env.DB, env, identity.email, identity.email);
-      active = { id: null, pin_last4: created.pin.slice(-4), status: "Active", expires_at: created.expiresAt, used_at: null, revoked_at: null, revoked_by: null, last_used_at: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), active_pin: created.pin, generated: true };
+      active = {
+        id: null,
+        pin_last4: created.pin.slice(-4),
+        status: "Active",
+        expires_at: created.expiresAt,
+        used_at: null,
+        revoked_at: null,
+        revoked_by: null,
+        last_used_at: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        active_pin: created.pin,
+        generated: true
+      };
       return json({ pins: [active] });
     }
-    return json({ pins: [serializePinRow({ ...active, active_pin: active.active_pin })] });
+
+    return json({
+      pins: [serializePinRow({ ...active, active_pin: activePin })]
+    });
   }
 
   if (request.method === "POST") {

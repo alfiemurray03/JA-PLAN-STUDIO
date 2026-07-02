@@ -241,6 +241,8 @@ async function renderPage(page) {
             <summary><strong>Personal details</strong></summary>
             <div class="portal-form-grid">
               <label class="portal-field"><span class="portal-label">Display name</span><input id="profileDisplayName" value="${escapeHtml(profile.displayName || "")}"></label>
+              <label class="portal-field"><span class="portal-label">Given name</span><input id="profileGivenName" value="${escapeHtml(profile.microsoftGivenName || "")}"></label>
+              <label class="portal-field"><span class="portal-label">Surname</span><input id="profileFamilyName" value="${escapeHtml(profile.microsoftFamilyName || "")}"></label>
               <label class="portal-field"><span class="portal-label">Contact email</span><input id="profileContactEmail" value="${escapeHtml(profile.contactEmail || profile.email || "")}"></label>
               <label class="portal-field"><span class="portal-label">Phone</span><input id="profilePhone" value="${escapeHtml(profile.phone || "")}"></label>
               <label class="portal-field"><span class="portal-label">Communication preference</span><select id="profileComms"><option>Email</option><option>Phone</option><option>Email first, phone if urgent</option></select></label>
@@ -249,14 +251,14 @@ async function renderPage(page) {
         </article>
         <article class="portal-card portal-span-6">
           <h2>Microsoft Entra identity</h2>
-          <div class="portal-stack">
-            <div class="portal-entry"><span class="portal-label">Tenant ID</span><strong>${escapeHtml(profile.microsoftTenantId || "Not provided")}</strong></div>
-            <div class="portal-entry"><span class="portal-label">Object ID</span><strong>${escapeHtml(profile.microsoftObjectId || "Not provided")}</strong></div>
-            <label class="portal-field"><span class="portal-label">Preferred username</span><input value="${escapeHtml(profile.microsoftPreferredUsername || "")}" disabled><small>Managed by Microsoft Entra</small></label>
-            <label class="portal-field"><span class="portal-label">Preferred language</span><input value="${escapeHtml(profile.microsoftPreferredLanguage || "")}"><small>Editable where Microsoft Graph permits.</small></label>
-            <div class="portal-entry"><span class="portal-label">Last sync</span><strong>${escapeHtml(fmt(profile.microsoftUpdatedAt))}</strong></div>
-          </div>
-        </article>
+            <div class="portal-stack">
+              <div class="portal-entry"><span class="portal-label">Tenant ID</span><strong>${escapeHtml(profile.microsoftTenantId || "Not provided")}</strong></div>
+              <div class="portal-entry"><span class="portal-label">Object ID</span><strong>${escapeHtml(profile.microsoftObjectId || "Not provided")}</strong></div>
+              <label class="portal-field"><span class="portal-label">Preferred username</span><input value="${escapeHtml(profile.microsoftPreferredUsername || "")}" disabled><small>Managed by Microsoft Entra</small></label>
+              <label class="portal-field"><span class="portal-label">Preferred language</span><input id="profilePreferredLanguage" value="${escapeHtml(profile.microsoftPreferredLanguage || "")}"><small>Editable where Microsoft Graph permits.</small></label>
+              <div class="portal-entry"><span class="portal-label">Last sync</span><strong>${escapeHtml(fmt(profile.microsoftUpdatedAt))}</strong></div>
+            </div>
+          </article>
         <article class="portal-card portal-span-6">
           <h2>Account metadata</h2>
           <div class="portal-stack">
@@ -284,9 +286,12 @@ async function renderPage(page) {
     document.getElementById("saveProfileBtn").addEventListener("click", async () => {
       const payload = {
         displayName: document.getElementById("profileDisplayName").value,
+        givenName: document.getElementById("profileGivenName").value,
+        familyName: document.getElementById("profileFamilyName").value,
         contactEmail: document.getElementById("profileContactEmail").value,
         phone: document.getElementById("profilePhone").value,
         communicationPreference: document.getElementById("profileComms").value,
+        preferredLanguage: document.getElementById("profilePreferredLanguage").value,
         supportNotes: document.getElementById("profileSupportNotes").value,
         termsAccepted: true,
         privacyAccepted: true,
@@ -352,7 +357,37 @@ async function renderPage(page) {
   if (page === "security") {
     const pins = await loadPins(true).catch(() => ({ pins: [] }));
     const activePinRecord = (pins.pins || []).find((pin) => pin.active_pin) || (pins.pins || [])[0] || null;
-    const activePinValue = activePinRecord?.active_pin || "PIN UNAVAILABLE";
+    let activePinValue = activePinRecord?.active_pin || "";
+    let activePinList = pins.pins || [];
+
+    if (!activePinValue) {
+      const generated = await fetch("/account/pins", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Accept": "application/json", "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "generate" })
+      }).then((response) => response.json().catch(() => ({}))).catch(() => ({}));
+      if (generated?.pin) {
+        activePinValue = generated.pin;
+        activePinList = [{
+          id: generated.id || "generated",
+          active_pin: generated.pin,
+          pin_last4: generated.pin.slice(-4),
+          status: "Active",
+          expires_at: generated.expiresAt || "",
+          used_at: null,
+          revoked_at: null,
+          revoked_by: null,
+          last_used_at: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }];
+        portalState.pins = { pins: activePinList };
+      }
+    }
+
+    if (!activePinValue) activePinValue = "PIN UNAVAILABLE";
+    const activePinId = activePinList[0]?.id || activePinRecord?.id || "";
     pageRoot.innerHTML = `
       <section class="portal-grid">
         <article class="portal-card portal-span-6">
@@ -372,7 +407,7 @@ async function renderPage(page) {
               ${escapeHtml(activePinValue)}
             </div>
             <div class="portal-stack" id="pinHistory">
-              ${(pins.pins || []).map((pin) => `<div class="portal-entry" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);color:#fff"><strong>${escapeHtml(pin.active_pin || activePin || `${pin.status || "Active"} PIN`)}</strong><small>Status: ${escapeHtml(pin.status || "Active")} · Created ${escapeHtml(fmt(pin.created_at))} · Expires ${escapeHtml(fmt(pin.expires_at))}</small></div>`).join("") || `<div class="portal-note inline" style="color:#fff;background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12)">Your support PIN is ready and will appear here automatically.</div>`}
+              ${activePinList.map((pin) => `<div class="portal-entry" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);color:#fff"><strong>${escapeHtml(pin.active_pin || activePinValue || `${pin.status || "Active"} PIN`)}</strong><small>Status: ${escapeHtml(pin.status || "Active")} · Created ${escapeHtml(fmt(pin.created_at))} · Expires ${escapeHtml(fmt(pin.expires_at))}</small></div>`).join("") || `<div class="portal-note inline" style="color:#fff;background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12)">Your support PIN is ready and will appear here automatically.</div>`}
             </div>
           </div>
           <div class="portal-actions" style="margin-top:1rem">
@@ -389,9 +424,9 @@ async function renderPage(page) {
     pageRoot.querySelectorAll("[data-pin-action]").forEach((button) => {
       button.addEventListener("click", async () => {
         const action = button.dataset.pinAction;
-        const target = pins.pins?.[0]?.id || "";
+        const target = activePinId;
         if (action === "copy") {
-          const currentPin = activePinRecord?.active_pin || activePinValue;
+          const currentPin = activePinValue;
           if (!currentPin || currentPin === "PIN UNAVAILABLE") {
             alert("Generate or rotate the PIN first.");
             return;

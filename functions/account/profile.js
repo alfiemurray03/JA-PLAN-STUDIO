@@ -55,6 +55,133 @@ function cleanEmail(value) {
   return clean(value, 254).toLowerCase();
 }
 
+function base64UrlToBytes(value) {
+  const normalised = String(value || "").replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalised.padEnd(normalised.length + ((4 - normalised.length % 4) % 4), "=");
+  const binary = atob(padded);
+  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+}
+
+async function oidcEncryptionKey(env) {
+  const secret = String(env.OIDC_TOKEN_ENCRYPTION_KEY || "");
+  if (secret.length < 32) return null;
+  const material = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), "HKDF", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey({
+    name: "HKDF",
+    hash: "SHA-256",
+    salt: new TextEncoder().encode("ja-experiences-native-oidc-v1"),
+    info: new TextEncoder().encode("refresh-token-storage")
+  }, material, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+}
+
+async function decryptOidcSecret(value, env) {
+  if (!value) return "";
+  const [iv, encrypted] = String(value).split(".");
+  if (!iv || !encrypted) return "";
+  const key = await oidcEncryptionKey(env);
+  if (!key) return "";
+  const decrypted = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: base64UrlToBytes(iv) },
+    key,
+    base64UrlToBytes(encrypted)
+  );
+  return new TextDecoder().decode(decrypted);
+}
+
+async function discoverOidc(env) {
+  const issuer = String(env.CUSTOMER_OIDC_ISSUER || env.MICROSOFT_OIDC_ISSUER || env.OIDC_ISSUER || "").trim().replace(/\/$/, "");
+  if (!issuer) return null;
+  const response = await fetch(`${issuer}/.well-known/openid-configuration`, {
+    headers: { Accept: "application/json" },
+    cf: { cacheTtl: 3600, cacheEverything: true }
+  });
+  if (!response.ok) return null;
+  const metadata = await response.json().catch(() => null);
+  if (!metadata?.token_endpoint) return null;
+  return metadata;
+}
+
+async function getCustomerRefreshToken(DB, identity, env) {
+  try {
+    const row = await DB.prepare(`
+      SELECT refresh_token_encrypted
+      FROM customer_oidc_sessions
+      WHERE lower(email) = lower(?) AND revoked_at IS NULL AND refresh_token_encrypted IS NOT NULL
+      ORDER BY datetime(last_seen_at) DESC, datetime(created_at) DESC
+      LIMIT 1
+    `).bind(identity.email).first();
+    return decryptOidcSecret(row?.refresh_token_encrypted || "", env);
+  } catch {
+    return "";
+  }
+}
+
+async function refreshMicrosoftAccessToken(DB, env, identity) {
+  const metadata = await discoverOidc(env);
+  if (!metadata) return null;
+  const refreshToken = await getCustomerRefreshToken(DB, identity, env);
+  if (!refreshToken) return null;
+  const clientId = String(env.CUSTOMER_OIDC_CLIENT_ID || env.MICROSOFT_OIDC_CLIENT_ID || env.OIDC_CLIENT_ID || "").trim();
+  const clientSecret = String(env.CUSTOMER_OIDC_CLIENT_SECRET || env.MICROSOFT_OIDC_CLIENT_SECRET || env.OIDC_CLIENT_SECRET || "").trim();
+  if (!clientId || !clientSecret) return null;
+
+  const response = await fetch(metadata.token_endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      grant_type: "refresh_token",
+      refresh_token: refreshToken,
+      scope: "openid profile email offline_access https://graph.microsoft.com/User.ReadWrite"
+    }).toString()
+  });
+  if (!response.ok) return null;
+  const payload = await response.json().catch(() => null);
+  if (!payload?.access_token) return null;
+  return payload.access_token;
+}
+
+async function syncMicrosoftGraphProfile(DB, env, identity, profile) {
+  const accessToken = await refreshMicrosoftAccessToken(DB, env, identity);
+  if (!accessToken) return { synced: false, reason: "No Microsoft Graph access token was available." };
+
+  const givenName = clean(profile.microsoftGivenName || profile.displayName || identity.givenName || "", 120);
+  const familyName = clean(profile.microsoftFamilyName || identity.familyName || "", 120);
+  const displayName = clean(profile.displayName || profile.verifiedName || identity.verifiedName || identity.email, 120);
+  const preferredLanguage = clean(profile.microsoftPreferredLanguage || identity.preferredLanguage || "", 40);
+
+  const patchBody = {
+    displayName,
+    givenName: givenName || undefined,
+    surname: familyName || undefined,
+    preferredLanguage: preferredLanguage || undefined
+  };
+  for (const key of Object.keys(patchBody)) {
+    if (!patchBody[key]) delete patchBody[key];
+  }
+
+  if (!Object.keys(patchBody).length) {
+    return { synced: false, reason: "No Graph-updatable fields were supplied." };
+  }
+
+  const response = await fetch("https://graph.microsoft.com/v1.0/me", {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      Accept: "application/json"
+    },
+    body: JSON.stringify(patchBody)
+  });
+  if (!response.ok) {
+    const details = await response.text().catch(() => "");
+    throw new Error(`Microsoft Graph update failed: ${response.status} ${details.slice(0, 240)}`);
+  }
+
+  return { synced: true };
+}
+
 function profileHasEligibleAccess(row, plan) {
   const status = String(row?.admin_customer_status || "").trim().toLowerCase();
   return Boolean(
@@ -495,7 +622,10 @@ async function saveProfile(DB, identity, body, request, env = {}) {
     contactEmail: clean(body.contactEmail, 180) || current.contactEmail || identity.email,
     phone: clean(body.phone, 80),
     communicationPreference: clean(body.communicationPreference, 80) || "Email",
-    supportNotes: clean(body.supportNotes, 1000)
+    supportNotes: clean(body.supportNotes, 1000),
+    microsoftGivenName: clean(body.givenName, 120) || current.microsoftGivenName || identity.givenName || "",
+    microsoftFamilyName: clean(body.familyName, 120) || current.microsoftFamilyName || identity.familyName || "",
+    microsoftPreferredLanguage: clean(body.preferredLanguage, 40) || current.microsoftPreferredLanguage || identity.preferredLanguage || ""
   };
   const locale = identity.locale || current.microsoftLocale || "";
 
@@ -553,7 +683,7 @@ async function saveProfile(DB, identity, body, request, env = {}) {
       microsoft_photo_url = COALESCE(profiles.microsoft_photo_url, excluded.microsoft_photo_url),
       microsoft_updated_at = COALESCE(profiles.microsoft_updated_at, excluded.microsoft_updated_at),
       updated_at = CURRENT_TIMESTAMP
-  `).bind(
+    `).bind(
     identity.email,
     identity.verifiedName,
     updated.displayName,
@@ -564,8 +694,8 @@ async function saveProfile(DB, identity, body, request, env = {}) {
     identity.objectId || "",
     identity.tenantId || "",
     identity.name || identity.verifiedName || identity.email,
-    identity.givenName || "",
-    identity.familyName || "",
+    updated.microsoftGivenName,
+    updated.microsoftFamilyName,
     identity.email || "",
     identity.preferredUsername || identity.email || "",
     locale,
@@ -575,10 +705,41 @@ async function saveProfile(DB, identity, body, request, env = {}) {
     identity.mobilePhone || "",
     identity.businessPhone || "",
     identity.country || "",
-    identity.preferredLanguage || "",
+    updated.microsoftPreferredLanguage || identity.preferredLanguage || "",
     identity.photoUrl || "",
     new Date().toISOString()
   ).run();
+
+  const graphSync = await syncMicrosoftGraphProfile(DB, env, {
+    email: identity.email,
+    givenName: updated.microsoftGivenName,
+    familyName: updated.microsoftFamilyName,
+    preferredLanguage: updated.microsoftPreferredLanguage
+  }, {
+    displayName: updated.displayName,
+    microsoftGivenName: updated.microsoftGivenName,
+    microsoftFamilyName: updated.microsoftFamilyName,
+    microsoftPreferredLanguage: updated.microsoftPreferredLanguage
+  }).catch(() => ({ synced: false }));
+
+  if (graphSync?.synced) {
+    await DB.prepare(`
+      UPDATE profiles
+      SET microsoft_display_name = COALESCE(NULLIF(?, ''), microsoft_display_name),
+        microsoft_given_name = COALESCE(NULLIF(?, ''), microsoft_given_name),
+        microsoft_family_name = COALESCE(NULLIF(?, ''), microsoft_family_name),
+        microsoft_preferred_language = COALESCE(NULLIF(?, ''), microsoft_preferred_language),
+        microsoft_updated_at = CURRENT_TIMESTAMP,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE lower(email) = lower(?)
+    `).bind(
+      updated.displayName,
+      updated.microsoftGivenName,
+      updated.microsoftFamilyName,
+      updated.microsoftPreferredLanguage,
+      identity.email
+    ).run();
+  }
 
   await storeConsent(DB, {
     email: identity.email,
