@@ -55,6 +55,21 @@ function cleanEmail(value) {
   return clean(value, 254).toLowerCase();
 }
 
+function readCookie(request, name) {
+  const prefix = `${name}=`;
+  const entry = (request.headers.get("Cookie") || "")
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(prefix));
+  return entry ? decodeURIComponent(entry.slice(prefix.length)) : "";
+}
+
+async function hashToken(value) {
+  const data = new TextEncoder().encode(String(value || ""));
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 function base64UrlToBytes(value) {
   const normalised = String(value || "").replace(/-/g, "+").replace(/_/g, "/");
   const padded = normalised.padEnd(normalised.length + ((4 - normalised.length % 4) % 4), "=");
@@ -62,7 +77,13 @@ function base64UrlToBytes(value) {
   return Uint8Array.from(binary, (character) => character.charCodeAt(0));
 }
 
-async function oidcEncryptionKey(env) {
+function bytesToBase64Url(bytes) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+async function encryptionKey(env) {
   const secret = String(env.OIDC_TOKEN_ENCRYPTION_KEY || "");
   if (secret.length < 32) return null;
   const material = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), "HKDF", false, ["deriveKey"]);
@@ -71,14 +92,14 @@ async function oidcEncryptionKey(env) {
     hash: "SHA-256",
     salt: new TextEncoder().encode("ja-experiences-native-oidc-v1"),
     info: new TextEncoder().encode("refresh-token-storage")
-  }, material, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+  }, material, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
 }
 
-async function decryptOidcSecret(value, env) {
+async function decryptSecret(value, env) {
   if (!value) return "";
   const [iv, encrypted] = String(value).split(".");
   if (!iv || !encrypted) return "";
-  const key = await oidcEncryptionKey(env);
+  const key = await encryptionKey(env);
   if (!key) return "";
   const decrypted = await crypto.subtle.decrypt(
     { name: "AES-GCM", iv: base64UrlToBytes(iv) },
@@ -86,6 +107,15 @@ async function decryptOidcSecret(value, env) {
     base64UrlToBytes(encrypted)
   );
   return new TextDecoder().decode(decrypted);
+}
+
+async function encryptSecret(value, env) {
+  if (!value) return "";
+  const key = await encryptionKey(env);
+  if (!key) return "";
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const encrypted = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(value));
+  return `${bytesToBase64Url(iv)}.${bytesToBase64Url(new Uint8Array(encrypted))}`;
 }
 
 async function discoverOidc(env) {
@@ -101,25 +131,30 @@ async function discoverOidc(env) {
   return metadata;
 }
 
-async function getCustomerRefreshToken(DB, identity, env) {
+async function getCurrentCustomerSession(DB, request) {
+  const token = readCookie(request, "ja_customer_oidc_session");
+  if (!token) return null;
+  const tokenHash = await hashToken(token);
   try {
-    const row = await DB.prepare(`
-      SELECT refresh_token_encrypted
+    return await DB.prepare(`
+      SELECT token_hash, refresh_token_encrypted, access_token_encrypted, access_token_expires_at
       FROM customer_oidc_sessions
-      WHERE lower(email) = lower(?) AND revoked_at IS NULL AND refresh_token_encrypted IS NOT NULL
-      ORDER BY datetime(last_seen_at) DESC, datetime(created_at) DESC
-      LIMIT 1
-    `).bind(identity.email).first();
-    return decryptOidcSecret(row?.refresh_token_encrypted || "", env);
+      WHERE token_hash = ? AND revoked_at IS NULL
+    `).bind(tokenHash).first();
   } catch {
-    return "";
+    return null;
   }
 }
 
-async function refreshMicrosoftAccessToken(DB, env, identity) {
+async function getCustomerRefreshToken(DB, request, env) {
+  const session = await getCurrentCustomerSession(DB, request);
+  return decryptSecret(session?.refresh_token_encrypted || "", env);
+}
+
+async function refreshMicrosoftAccessToken(DB, request, env) {
   const metadata = await discoverOidc(env);
   if (!metadata) return null;
-  const refreshToken = await getCustomerRefreshToken(DB, identity, env);
+  const refreshToken = await getCustomerRefreshToken(DB, request, env);
   if (!refreshToken) return null;
   const clientId = String(env.CUSTOMER_OIDC_CLIENT_ID || env.MICROSOFT_OIDC_CLIENT_ID || env.OIDC_CLIENT_ID || "").trim();
   const clientSecret = String(env.CUSTOMER_OIDC_CLIENT_SECRET || env.MICROSOFT_OIDC_CLIENT_SECRET || env.OIDC_CLIENT_SECRET || "").trim();
@@ -139,11 +174,29 @@ async function refreshMicrosoftAccessToken(DB, env, identity) {
   if (!response.ok) return null;
   const payload = await response.json().catch(() => null);
   if (!payload?.access_token) return null;
+
+  const session = await getCurrentCustomerSession(DB, request);
+  if (session?.token_hash) {
+    const accessTokenEncrypted = await encryptSecret(payload.access_token, env);
+    const accessTokenExpiresAt = payload.expires_in ? new Date(Date.now() + Number(payload.expires_in) * 1000).toISOString() : "";
+    await DB.prepare(`
+      UPDATE customer_oidc_sessions
+      SET access_token_encrypted = COALESCE(NULLIF(?, ''), access_token_encrypted),
+        access_token_expires_at = COALESCE(NULLIF(?, ''), access_token_expires_at)
+      WHERE token_hash = ? AND revoked_at IS NULL
+    `).bind(accessTokenEncrypted, accessTokenExpiresAt, session.token_hash).run();
+  }
+
   return payload.access_token;
 }
 
-async function syncMicrosoftGraphProfile(DB, env, identity, profile) {
-  const accessToken = await refreshMicrosoftAccessToken(DB, env, identity);
+async function syncMicrosoftGraphProfile(DB, request, env, identity, profile) {
+  const session = await getCurrentCustomerSession(DB, request);
+  const storedAccessToken = session?.access_token_encrypted ? await decryptSecret(session.access_token_encrypted, env) : "";
+  const storedAccessTokenExpiry = session?.access_token_expires_at ? Date.parse(session.access_token_expires_at) : 0;
+  const accessToken = storedAccessToken && storedAccessTokenExpiry > Date.now() + 60_000
+    ? storedAccessToken
+    : await refreshMicrosoftAccessToken(DB, request, env);
   if (!accessToken) return { synced: false, reason: "No Microsoft Graph access token was available." };
 
   const givenName = clean(profile.microsoftGivenName || profile.displayName || identity.givenName || "", 120);

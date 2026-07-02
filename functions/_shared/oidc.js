@@ -31,6 +31,8 @@ const sessionTableColumns = new Map([
     "email",
     "name",
     "refresh_token_encrypted",
+    "access_token_encrypted",
+    "access_token_expires_at",
     "created_at",
     "last_seen_at",
     "idle_expires_at",
@@ -60,6 +62,8 @@ const sessionTableColumns = new Map([
     "email",
     "name",
     "refresh_token_encrypted",
+    "access_token_encrypted",
+    "access_token_expires_at",
     "created_at",
     "last_seen_at",
     "idle_expires_at",
@@ -302,7 +306,8 @@ async function ensureTables(DB) {
   for (const table of ["admin_oidc_sessions", "customer_oidc_sessions"]) {
     await DB.prepare(`CREATE TABLE IF NOT EXISTS ${table} (
       token_hash TEXT PRIMARY KEY, subject TEXT NOT NULL, tenant_id TEXT, email TEXT NOT NULL, name TEXT,
-      refresh_token_encrypted TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP, last_seen_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      refresh_token_encrypted TEXT, access_token_encrypted TEXT, access_token_expires_at TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP, last_seen_at TEXT DEFAULT CURRENT_TIMESTAMP,
       idle_expires_at TEXT NOT NULL, absolute_expires_at TEXT NOT NULL, refresh_after TEXT NOT NULL,
       revoked_at TEXT, ip_hash TEXT, user_agent TEXT,
       microsoft_object_id TEXT, microsoft_given_name TEXT, microsoft_family_name TEXT,
@@ -676,6 +681,11 @@ export async function completeLogin(context, realm) {
       ["email", "?", email],
       ["name", "?", String(claims.name || email).trim()],
       ["refresh_token_encrypted", "?", encryptedRefreshToken],
+      ["access_token_encrypted", "?", await stage(context, realm, "access_token_encryption", () => encryptSecret(tokens.access_token, context.env), {
+        requestId,
+        customerEmail: email
+      })],
+      ["access_token_expires_at", "?", tokens.expires_in ? new Date(Date.now() + Number(tokens.expires_in) * 1000).toISOString() : ""],
       ["idle_expires_at", "datetime('now', ?)", `+${config.idleMinutes} minutes`],
       ["absolute_expires_at", "datetime('now', ?)", `+${config.absoluteMinutes} minutes`],
       ["refresh_after", "datetime('now', '+50 minutes')", null],
