@@ -203,6 +203,12 @@ async function graphRequest({ method, url, accessToken, body, customerEmail = ""
     body: body ? JSON.stringify(body) : undefined
   });
   const responseBody = await response.text().catch(() => "");
+  let parsedJson = null;
+  try {
+    parsedJson = JSON.parse(responseBody || "{}");
+  } catch {
+    parsedJson = null;
+  }
   const parsed = response.ok ? null : graphErrorPayload(responseBody);
   const requestId = response.headers.get("request-id") || response.headers.get("x-ms-request-id") || "";
   await logGraphEvent({
@@ -217,7 +223,7 @@ async function graphRequest({ method, url, accessToken, body, customerEmail = ""
     customerEmail,
     userObjectId
   });
-  return { response, responseBody, parsedError: parsed, requestId, clientRequestId };
+  return { response, responseBody, parsedJson, parsedError: parsed, requestId, clientRequestId };
 }
 
 async function refreshMicrosoftAccessToken(DB, request, env) {
@@ -303,7 +309,7 @@ async function loadMicrosoftGraphProfile(DB, request, env, identity) {
     : await refreshMicrosoftAccessToken(DB, request, env);
   if (!accessToken) return { ok: false, reason: "No Microsoft Graph access token was available.", status: 0, requestId: "", clientRequestId: "" };
 
-  const { response, responseBody, parsedError } = await graphRequest({
+  const { response, responseBody, parsedJson, parsedError } = await graphRequest({
     method: "GET",
     url: graphUrl("/me", [
       "id",
@@ -339,7 +345,7 @@ async function loadMicrosoftGraphProfile(DB, request, env, identity) {
     };
   }
 
-  const profile = await response.json().catch(() => ({}));
+  const profile = parsedJson || {};
   return { ok: true, status: response.status, profile, accessToken, requestId, clientRequestId };
 }
 
