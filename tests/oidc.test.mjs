@@ -19,6 +19,7 @@ class MockD1 {
     this.session = null;
     this.revoked = false;
     this.refreshClaimed = false;
+    this.alterStatements = [];
   }
 
   prepare(sql) {
@@ -78,7 +79,10 @@ class MockD1 {
           }
         };
       },
-      async run() { return { success: true }; }
+      async run() {
+        if (sql.includes("ALTER TABLE")) database.alterStatements.push(sql);
+        return { success: true };
+      }
     };
   }
 }
@@ -225,6 +229,8 @@ test("customer OIDC flow creates a session and redirects into the portal", async
     assert.equal(callback.headers.get("location"), "/account/dashboard/");
     assert.match(callback.headers.get("set-cookie"), /ja_customer_oidc_session=/);
     assert.equal(DB.customerSession.email, "customer@example.test");
+    assert.ok(DB.alterStatements.some((sql) => sql.includes("customer_oidc_sessions ADD COLUMN access_token_encrypted TEXT")));
+    assert.ok(DB.alterStatements.some((sql) => sql.includes("customer_oidc_sessions ADD COLUMN access_token_expires_at TEXT")));
   } finally {
     globalThis.fetch = originalFetch;
   }

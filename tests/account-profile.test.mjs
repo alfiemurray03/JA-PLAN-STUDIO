@@ -18,8 +18,9 @@ const profileColumns = [
 ];
 
 class ProfileD1Mock {
-  constructor(session = null) {
+  constructor(session = null, { legacySessionSchema = false } = {}) {
     this.session = session;
+    this.legacySessionSchema = legacySessionSchema;
   }
 
   prepare(sql) {
@@ -47,7 +48,12 @@ class ProfileD1Mock {
         return { results: [] };
       },
       async first() {
-        if (sql.includes("FROM customer_oidc_sessions")) return this.session;
+        if (sql.includes("FROM customer_oidc_sessions")) {
+          if (this.legacySessionSchema && sql.includes("access_token_encrypted") && !sql.includes("NULL AS access_token_encrypted")) {
+            throw new Error("no such column: access_token_encrypted");
+          }
+          return this.session;
+        }
         if (sql.includes("SELECT * FROM profiles")) {
           return {
             email: "customer@example.test",
@@ -63,6 +69,7 @@ class ProfileD1Mock {
       }
     };
     statement.session = this.session;
+    statement.legacySessionSchema = this.legacySessionSchema;
     return statement;
   }
 }
@@ -125,6 +132,57 @@ test("GET /account/profile returns JSON after a successful Graph /me response", 
 
   try {
     const response = await onRequest({ request, env: { DB, OIDC_TOKEN_ENCRYPTION_KEY: secret } });
+    const payload = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(payload.success, true);
+    assert.equal(payload.profile.email, "customer@example.test");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("GET /account/profile uses a refresh token from a legacy session schema", async () => {
+  const secret = "test-token-encryption-key-that-is-long-enough";
+  const refreshToken = await encryptToken("graph-refresh-token", secret);
+  const DB = new ProfileD1Mock({
+    token_hash: "session-hash",
+    refresh_token_encrypted: refreshToken
+  }, { legacySessionSchema: true });
+  const request = new Request("http://127.0.0.1/account/profile", {
+    headers: {
+      Accept: "application/json",
+      Cookie: "ja_customer_oidc_session=test-session",
+      "x-ja-auth-email": "customer@example.test",
+      "x-ja-auth-name": "Test Customer",
+      "x-ja-auth-object-id": "customer-object-id"
+    }
+  });
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const url = String(input);
+    if (url.endsWith("/.well-known/openid-configuration")) {
+      return Response.json({ token_endpoint: "https://customer.example.test/token" });
+    }
+    if (url === "https://customer.example.test/token") {
+      return Response.json({ access_token: "new-access-token", expires_in: 3600 });
+    }
+    if (url.startsWith("https://graph.microsoft.com/v1.0/me")) {
+      return Response.json({ id: "customer-object-id", displayName: "Graph Customer" });
+    }
+    throw new Error(`Unexpected fetch: ${url}`);
+  };
+
+  try {
+    const response = await onRequest({
+      request,
+      env: {
+        DB,
+        OIDC_TOKEN_ENCRYPTION_KEY: secret,
+        CUSTOMER_OIDC_ISSUER: "https://customer.example.test/tenant/v2.0",
+        CUSTOMER_OIDC_CLIENT_ID: "customer-client-id",
+        CUSTOMER_OIDC_CLIENT_SECRET: "customer-client-secret"
+      }
+    });
     const payload = await response.json();
     assert.equal(response.status, 200);
     assert.equal(payload.success, true);

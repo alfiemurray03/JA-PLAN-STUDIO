@@ -320,6 +320,8 @@ async function ensureTables(DB) {
       microsoft_photo_url TEXT
     )`).run();
     for (const column of [
+      "access_token_encrypted TEXT",
+      "access_token_expires_at TEXT",
       "microsoft_object_id TEXT",
       "microsoft_given_name TEXT",
       "microsoft_family_name TEXT",

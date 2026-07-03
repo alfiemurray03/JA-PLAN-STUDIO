@@ -141,8 +141,26 @@ async function getCurrentCustomerSession(DB, request) {
       FROM customer_oidc_sessions
       WHERE token_hash = ? AND revoked_at IS NULL
     `).bind(tokenHash).first();
-  } catch {
-    return null;
+  } catch (error) {
+    console.error(JSON.stringify({
+      event: "customer_session_extended_columns_unavailable",
+      error_message: error instanceof Error ? error.message : "Customer session query failed."
+    }));
+    try {
+      return await DB.prepare(`
+        SELECT token_hash, refresh_token_encrypted,
+          NULL AS access_token_encrypted,
+          NULL AS access_token_expires_at
+        FROM customer_oidc_sessions
+        WHERE token_hash = ? AND revoked_at IS NULL
+      `).bind(tokenHash).first();
+    } catch (fallbackError) {
+      console.error(JSON.stringify({
+        event: "customer_session_lookup_failed",
+        error_message: fallbackError instanceof Error ? fallbackError.message : "Customer session fallback query failed."
+      }));
+      return null;
+    }
   }
 }
 
