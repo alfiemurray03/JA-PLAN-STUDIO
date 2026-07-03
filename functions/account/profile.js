@@ -853,7 +853,7 @@ async function getProfile(DB, identity, env = {}) {
       graph_sync_failure_reason,
       graph_sync_last_http_status
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, NULL, 0)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).bind(
     nowProfile.email,
     nowProfile.verifiedName,
@@ -883,7 +883,11 @@ async function getProfile(DB, identity, env = {}) {
     "",
     "",
     identity.photoUrl || "",
-    new Date().toISOString()
+    new Date().toISOString(),
+    new Date().toISOString(),
+    0,
+    null,
+    0
   ).run();
 
   await notifyCustomerSignup(DB, env, identity, nowProfile).catch(() => {});
