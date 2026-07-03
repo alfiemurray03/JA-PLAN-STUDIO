@@ -521,6 +521,7 @@ export async function onRequest(context) {
   }
 
   const bypass =
+    publicAuthPath ||
     path === "/admin" ||
     path === "/admin/" ||
     path.startsWith("/admin/") ||

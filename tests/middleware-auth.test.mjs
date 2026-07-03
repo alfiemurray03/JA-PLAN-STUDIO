@@ -159,6 +159,24 @@ test("signed-out users can view portal landing pages before authentication", asy
   }
 });
 
+test("customer authentication endpoints bypass Launch Gateway and maintenance modes", async () => {
+  for (const path of ["/account/login", "/account/auth/callback"]) {
+    const DB = new MiddlewareD1({ session: false });
+    const prepare = DB.prepare.bind(DB);
+    DB.prepare = (sql) => {
+      if (sql.includes("site_settings")) throw new Error("Customer authentication routes must not evaluate public mode settings.");
+      return prepare(sql);
+    };
+    const response = await onRequest({
+      request: new Request(`https://experiences.example.test${path}`),
+      env: environment(DB),
+      next: async () => new Response("customer authentication route")
+    });
+    assert.equal(response.status, 200);
+    assert.equal(await response.text(), "customer authentication route");
+  }
+});
+
 test("signed-out JSON profile checks do not start a login transaction", async () => {
   const response = await onRequest({
     request: new Request("https://experiences.example.test/account/profile", {
