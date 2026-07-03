@@ -1089,7 +1089,7 @@ async function saveProfile(DB, identity, body, request, env = {}) {
       graph_sync_last_http_status,
       updated_at
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     ON CONFLICT(email) DO UPDATE SET
       verified_name = excluded.verified_name,
       display_name = excluded.display_name,
@@ -1153,7 +1153,11 @@ async function saveProfile(DB, identity, body, request, env = {}) {
     updated.microsoftPostalCode || "",
     updated.microsoftStreetAddress || "",
     identity.photoUrl || "",
-    new Date().toISOString()
+    new Date().toISOString(),
+    new Date().toISOString(),
+    0,
+    null,
+    0
   ).run();
 
   const graphSync = await patchMicrosoftGraphProfile(DB, request, env, identity, updated).catch((error) => ({

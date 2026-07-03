@@ -23,9 +23,23 @@ class ProfileD1Mock {
   }
 
   prepare(sql) {
+    let boundValues = [];
     const statement = {
-      bind() { return statement; },
-      async run() { return { success: true }; },
+      bind(...values) {
+        boundValues = values;
+        return statement;
+      },
+      async run() {
+        if (sql.includes("INSERT INTO profiles")) {
+          const insert = sql.match(/INSERT INTO profiles\s*\(([^)]+)\)\s*VALUES\s*\(([^)]+)\)/s);
+          assert.ok(insert, "Profile INSERT must have a parseable column/value list");
+          const columns = insert[1].split(",").map((value) => value.trim());
+          const values = insert[2].split(",").map((value) => value.trim());
+          assert.equal(values.length, columns.length, "Profile INSERT column/value count mismatch");
+          assert.equal((insert[2].match(/\?/g) || []).length, boundValues.length, "Profile INSERT placeholder/bind count mismatch");
+        }
+        return { success: true };
+      },
       async all() {
         if (sql.includes("PRAGMA table_info(profiles)")) {
           return { results: profileColumns.map((name) => ({ name })) };
@@ -131,4 +145,28 @@ test("GET /account/profile converts thrown D1 errors into structured JSON", asyn
   assert.equal(response.status, 500);
   assert.match(response.headers.get("content-type"), /^application\/json/);
   assert.deepEqual(payload, { success: false, stage: "read D1 profile", error: "D1 test failure" });
+});
+
+test("POST /account/profile binds one value for every profile INSERT placeholder", async () => {
+  const request = new Request("http://127.0.0.1/account/profile", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "x-ja-auth-email": "customer@example.test",
+      "x-ja-auth-name": "Test Customer"
+    },
+    body: JSON.stringify({
+      displayName: "Updated Customer",
+      contactEmail: "customer@example.test",
+      termsAccepted: true,
+      privacyAccepted: true
+    })
+  });
+  const response = await onRequest({ request, env: { DB: new ProfileD1Mock() } });
+  const payload = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(payload.success, true);
+  assert.equal(payload.saved, true);
 });
