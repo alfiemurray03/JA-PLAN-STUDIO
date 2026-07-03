@@ -30,6 +30,13 @@ async function ensureTables(DB) {
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `).run();
+  for (const column of ["pin_ciphertext TEXT", "pin_iv TEXT"]) {
+    try {
+      await DB.prepare(`ALTER TABLE customer_support_pins ADD COLUMN ${column}`).run();
+    } catch {
+      // Existing databases may already include the encrypted PIN columns.
+    }
+  }
 }
 
 async function hashPin(pin) {
@@ -54,7 +61,7 @@ function base64ToBytes(value) {
 }
 
 async function getEncryptionKey(env) {
-  const source = env.SUPPORT_PIN_ENCRYPTION_KEY || env.SESSION_SECRET || env.ACCESS_COOKIE_SECRET || env.SECRET_KEY || env.APP_SECRET || "";
+  const source = env.SUPPORT_PIN_ENCRYPTION_KEY || env.SESSION_SECRET || env.AUTH_COOKIE_SECRET || env.ACCESS_COOKIE_SECRET || env.SECRET_KEY || env.APP_SECRET || "";
   if (!source) return null;
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(source));
   return crypto.subtle.importKey("raw", digest, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
@@ -84,12 +91,13 @@ async function decryptPin(env, ciphertext, iv) {
 }
 
 async function createSupportPinRecord(DB, env, email, actorEmail, pin = null) {
+  const id = crypto.randomUUID();
   const supportPin = pin || generatePin();
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
   const payload = JSON.stringify([{ event: "generated", at: new Date().toISOString(), actor: actorEmail }]);
   const encrypted = await encryptPin(env, supportPin);
   await DB.prepare(`INSERT INTO customer_support_pins (id, email, pin_hash, pin_ciphertext, pin_iv, pin_last4, status, expires_at, audit_history) VALUES (?, ?, ?, ?, ?, ?, 'Active', ?, ?)`).bind(
-    crypto.randomUUID(),
+    id,
     email,
     await hashPin(supportPin),
     encrypted.ciphertext,
@@ -98,7 +106,7 @@ async function createSupportPinRecord(DB, env, email, actorEmail, pin = null) {
     expiresAt,
     payload
   ).run();
-  return { pin: supportPin, expiresAt };
+  return { id, pin: supportPin, expiresAt };
 }
 
 function serializePinRow(row) {
@@ -141,7 +149,7 @@ export async function onRequest(context) {
     if (!active || !activePin) {
       const created = await createSupportPinRecord(env.DB, env, identity.email, identity.email);
       active = {
-        id: null,
+        id: created.id,
         pin_last4: created.pin.slice(-4),
         status: "Active",
         expires_at: created.expiresAt,
@@ -167,8 +175,8 @@ export async function onRequest(context) {
     const action = clean(body.action, 20);
     const id = clean(body.id, 120);
     if (action === "generate") {
-      const { pin, expiresAt } = await createSupportPinRecord(env.DB, env, identity.email, identity.email);
-      return json({ pin, expiresAt });
+      const { id, pin, expiresAt } = await createSupportPinRecord(env.DB, env, identity.email, identity.email);
+      return json({ id, pin, expiresAt });
     }
     const current = await env.DB.prepare(`SELECT * FROM customer_support_pins WHERE id = ? AND lower(email) = lower(?)`).bind(id, identity.email).first();
     if (!current) return json({ error: "PIN not found." }, 404);
