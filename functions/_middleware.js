@@ -523,7 +523,7 @@ export async function onRequest(context) {
   const bypass =
     path === "/admin" ||
     path === "/admin/" ||
-    path.startsWith("/admin/dashboard") ||
+    path.startsWith("/admin/") ||
     path === "/account/logout" ||
     path === "/account/logout/" ||
     path === "/account" ||

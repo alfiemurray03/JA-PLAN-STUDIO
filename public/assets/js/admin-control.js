@@ -3446,8 +3446,22 @@ async function importAffiliateContent() {
 }
 
 async function createAdminBypass() {
-  const data = await api("bypass", { method: "POST", body: JSON.stringify({ action: "create" }) });
-  window.location.href = data.bypass?.redirect || "/";
+  const websiteWindow = window.open("about:blank", "_blank");
+  if (!websiteWindow) {
+    window.alert("Your browser blocked the website tab. Allow pop-ups for this site and try again.");
+    return;
+  }
+  websiteWindow.opener = null;
+  websiteWindow.document.title = "Opening website…";
+  websiteWindow.document.body.textContent = "Authorising administrator website access…";
+
+  try {
+    const data = await api("bypass", { method: "POST", body: JSON.stringify({ action: "create" }) });
+    websiteWindow.location.replace(data.bypass?.redirect || "/");
+  } catch (error) {
+    websiteWindow.close();
+    window.alert(error.message || "Administrator website access could not be created.");
+  }
 }
 
 async function removeAdminBypass() {
@@ -3578,6 +3592,7 @@ function renderStatusForm(section, settings, labels) {
         <div class="admin-alert" id="${section}ModeHelp">Plain text mode escapes HTML and preserves line breaks.</div>
         <div class="section-actions">
           <button class="admin-button" type="submit">${escapeHtml(labels.saveLabel)}</button>
+          <button class="admin-button secondary" type="button" data-action="create-bypass">Open Website as Admin</button>
           <a class="admin-button secondary" href="/?preview_public_block=1" target="_blank" rel="noopener noreferrer">${escapeHtml(labels.previewLabel)}</a>
         </div>
         <div id="${section}Saved" class="admin-success" hidden></div>

@@ -95,6 +95,24 @@ test("middleware replaces spoofable identity headers with the validated native s
   assert.ok(downstreamRequest.headers.get("x-ja-auth-session"));
 });
 
+test("authenticated admin API remains available during public blocking modes", async () => {
+  const DB = new MiddlewareD1();
+  const prepare = DB.prepare.bind(DB);
+  DB.prepare = (sql) => {
+    if (sql.includes("site_settings")) throw new Error("Admin routes must not evaluate public mode settings.");
+    return prepare(sql);
+  };
+  const response = await onRequest({
+    request: new Request("https://experiences.example.test/admin/api?section=launchgateway", {
+      headers: { Cookie: "ja_admin_session=opaque-session", Accept: "application/json" }
+    }),
+    env: environment(DB),
+    next: async () => Response.json({ admin: true })
+  });
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { admin: true });
+});
+
 test("middleware redirects an unauthenticated administrator and preserves the deep link", async () => {
   const response = await onRequest({
     request: new Request("https://experiences.example.test/admin/api?section=customers"),
