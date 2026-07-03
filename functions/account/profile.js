@@ -151,6 +151,75 @@ async function getCustomerRefreshToken(DB, request, env) {
   return decryptSecret(session?.refresh_token_encrypted || "", env);
 }
 
+function graphUrl(path, select = []) {
+  const url = new URL(`https://graph.microsoft.com/v1.0${path}`);
+  if (select.length) url.searchParams.set("$select", select.join(","));
+  return url.toString();
+}
+
+function graphErrorPayload(bodyText) {
+  try {
+    const parsed = JSON.parse(bodyText || "{}");
+    return {
+      code: parsed?.error?.code || "",
+      message: parsed?.error?.message || "",
+      body: parsed
+    };
+  } catch {
+    return {
+      code: "",
+      message: bodyText || "",
+      body: bodyText
+    };
+  }
+}
+
+async function logGraphEvent(details) {
+  console.log(JSON.stringify({
+    event: "microsoft_graph_request",
+    request_url: details.requestUrl,
+    http_method: details.method,
+    http_status: details.status,
+    error_code: details.errorCode || "",
+    error_message: details.errorMessage || "",
+    request_id: details.requestId || "",
+    client_request_id: details.clientRequestId || "",
+    response_body: details.responseBody,
+    customer_email: details.customerEmail || "",
+    user_object_id: details.userObjectId || ""
+  }));
+}
+
+async function graphRequest({ method, url, accessToken, body, customerEmail = "", userObjectId = "" }) {
+  const clientRequestId = crypto.randomUUID();
+  const response = await fetch(url, {
+    method,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      "client-request-id": clientRequestId
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const responseBody = await response.text().catch(() => "");
+  const parsed = response.ok ? null : graphErrorPayload(responseBody);
+  const requestId = response.headers.get("request-id") || response.headers.get("x-ms-request-id") || "";
+  await logGraphEvent({
+    requestUrl: url,
+    method,
+    status: response.status,
+    errorCode: parsed?.code || "",
+    errorMessage: parsed?.message || "",
+    requestId,
+    clientRequestId,
+    responseBody: responseBody || "",
+    customerEmail,
+    userObjectId
+  });
+  return { response, responseBody, parsedError: parsed, requestId, clientRequestId };
+}
+
 async function refreshMicrosoftAccessToken(DB, request, env) {
   const metadata = await discoverOidc(env);
   if (!metadata) return null;
@@ -170,9 +239,45 @@ async function refreshMicrosoftAccessToken(DB, request, env) {
       refresh_token: refreshToken
     }).toString()
   });
-  if (!response.ok) return null;
-  const payload = await response.json().catch(() => null);
-  if (!payload?.access_token) return null;
+  const responseBody = await response.text().catch(() => "");
+  if (!response.ok) {
+    console.error(JSON.stringify({
+      event: "microsoft_token_refresh_failed",
+      request_url: metadata.token_endpoint,
+      http_method: "POST",
+      http_status: response.status,
+      error_code: "",
+      error_message: responseBody,
+      request_id: response.headers.get("request-id") || response.headers.get("x-ms-request-id") || "",
+      client_request_id: "",
+      response_body: responseBody,
+      customer_email: "",
+      user_object_id: ""
+    }));
+    return null;
+  }
+  let payload = {};
+  try {
+    payload = JSON.parse(responseBody || "{}");
+  } catch {
+    payload = {};
+  }
+  if (!payload?.access_token) {
+    console.error(JSON.stringify({
+      event: "microsoft_token_refresh_failed",
+      request_url: metadata.token_endpoint,
+      http_method: "POST",
+      http_status: response.status,
+      error_code: "",
+      error_message: "Microsoft token refresh response did not include an access token.",
+      request_id: response.headers.get("request-id") || response.headers.get("x-ms-request-id") || "",
+      client_request_id: "",
+      response_body: responseBody,
+      customer_email: "",
+      user_object_id: ""
+    }));
+    return null;
+  }
 
   const session = await getCurrentCustomerSession(DB, request);
   if (session?.token_hash) {
@@ -189,67 +294,141 @@ async function refreshMicrosoftAccessToken(DB, request, env) {
   return payload.access_token;
 }
 
-async function syncMicrosoftGraphProfile(DB, request, env, identity, profile) {
+async function loadMicrosoftGraphProfile(DB, request, env, identity) {
   const session = await getCurrentCustomerSession(DB, request);
   const storedAccessToken = session?.access_token_encrypted ? await decryptSecret(session.access_token_encrypted, env) : "";
   const storedAccessTokenExpiry = session?.access_token_expires_at ? Date.parse(session.access_token_expires_at) : 0;
   const accessToken = storedAccessToken && storedAccessTokenExpiry > Date.now() + 60_000
     ? storedAccessToken
     : await refreshMicrosoftAccessToken(DB, request, env);
-  if (!accessToken) return { synced: false, reason: "No Microsoft Graph access token was available." };
+  if (!accessToken) return { ok: false, reason: "No Microsoft Graph access token was available.", status: 0, requestId: "", clientRequestId: "" };
 
-  const givenName = clean(profile.microsoftGivenName || profile.displayName || identity.givenName || "", 120);
-  const familyName = clean(profile.microsoftFamilyName || identity.familyName || "", 120);
-  const displayName = clean(profile.displayName || profile.verifiedName || identity.verifiedName || identity.email, 120);
-  const preferredLanguage = clean(profile.microsoftPreferredLanguage || identity.preferredLanguage || "", 40);
-
-  const patchBody = {
-    displayName,
-    givenName: givenName || undefined,
-    surname: familyName || undefined,
-    preferredLanguage: preferredLanguage || undefined
-  };
-  for (const key of Object.keys(patchBody)) {
-    if (!patchBody[key]) delete patchBody[key];
-  }
-
-  if (!Object.keys(patchBody).length) {
-    return { synced: false, reason: "No Graph-updatable fields were supplied." };
-  }
-
-  const response = await fetch("https://graph.microsoft.com/v1.0/me", {
-    method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-      Accept: "application/json"
-    },
-    body: JSON.stringify(patchBody)
+  const { response, responseBody, parsedError } = await graphRequest({
+    method: "GET",
+    url: graphUrl("/me", [
+      "id",
+      "displayName",
+      "givenName",
+      "surname",
+      "preferredLanguage",
+      "mobilePhone",
+      "officeLocation",
+      "city",
+      "state",
+      "country",
+      "postalCode",
+      "streetAddress",
+      "mail",
+      "identities",
+      "otherMails"
+    ]),
+    accessToken,
+    customerEmail: identity.email,
+    userObjectId: identity.objectId || ""
   });
+
   if (!response.ok) {
-    const details = await response.text().catch(() => "");
-    let code = "";
-    let message = "";
-    try {
-      const parsed = JSON.parse(details || "{}");
-      code = parsed?.error?.code || "";
-      message = parsed?.error?.message || "";
-    } catch {
-      message = details.slice(0, 240);
-    }
-    console.error(JSON.stringify({
-      event: "microsoft_graph_profile_patch_failed",
-      http_status: response.status,
-      error_code: code || "unknown",
-      error_message: message || "Unknown Graph error",
-      request_id: response.headers.get("request-id") || response.headers.get("client-request-id") || response.headers.get("x-ms-request-id") || "",
-      request_body: patchBody,
-      customer_email: identity.email
-    }));
-    throw new Error(`Microsoft Graph update failed: ${response.status} ${code || "unknown"} ${message || details.slice(0, 240)}`);
+    return {
+      ok: false,
+      status: response.status,
+      reason: parsedError?.message || "Microsoft Graph /me lookup failed.",
+      errorCode: parsedError?.code || "",
+      responseBody,
+      requestId,
+      clientRequestId
+    };
   }
 
-  return { synced: true };
+  const profile = await response.json().catch(() => ({}));
+  return { ok: true, status: response.status, profile, accessToken, requestId, clientRequestId };
+}
+
+function graphProfileFields(graph = {}) {
+  return {
+    microsoftDisplayName: clean(graph.displayName, 120),
+    microsoftGivenName: clean(graph.givenName, 120),
+    microsoftFamilyName: clean(graph.surname, 120),
+    microsoftPreferredLanguage: clean(graph.preferredLanguage, 40),
+    microsoftMobilePhone: clean(graph.mobilePhone, 80),
+    microsoftOfficeLocation: clean(graph.officeLocation, 120),
+    microsoftCity: clean(graph.city, 120),
+    microsoftState: clean(graph.state, 120),
+    microsoftCountry: clean(graph.country, 120),
+    microsoftPostalCode: clean(graph.postalCode, 40),
+    microsoftStreetAddress: clean(graph.streetAddress, 240),
+    microsoftEmail: clean(graph.mail, 254)
+  };
+}
+
+function graphProfileDiffers(existing, graphFields) {
+  return Object.entries(graphFields).some(([key, value]) => clean(existing?.[key] || "", 500) !== value);
+}
+
+function emailUpdateAllowed(env) {
+  return String(env.CUSTOMER_GRAPH_ALLOW_EMAIL_UPDATE || "").trim().toLowerCase() === "true";
+}
+
+async function patchMicrosoftGraphProfile(DB, request, env, identity, desired) {
+  const session = await getCurrentCustomerSession(DB, request);
+  const storedAccessToken = session?.access_token_encrypted ? await decryptSecret(session.access_token_encrypted, env) : "";
+  const storedAccessTokenExpiry = session?.access_token_expires_at ? Date.parse(session.access_token_expires_at) : 0;
+  const refreshToken = await getCustomerRefreshToken(DB, request, env);
+  if (!refreshToken) return { ok: false, status: 0, reason: "No Microsoft refresh token was available.", requestId: "", clientRequestId: "" };
+
+  let accessToken = storedAccessToken && storedAccessTokenExpiry > Date.now() + 60_000
+    ? storedAccessToken
+    : await refreshMicrosoftAccessToken(DB, request, env);
+  if (!accessToken) return { ok: false, status: 0, reason: "Microsoft access token refresh failed.", requestId: "", clientRequestId: "" };
+
+  const body = {
+    displayName: clean(desired.displayName, 120) || undefined,
+    givenName: clean(desired.givenName, 120) || undefined,
+    surname: clean(desired.familyName, 120) || undefined,
+    preferredLanguage: clean(desired.preferredLanguage, 40) || undefined,
+    mobilePhone: clean(desired.mobilePhone, 80) || undefined,
+    officeLocation: clean(desired.officeLocation, 120) || undefined,
+    city: clean(desired.city, 120) || undefined,
+    state: clean(desired.state, 120) || undefined,
+    country: clean(desired.country, 120) || undefined,
+    postalCode: clean(desired.postalCode, 40) || undefined,
+    streetAddress: clean(desired.streetAddress, 240) || undefined
+  };
+
+  if (emailUpdateAllowed(env)) {
+    if (clean(desired.mail, 254)) body.mail = clean(desired.mail, 254);
+    if (Array.isArray(desired.identities) && desired.identities.length) body.identities = desired.identities;
+  }
+
+  for (const key of Object.keys(body)) {
+    if (!body[key]) delete body[key];
+  }
+
+  if (!Object.keys(body).length) {
+    return { ok: true, status: 200, skipped: true, reason: "No Graph-updatable fields were supplied.", requestId: "", clientRequestId: "" };
+  }
+
+  const { response, responseBody, parsedError } = await graphRequest({
+    method: "PATCH",
+    url: graphUrl("/me"),
+    accessToken,
+    body,
+    customerEmail: identity.email,
+    userObjectId: identity.objectId || ""
+  });
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      status: response.status,
+      reason: parsedError?.message || "Microsoft Graph update failed.",
+      errorCode: parsedError?.code || "",
+      responseBody,
+      requestId,
+      clientRequestId
+    };
+  }
+
+  return { ok: true, status: response.status, requestId, clientRequestId };
 }
 
 function profileHasEligibleAccess(row, plan) {
@@ -301,6 +480,17 @@ async function ensureProfileTable(DB) {
   await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN microsoft_preferred_language TEXT`);
   await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN microsoft_photo_url TEXT`);
   await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN microsoft_updated_at TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN microsoft_office_location TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN microsoft_city TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN microsoft_state TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN microsoft_postal_code TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN microsoft_street_address TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN graph_sync_last_at TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN graph_sync_success INTEGER DEFAULT 0`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN graph_sync_failure_reason TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN graph_sync_last_http_status INTEGER`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN graph_sync_last_request_id TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN graph_sync_last_client_request_id TEXT`);
   await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN stripe_customer_id TEXT`);
   await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN stripe_customer_created_at TEXT`);
   await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN stripe_customer_synced_at TEXT`);
@@ -551,11 +741,22 @@ async function getProfile(DB, identity, env = {}) {
       microsoftBusinessPhone: existing.microsoft_business_phone || identity.businessPhone || "",
       microsoftCountry: existing.microsoft_country || identity.country || "",
       microsoftPreferredLanguage: existing.microsoft_preferred_language || identity.preferredLanguage || "",
+      microsoftOfficeLocation: existing.microsoft_office_location || "",
+      microsoftCity: existing.microsoft_city || "",
+      microsoftState: existing.microsoft_state || "",
+      microsoftPostalCode: existing.microsoft_postal_code || "",
+      microsoftStreetAddress: existing.microsoft_street_address || "",
       microsoftPhotoUrl: existing.microsoft_photo_url || identity.photoUrl || "",
       country: existing.microsoft_country || identity.country || countryFromLocale(existing.microsoft_locale || identity.locale || ""),
       photoUrl: existing.microsoft_photo_url || identity.photoUrl || "",
       verificationStatus: existing.microsoft_email || existing.microsoft_object_id ? "Verified" : "Unverified",
       microsoftUpdatedAt: existing.microsoft_updated_at || "",
+      graphSyncLastAt: existing.graph_sync_last_at || "",
+      graphSyncSuccess: Number(existing.graph_sync_success || 0) === 1,
+      graphSyncFailureReason: existing.graph_sync_failure_reason || "",
+      graphSyncLastHttpStatus: Number(existing.graph_sync_last_http_status || 0) || 0,
+      graphSyncLastRequestId: existing.graph_sync_last_request_id || "",
+      graphSyncLastClientRequestId: existing.graph_sync_last_client_request_id || "",
       stripeCustomerId: existing.stripe_customer_id || "",
       stripeCustomerCreatedAt: existing.stripe_customer_created_at || "",
       stripeCustomerSyncedAt: existing.stripe_customer_synced_at || "",
@@ -593,11 +794,22 @@ async function getProfile(DB, identity, env = {}) {
     microsoftBusinessPhone: identity.businessPhone || "",
     microsoftCountry: identity.country || "",
     microsoftPreferredLanguage: identity.preferredLanguage || "",
+    microsoftOfficeLocation: "",
+    microsoftCity: "",
+    microsoftState: "",
+    microsoftPostalCode: "",
+    microsoftStreetAddress: "",
     microsoftPhotoUrl: identity.photoUrl || "",
     country: identity.country || countryFromLocale(identity.locale || ""),
     photoUrl: identity.photoUrl || "",
     verificationStatus: identity.email ? "Verified" : "Unverified",
-      microsoftUpdatedAt: "",
+    microsoftUpdatedAt: "",
+    graphSyncLastAt: "",
+    graphSyncSuccess: false,
+    graphSyncFailureReason: "",
+    graphSyncLastHttpStatus: 0,
+    graphSyncLastRequestId: "",
+    graphSyncLastClientRequestId: "",
     stripeCustomerId: "",
     stripeCustomerCreatedAt: "",
     stripeCustomerSyncedAt: "",
@@ -629,10 +841,19 @@ async function getProfile(DB, identity, env = {}) {
       microsoft_business_phone,
       microsoft_country,
       microsoft_preferred_language,
+      microsoft_office_location,
+      microsoft_city,
+      microsoft_state,
+      microsoft_postal_code,
+      microsoft_street_address,
       microsoft_photo_url,
-      microsoft_updated_at
+      microsoft_updated_at,
+      graph_sync_last_at,
+      graph_sync_success,
+      graph_sync_failure_reason,
+      graph_sync_last_http_status
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, NULL, 0)
   `).bind(
     nowProfile.email,
     nowProfile.verifiedName,
@@ -656,6 +877,11 @@ async function getProfile(DB, identity, env = {}) {
     identity.businessPhone || "",
     identity.country || "",
     identity.preferredLanguage || "",
+    "",
+    "",
+    "",
+    "",
+    "",
     identity.photoUrl || "",
     new Date().toISOString()
   ).run();
@@ -695,7 +921,15 @@ async function saveProfile(DB, identity, body, request, env = {}) {
     supportNotes: clean(body.supportNotes, 1000),
     microsoftGivenName: clean(body.givenName, 120) || current.microsoftGivenName || identity.givenName || "",
     microsoftFamilyName: clean(body.familyName, 120) || current.microsoftFamilyName || identity.familyName || "",
-    microsoftPreferredLanguage: clean(body.preferredLanguage, 40) || current.microsoftPreferredLanguage || identity.preferredLanguage || ""
+    microsoftPreferredLanguage: clean(body.preferredLanguage, 40) || current.microsoftPreferredLanguage || identity.preferredLanguage || "",
+    microsoftMobilePhone: clean(body.mobilePhone, 80) || current.microsoftMobilePhone || identity.mobilePhone || "",
+    microsoftOfficeLocation: clean(body.officeLocation, 120) || current.microsoftOfficeLocation || "",
+    microsoftCity: clean(body.city, 120) || current.microsoftCity || "",
+    microsoftState: clean(body.state, 120) || current.microsoftState || "",
+    microsoftCountry: clean(body.country, 120) || current.microsoftCountry || identity.country || "",
+    microsoftPostalCode: clean(body.postalCode, 40) || current.microsoftPostalCode || "",
+    microsoftStreetAddress: clean(body.streetAddress, 240) || current.microsoftStreetAddress || "",
+    microsoftMail: clean(body.email, 254) || current.microsoftEmail || identity.email || ""
   };
   const locale = identity.locale || current.microsoftLocale || "";
 
@@ -723,11 +957,20 @@ async function saveProfile(DB, identity, body, request, env = {}) {
       microsoft_business_phone,
       microsoft_country,
       microsoft_preferred_language,
+      microsoft_office_location,
+      microsoft_city,
+      microsoft_state,
+      microsoft_postal_code,
+      microsoft_street_address,
       microsoft_photo_url,
       microsoft_updated_at,
+      graph_sync_last_at,
+      graph_sync_success,
+      graph_sync_failure_reason,
+      graph_sync_last_http_status,
       updated_at
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     ON CONFLICT(email) DO UPDATE SET
       verified_name = excluded.verified_name,
       display_name = excluded.display_name,
@@ -750,8 +993,17 @@ async function saveProfile(DB, identity, body, request, env = {}) {
       microsoft_business_phone = COALESCE(profiles.microsoft_business_phone, excluded.microsoft_business_phone),
       microsoft_country = COALESCE(profiles.microsoft_country, excluded.microsoft_country),
       microsoft_preferred_language = COALESCE(profiles.microsoft_preferred_language, excluded.microsoft_preferred_language),
+      microsoft_office_location = COALESCE(profiles.microsoft_office_location, excluded.microsoft_office_location),
+      microsoft_city = COALESCE(profiles.microsoft_city, excluded.microsoft_city),
+      microsoft_state = COALESCE(profiles.microsoft_state, excluded.microsoft_state),
+      microsoft_postal_code = COALESCE(profiles.microsoft_postal_code, excluded.microsoft_postal_code),
+      microsoft_street_address = COALESCE(profiles.microsoft_street_address, excluded.microsoft_street_address),
       microsoft_photo_url = COALESCE(profiles.microsoft_photo_url, excluded.microsoft_photo_url),
       microsoft_updated_at = COALESCE(profiles.microsoft_updated_at, excluded.microsoft_updated_at),
+      graph_sync_last_at = COALESCE(profiles.graph_sync_last_at, excluded.graph_sync_last_at),
+      graph_sync_success = COALESCE(profiles.graph_sync_success, excluded.graph_sync_success),
+      graph_sync_failure_reason = COALESCE(profiles.graph_sync_failure_reason, excluded.graph_sync_failure_reason),
+      graph_sync_last_http_status = COALESCE(profiles.graph_sync_last_http_status, excluded.graph_sync_last_http_status),
       updated_at = CURRENT_TIMESTAMP
     `).bind(
     identity.email,
@@ -776,30 +1028,42 @@ async function saveProfile(DB, identity, body, request, env = {}) {
     identity.businessPhone || "",
     identity.country || "",
     updated.microsoftPreferredLanguage || identity.preferredLanguage || "",
+    updated.microsoftOfficeLocation || "",
+    updated.microsoftCity || "",
+    updated.microsoftState || "",
+    updated.microsoftPostalCode || "",
+    updated.microsoftStreetAddress || "",
     identity.photoUrl || "",
     new Date().toISOString()
   ).run();
 
-  const graphSync = await syncMicrosoftGraphProfile(DB, env, {
-    email: identity.email,
-    givenName: updated.microsoftGivenName,
-    familyName: updated.microsoftFamilyName,
-    preferredLanguage: updated.microsoftPreferredLanguage
-  }, {
-    displayName: updated.displayName,
-    microsoftGivenName: updated.microsoftGivenName,
-    microsoftFamilyName: updated.microsoftFamilyName,
-    microsoftPreferredLanguage: updated.microsoftPreferredLanguage
-  }).catch(() => ({ synced: false }));
+  const graphSync = await patchMicrosoftGraphProfile(DB, request, env, identity, updated).catch((error) => ({
+    ok: false,
+    status: 0,
+    reason: error instanceof Error ? error.message : "Microsoft Graph update failed."
+  }));
 
-  if (graphSync?.synced) {
+  if (graphSync?.ok) {
     await DB.prepare(`
       UPDATE profiles
       SET microsoft_display_name = COALESCE(NULLIF(?, ''), microsoft_display_name),
         microsoft_given_name = COALESCE(NULLIF(?, ''), microsoft_given_name),
         microsoft_family_name = COALESCE(NULLIF(?, ''), microsoft_family_name),
         microsoft_preferred_language = COALESCE(NULLIF(?, ''), microsoft_preferred_language),
+        microsoft_mobile_phone = COALESCE(NULLIF(?, ''), microsoft_mobile_phone),
+        microsoft_office_location = COALESCE(NULLIF(?, ''), microsoft_office_location),
+        microsoft_city = COALESCE(NULLIF(?, ''), microsoft_city),
+        microsoft_state = COALESCE(NULLIF(?, ''), microsoft_state),
+        microsoft_country = COALESCE(NULLIF(?, ''), microsoft_country),
+        microsoft_postal_code = COALESCE(NULLIF(?, ''), microsoft_postal_code),
+        microsoft_street_address = COALESCE(NULLIF(?, ''), microsoft_street_address),
         microsoft_updated_at = CURRENT_TIMESTAMP,
+        graph_sync_last_at = CURRENT_TIMESTAMP,
+        graph_sync_success = 1,
+        graph_sync_failure_reason = NULL,
+        graph_sync_last_http_status = ?,
+        graph_sync_last_request_id = ?,
+        graph_sync_last_client_request_id = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE lower(email) = lower(?)
     `).bind(
@@ -807,6 +1071,34 @@ async function saveProfile(DB, identity, body, request, env = {}) {
       updated.microsoftGivenName,
       updated.microsoftFamilyName,
       updated.microsoftPreferredLanguage,
+      updated.microsoftMobilePhone,
+      updated.microsoftOfficeLocation,
+      updated.microsoftCity,
+      updated.microsoftState,
+      updated.microsoftCountry,
+      updated.microsoftPostalCode,
+      updated.microsoftStreetAddress,
+      graphSync.status || 200,
+      graphSync.requestId || "",
+      graphSync.clientRequestId || "",
+      identity.email
+    ).run();
+  } else {
+    await DB.prepare(`
+      UPDATE profiles
+      SET graph_sync_last_at = CURRENT_TIMESTAMP,
+        graph_sync_success = 0,
+        graph_sync_failure_reason = ?,
+        graph_sync_last_http_status = ?,
+        graph_sync_last_request_id = ?,
+        graph_sync_last_client_request_id = ?,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE lower(email) = lower(?)
+    `).bind(
+      clean(graphSync.reason || "Microsoft Graph update failed.", 1000),
+      graphSync.status || 0,
+      graphSync.requestId || "",
+      graphSync.clientRequestId || "",
       identity.email
     ).run();
   }
@@ -938,6 +1230,72 @@ export async function onRequest(context) {
   }
 
   if (request.method === "GET") {
+    const existing = await getProfile(env.DB, identity, env);
+    const graphSync = await loadMicrosoftGraphProfile(env.DB, request, env, identity);
+    if (graphSync.ok && graphSync.profile) {
+      const graphFields = graphProfileFields(graphSync.profile);
+      if (graphProfileDiffers(existing, graphFields)) {
+        await env.DB.prepare(`
+          UPDATE profiles
+          SET microsoft_display_name = COALESCE(NULLIF(?, ''), microsoft_display_name),
+            microsoft_given_name = COALESCE(NULLIF(?, ''), microsoft_given_name),
+            microsoft_family_name = COALESCE(NULLIF(?, ''), microsoft_family_name),
+            microsoft_email = COALESCE(NULLIF(?, ''), microsoft_email),
+            microsoft_preferred_language = COALESCE(NULLIF(?, ''), microsoft_preferred_language),
+            microsoft_mobile_phone = COALESCE(NULLIF(?, ''), microsoft_mobile_phone),
+            microsoft_office_location = COALESCE(NULLIF(?, ''), microsoft_office_location),
+            microsoft_city = COALESCE(NULLIF(?, ''), microsoft_city),
+            microsoft_state = COALESCE(NULLIF(?, ''), microsoft_state),
+            microsoft_country = COALESCE(NULLIF(?, ''), microsoft_country),
+            microsoft_postal_code = COALESCE(NULLIF(?, ''), microsoft_postal_code),
+            microsoft_street_address = COALESCE(NULLIF(?, ''), microsoft_street_address),
+            microsoft_updated_at = CURRENT_TIMESTAMP,
+            graph_sync_last_at = CURRENT_TIMESTAMP,
+            graph_sync_success = 1,
+            graph_sync_failure_reason = NULL,
+            graph_sync_last_http_status = ?,
+            graph_sync_last_request_id = ?,
+            graph_sync_last_client_request_id = ?,
+            updated_at = CURRENT_TIMESTAMP
+          WHERE lower(email) = lower(?)
+        `).bind(
+          graphFields.microsoftDisplayName,
+          graphFields.microsoftGivenName,
+          graphFields.microsoftFamilyName,
+          graphFields.microsoftEmail,
+          graphFields.microsoftPreferredLanguage,
+          graphFields.microsoftMobilePhone,
+          graphFields.microsoftOfficeLocation,
+          graphFields.microsoftCity,
+          graphFields.microsoftState,
+          graphFields.microsoftCountry,
+          graphFields.microsoftPostalCode,
+          graphFields.microsoftStreetAddress,
+          graphSync.status || 200,
+          graphSync.requestId || "",
+          graphSync.clientRequestId || "",
+          identity.email
+        ).run();
+      }
+    } else {
+      await env.DB.prepare(`
+        UPDATE profiles
+        SET graph_sync_last_at = CURRENT_TIMESTAMP,
+          graph_sync_success = 0,
+          graph_sync_failure_reason = ?,
+          graph_sync_last_http_status = ?,
+          graph_sync_last_request_id = ?,
+          graph_sync_last_client_request_id = ?,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE lower(email) = lower(?)
+      `).bind(
+        clean(graphSync.reason || "Microsoft Graph profile refresh failed.", 1000),
+        graphSync.status || 0,
+        graphSync.requestId || "",
+        graphSync.clientRequestId || "",
+        identity.email
+      ).run();
+    }
     const profile = await getProfile(env.DB, identity, env);
     await ensureStripeCustomer(env.DB, env, identity, profile).catch(() => {});
     if (!wantsJson(request)) {

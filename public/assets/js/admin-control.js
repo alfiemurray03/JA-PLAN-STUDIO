@@ -3708,6 +3708,11 @@ function renderCustomerDrawer(customer, plans = []) {
       <div class="drawer-field"><span>Support notes</span><strong>${escapeHtml(customer.support_notes || "None recorded")}</strong></div>
       <div class="drawer-field"><span>Flags</span><strong>${escapeHtml(flags.map((flag) => flag.flag).join(", ") || "None")}</strong></div>
       <div class="drawer-field"><span>Lifetime plan</span><strong>${escapeHtml(customer.admin_lifetime_plan_id || "Not assigned")}</strong></div>
+      <div class="drawer-field"><span>Graph sync status</span><strong>${customer.graph_sync_success ? "Success" : "Needs attention"}</strong></div>
+      <div class="drawer-field"><span>Last successful sync</span><strong>${escapeHtml(formatDate(customer.graph_sync_last_at || customer.microsoft_updated_at || customer.updated_at || customer.created_at))}</strong></div>
+      <div class="drawer-field"><span>Last failed sync</span><strong>${escapeHtml(customer.graph_sync_success ? "None" : (customer.graph_sync_failure_reason || formatDate(customer.graph_sync_last_at || customer.updated_at || customer.created_at)))}</strong></div>
+      <div class="drawer-field"><span>Graph object ID</span><strong>${escapeHtml(customer.microsoft_object_id || "Not provided")}</strong></div>
+      <div class="drawer-field"><span>Graph request ID</span><strong>${escapeHtml(customer.graph_sync_success ? "Not applicable" : (customer.graph_sync_last_request_id || "Not provided"))}</strong></div>
       <div class="drawer-field"><span>Updated</span><strong>${escapeHtml(formatDate(customer.updated_at || customer.created_at))}</strong></div>
     </div>
     <div class="drawer-section-grid">

@@ -243,9 +243,16 @@ async function renderPage(page) {
               <label class="portal-field"><span class="portal-label">Display name</span><input id="profileDisplayName" value="${escapeHtml(profile.displayName || "")}"></label>
               <label class="portal-field"><span class="portal-label">Given name</span><input id="profileGivenName" value="${escapeHtml(profile.microsoftGivenName || "")}"></label>
               <label class="portal-field"><span class="portal-label">Surname</span><input id="profileFamilyName" value="${escapeHtml(profile.microsoftFamilyName || "")}"></label>
-              <label class="portal-field"><span class="portal-label">Contact email</span><input id="profileContactEmail" value="${escapeHtml(profile.contactEmail || profile.email || "")}"></label>
               <label class="portal-field"><span class="portal-label">Phone</span><input id="profilePhone" value="${escapeHtml(profile.phone || "")}"></label>
               <label class="portal-field"><span class="portal-label">Communication preference</span><select id="profileComms"><option>Email</option><option>Phone</option><option>Email first, phone if urgent</option></select></label>
+              <label class="portal-field"><span class="portal-label">Preferred language</span><input id="profilePreferredLanguage" value="${escapeHtml(profile.microsoftPreferredLanguage || "")}"></label>
+              <label class="portal-field"><span class="portal-label">Mobile phone</span><input id="profileMobilePhone" value="${escapeHtml(profile.microsoftMobilePhone || "")}"></label>
+              <label class="portal-field"><span class="portal-label">Office location</span><input id="profileOfficeLocation" value="${escapeHtml(profile.microsoftOfficeLocation || "")}"></label>
+              <label class="portal-field"><span class="portal-label">City</span><input id="profileCity" value="${escapeHtml(profile.microsoftCity || "")}"></label>
+              <label class="portal-field"><span class="portal-label">State</span><input id="profileState" value="${escapeHtml(profile.microsoftState || "")}"></label>
+              <label class="portal-field"><span class="portal-label">Country</span><input id="profileCountry" value="${escapeHtml(profile.microsoftCountry || "")}"></label>
+              <label class="portal-field"><span class="portal-label">Postal code</span><input id="profilePostalCode" value="${escapeHtml(profile.microsoftPostalCode || "")}"></label>
+              <label class="portal-field"><span class="portal-label">Street address</span><input id="profileStreetAddress" value="${escapeHtml(profile.microsoftStreetAddress || "")}"></label>
             </div>
           </details>
         </article>
@@ -255,8 +262,11 @@ async function renderPage(page) {
               <div class="portal-entry"><span class="portal-label">Tenant ID</span><strong>${escapeHtml(profile.microsoftTenantId || "Not provided")}</strong></div>
               <div class="portal-entry"><span class="portal-label">Object ID</span><strong>${escapeHtml(profile.microsoftObjectId || "Not provided")}</strong></div>
               <label class="portal-field"><span class="portal-label">Preferred username</span><input value="${escapeHtml(profile.microsoftPreferredUsername || "")}" disabled><small>Managed by Microsoft Entra</small></label>
-              <label class="portal-field"><span class="portal-label">Preferred language</span><input id="profilePreferredLanguage" value="${escapeHtml(profile.microsoftPreferredLanguage || "")}"><small>Editable where Microsoft Graph permits.</small></label>
               <div class="portal-entry"><span class="portal-label">Last sync</span><strong>${escapeHtml(fmt(profile.microsoftUpdatedAt))}</strong></div>
+              <div class="portal-entry"><span class="portal-label">Graph sync</span><strong>${profile.graphSyncSuccess ? "Success" : "Not confirmed"}</strong></div>
+              <div class="portal-entry"><span class="portal-label">Last Graph sync</span><strong>${escapeHtml(fmt(profile.graphSyncLastAt || profile.microsoftUpdatedAt))}</strong></div>
+              <div class="portal-entry"><span class="portal-label">Last Graph HTTP status</span><strong>${escapeHtml(profile.graphSyncLastHttpStatus ? String(profile.graphSyncLastHttpStatus) : "Not available")}</strong></div>
+              <div class="portal-entry"><span class="portal-label">Last Graph failure</span><strong>${escapeHtml(profile.graphSyncFailureReason || "None")}</strong></div>
             </div>
           </article>
         <article class="portal-card portal-span-6">
@@ -275,6 +285,7 @@ async function renderPage(page) {
               <div class="portal-entry"><span class="portal-label">Microsoft display name</span><strong>${escapeHtml(profile.microsoftDisplayName || "Not provided")}</strong></div>
               <div class="portal-entry"><span class="portal-label">Country</span><strong>${escapeHtml(profile.microsoftCountry || "Not provided")}</strong></div>
               <div class="portal-entry"><span class="portal-label">Job title</span><strong>${escapeHtml(profile.microsoftJobTitle || "Not provided")}</strong></div>
+              <div class="portal-entry"><span class="portal-label">Graph sync status</span><strong>${profile.graphSyncSuccess ? "Latest values confirmed" : "Last sync needs attention"}</strong></div>
             </div>
           </div>
           <div class="portal-form-actions">
@@ -288,10 +299,16 @@ async function renderPage(page) {
         displayName: document.getElementById("profileDisplayName").value,
         givenName: document.getElementById("profileGivenName").value,
         familyName: document.getElementById("profileFamilyName").value,
-        contactEmail: document.getElementById("profileContactEmail").value,
         phone: document.getElementById("profilePhone").value,
         communicationPreference: document.getElementById("profileComms").value,
         preferredLanguage: document.getElementById("profilePreferredLanguage").value,
+        mobilePhone: document.getElementById("profileMobilePhone").value,
+        officeLocation: document.getElementById("profileOfficeLocation").value,
+        city: document.getElementById("profileCity").value,
+        state: document.getElementById("profileState").value,
+        country: document.getElementById("profileCountry").value,
+        postalCode: document.getElementById("profilePostalCode").value,
+        streetAddress: document.getElementById("profileStreetAddress").value,
         supportNotes: document.getElementById("profileSupportNotes").value,
         termsAccepted: true,
         privacyAccepted: true,
