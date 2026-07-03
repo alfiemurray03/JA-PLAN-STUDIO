@@ -97,11 +97,13 @@ async function getStripeHealth(DB, env) {
 }
 
 async function getProductionHealth(DB, env) {
+  const adminIssuer = String(env.ADMIN_OIDC_ISSUER || "");
+  const adminIssuerBase = adminIssuer.endsWith("/") ? adminIssuer.slice(0, -1) : adminIssuer;
   const [settings, email, stripe, entra, graph, customers, activeMemberships, openSupport, pendingGdpr, recentErrors, webhookTotal, webhookFailures, latestWebhook] = await Promise.all([
     settingMap(DB, ["maintenance_enabled", "launchgateway_enabled"], {}),
     getEmailSettings(DB, env).catch(() => ({ configured: false, email_provider: "unknown" })),
     getStripeHealth(DB, env),
-    checkRemoteService(`${String(env.ADMIN_OIDC_ISSUER || "").replace(/\/$/, "")}/.well-known/openid-configuration"),
+    checkRemoteService(adminIssuerBase + "/.well-known/openid-configuration"),
     checkRemoteService("https://graph.microsoft.com/v1.0/$metadata", { method: "HEAD" }),
     healthCount(DB, "SELECT COUNT(*) AS count FROM profiles"),
     healthCount(DB, "SELECT COUNT(*) AS count FROM stripe_subscriptions WHERE lower(status) IN ('active', 'trialing')"),
@@ -2988,7 +2990,8 @@ export async function onRequest(context) {
       if (section === "support") {
         if (!ownerAccess && !hasAnyPermission(adminContext.permissions, ["manage_support", "manage_crm"])) return json({ error: "Forbidden.", section }, 403);
         const result = await saveSupport(env.DB, body);
-        await writeAudit(env.DB, identity, body.action === "create" ? "support_create" : "support_update", "support_tickets", result.saved.id, `${body.action === "create" ? "Created" : "Updated"} support ticket ${result.saved.reference}: ${result.saved.subject}.`, { reference: result.saved.reference, status: clean(body.status, 80), priority: clean(body.priority, 80) });
+        const auditSummary = (body.action === "create" ? "Created" : "Updated") + " support ticket " + result.saved.reference + ": " + result.saved.subject + ".";
+        await writeAudit(env.DB, identity, body.action === "create" ? "support_create" : "support_update", "support_tickets", result.saved.id, auditSummary, { reference: result.saved.reference, status: clean(body.status, 80), priority: clean(body.priority, 80) });
         return json({ support: result.records, saved: true });
       }
       if (section === "notifications") {
