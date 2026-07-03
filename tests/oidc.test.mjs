@@ -311,6 +311,7 @@ test("administrator OIDC flow uses state, nonce, PKCE and a validated signed tok
     assert.equal(callback.status, 302);
     assert.equal(callback.headers.get("location"), "/admin/?section=customers");
     assert.match(callback.headers.get("set-cookie"), /ja_admin_session=/);
+    assert.match(callback.headers.get("set-cookie"), /Path=\/; /);
     assert.equal(DB.session.email, "admin@example.test");
     assert.notEqual(DB.session.refresh_token_encrypted, "refresh-token-1");
 

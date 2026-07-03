@@ -333,7 +333,17 @@ async function getAuthenticatedAdminIdentity(request, env) {
     if (!identity) return null;
     const authenticatedRequest = withIdentity(request, identity);
     if (!(await isAdminRequest(authenticatedRequest, env))) return null;
-    return identity;
+    let role = "";
+    let permissions = [];
+    if (env.DB) {
+      const admin = await env.DB.prepare(`SELECT role, permissions FROM admin_users WHERE lower(email) = lower(?)`)
+        .bind(identity.email)
+        .first()
+        .catch(() => null);
+      role = String(admin?.role || "");
+      permissions = Array.isArray(admin?.permissions) ? admin.permissions : [];
+    }
+    return { identity, role, permissions };
   } catch (error) {
     console.error(JSON.stringify({
       event: "admin_bypass_lookup_error",
@@ -471,6 +481,14 @@ export async function onRequest(context) {
     });
   }
 
+  const adminSessionCookieDetected = (request.headers.get("Cookie") || "")
+    .split(";")
+    .map((part) => part.trim())
+    .some((part) => part.startsWith("ja_admin_session="));
+  if (adminSessionCookieDetected) {
+    console.log(JSON.stringify({ event: "admin_bypass_diag", stage: "admin_session_cookie_detected", path }));
+  }
+
   const bypass =
     publicAuthPath ||
     path === "/admin" ||
@@ -502,10 +520,27 @@ export async function onRequest(context) {
 
   const adminIdentity = await getAuthenticatedAdminIdentity(request, env);
   if (adminIdentity) {
+    console.log(JSON.stringify({
+      event: "admin_bypass_diag",
+      stage: "admin_identity_resolved",
+      path,
+      email: adminIdentity.identity?.email || "",
+      role: adminIdentity.role || "",
+      permissions: adminIdentity.permissions || []
+    }));
     return next(request);
   }
 
   const settings = await getSiteSettings(env.DB);
+
+  console.log(JSON.stringify({
+    event: "admin_bypass_diag",
+    stage: "public_gate_decision",
+    path,
+    bypassDecision: "deny",
+    launchGatewayEnabled: String(settings.launchgateway_enabled || "false"),
+    maintenanceEnabled: String(settings.maintenance_enabled || "false")
+  }));
 
   if (settings.maintenance_enabled === "true") {
     return new Response(pageHtml(settings, "maintenance"), {
