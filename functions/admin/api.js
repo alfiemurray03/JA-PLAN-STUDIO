@@ -126,13 +126,13 @@ async function getProductionHealth(DB, env) {
     checked_at: new Date().toISOString(),
     services: {
       website: { status: maintenanceEnabled ? "maintenance" : launchGatewayEnabled ? "launch-gateway" : "operational", message: maintenanceEnabled ? "Maintenance mode is enabled." : launchGatewayEnabled ? "Launch Gateway is enabled." : "Public mode is enabled." },
-      entra: { status: entra.reachable ? "operational" : "degraded", message: entra.reachable ? `OIDC discovery responded in ${entra.latency_ms} ms.` : entra.message || "OIDC discovery is unavailable." },
-      graph: { status: graph.reachable ? "operational" : "degraded", message: graph.reachable ? `Microsoft Graph responded in ${graph.latency_ms} ms.` : graph.message || "Microsoft Graph is unavailable." },
+      entra: { status: entra.reachable ? "operational" : "degraded", message: entra.reachable ? "OIDC discovery responded in " + entra.latency_ms + " ms." : entra.message || "OIDC discovery is unavailable." },
+      graph: { status: graph.reachable ? "operational" : "degraded", message: graph.reachable ? "Microsoft Graph responded in " + graph.latency_ms + " ms." : graph.message || "Microsoft Graph is unavailable." },
       stripe: { status: stripe.account ? "operational" : stripe.configured ? "degraded" : "unavailable", message: stripe.message, mode: stripe.mode },
-      stripe_webhooks: { status: !webhookConfigured || webhookTotal === null ? "unavailable" : Number(webhookFailures || 0) > 0 ? "degraded" : "operational", message: !webhookConfigured ? "Webhook signing secret is not configured." : webhookTotal === null ? "No webhook event table is present, so delivery history cannot be verified." : `${webhookTotal} deliveries recorded; ${webhookFailures || 0} marked failed or retrying.`, latest: latestWebhook[0] || null },
+      stripe_webhooks: { status: !webhookConfigured || webhookTotal === null ? "unavailable" : Number(webhookFailures || 0) > 0 ? "degraded" : "operational", message: !webhookConfigured ? "Webhook signing secret is not configured." : webhookTotal === null ? "No webhook event table is present, so delivery history cannot be verified." : webhookTotal + " deliveries recorded; " + (webhookFailures || 0) + " marked failed or retrying.", latest: latestWebhook[0] || null },
       workers: { status: "operational", message: "This authenticated Worker health request completed successfully." },
       database: { status: customers === null ? "degraded" : "operational", message: customers === null ? "The profiles query failed." : "D1 queries completed successfully." },
-      email: { status: emailConfigured ? "configured" : "unavailable", message: emailConfigured ? `Provider ${email.email_provider} is configured; delivery is not tested by this read-only check.` : "Outbound email settings are incomplete." },
+      email: { status: emailConfigured ? "configured" : "unavailable", message: emailConfigured ? "Provider " + email.email_provider + " is configured; delivery is not tested by this read-only check." : "Outbound email settings are incomplete." },
       launch_gateway: { status: launchGatewayEnabled ? "enabled" : "disabled", message: launchGatewayEnabled ? "Launch Gateway is enabled." : "Launch Gateway is disabled." },
       maintenance: { status: maintenanceEnabled ? "enabled" : "disabled", message: maintenanceEnabled ? "Maintenance mode is enabled." : "Maintenance mode is disabled." }
     },
