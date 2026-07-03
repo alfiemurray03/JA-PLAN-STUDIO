@@ -148,7 +148,17 @@ async function getCurrentCustomerSession(DB, request) {
 
 async function getCustomerRefreshToken(DB, request, env) {
   const session = await getCurrentCustomerSession(DB, request);
-  return decryptSecret(session?.refresh_token_encrypted || "", env);
+  try {
+    return await decryptSecret(session?.refresh_token_encrypted || "", env);
+  } catch (error) {
+    console.error(JSON.stringify({
+      event: "microsoft_session_token_decrypt_failed",
+      token_type: "refresh_token",
+      customer_email: "",
+      error_message: error instanceof Error ? error.message : "Unknown decryption error"
+    }));
+    return "";
+  }
 }
 
 function graphUrl(path, select = []) {
@@ -302,7 +312,18 @@ async function refreshMicrosoftAccessToken(DB, request, env) {
 
 async function loadMicrosoftGraphProfile(DB, request, env, identity) {
   const session = await getCurrentCustomerSession(DB, request);
-  const storedAccessToken = session?.access_token_encrypted ? await decryptSecret(session.access_token_encrypted, env) : "";
+  let storedAccessToken = "";
+  try {
+    storedAccessToken = session?.access_token_encrypted ? await decryptSecret(session.access_token_encrypted, env) : "";
+  } catch (error) {
+    console.error(JSON.stringify({
+      event: "microsoft_session_token_decrypt_failed",
+      token_type: "access_token",
+      customer_email: identity.email,
+      error_message: error instanceof Error ? error.message : "Unknown decryption error"
+    }));
+    storedAccessToken = "";
+  }
   const storedAccessTokenExpiry = session?.access_token_expires_at ? Date.parse(session.access_token_expires_at) : 0;
   const accessToken = storedAccessToken && storedAccessTokenExpiry > Date.now() + 60_000
     ? storedAccessToken
@@ -376,7 +397,18 @@ function emailUpdateAllowed(env) {
 
 async function patchMicrosoftGraphProfile(DB, request, env, identity, desired) {
   const session = await getCurrentCustomerSession(DB, request);
-  const storedAccessToken = session?.access_token_encrypted ? await decryptSecret(session.access_token_encrypted, env) : "";
+  let storedAccessToken = "";
+  try {
+    storedAccessToken = session?.access_token_encrypted ? await decryptSecret(session.access_token_encrypted, env) : "";
+  } catch (error) {
+    console.error(JSON.stringify({
+      event: "microsoft_session_token_decrypt_failed",
+      token_type: "access_token",
+      customer_email: identity.email,
+      error_message: error instanceof Error ? error.message : "Unknown decryption error"
+    }));
+    storedAccessToken = "";
+  }
   const storedAccessTokenExpiry = session?.access_token_expires_at ? Date.parse(session.access_token_expires_at) : 0;
   const refreshToken = await getCustomerRefreshToken(DB, request, env);
   if (!refreshToken) return { ok: false, status: 0, reason: "No Microsoft refresh token was available.", requestId: "", clientRequestId: "" };
