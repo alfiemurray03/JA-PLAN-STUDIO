@@ -28,7 +28,7 @@ Use the following as the opening context for any new ChatGPT or Codex session:
 >
 > Important restrictions:
 >
-> - Do not remove, alter or bypass the existing `/coming-soon/` launch gate unless the user expressly authorises the public launch.
+> - Do not remove, alter or bypass the existing `/launch-gateway/` Launch Gateway unless the user expressly authorises the public launch.
 > - Do not change `public/_redirects` unless the user expressly requests it and the consequences are explained.
 > - Do not describe JA Experiences & Discovery as a travel agent, tour operator, package holiday provider, transport provider or activity supplier.
 > - Do not suggest that JA sells flights, visas, transfers, coaches, ferries, trains, taxis, car hire or any transport.
@@ -72,9 +72,9 @@ The website has been rebuilt from a limited affiliate/tours page into a broader 
 - Accommodation and selected-partner-hotel holding content.
 - Important information, complaints and travel/provider disclaimer pages.
 - Shared, centrally editable header and footer components.
-- A styled Coming Soon page that currently protects the unfinished public website.
+- A styled Launch Gateway page that currently protects the unfinished public website.
 
-The full website exists behind the launch gate. It is not yet publicly navigable through normal routes because the final redirect sends nearly every route to `/coming-soon/`.
+The full website exists behind the Launch Gateway. It is not yet publicly navigable through normal routes because the final redirect sends nearly every route to `/launch-gateway/`.
 
 ---
 
@@ -342,9 +342,9 @@ The homepage uses:
 - Affiliate/independent-booking explanation.
 - Strong navy closing call to action.
 
-### 5.5 Coming Soon style
+### 5.5 Launch Gateway style
 
-The Coming Soon page was redesigned to match the new website:
+The Launch Gateway page was redesigned to match the new website:
 
 - Full photographic UK hero.
 - Dark navy image overlays.
@@ -436,7 +436,7 @@ Header presentation:
 
 - Transparent/white on the homepage.
 - White/dark text on ordinary inner pages.
-- Transparent/white over the Coming Soon hero.
+- Transparent/white over the Launch Gateway hero.
 - Mobile menu below 900px.
 
 ### 6.4 Current footer content
@@ -634,7 +634,7 @@ Legal and support:
 
 Review/launch:
 
-- `/coming-soon/`
+- `/launch-gateway/`
 - `/preview/`
 
 ### 7.5 Holding or future content
@@ -739,7 +739,7 @@ Then:
 - Confirm spam and abuse controls.
 - Confirm complaint and retention processes.
 
-Do not remove the launch gate while assuming the current static Pages deployment runs the Worker.
+Do not remove the Launch Gateway while assuming the current static Pages deployment runs the Worker.
 
 ---
 
@@ -874,27 +874,27 @@ git push new-website main
 
 ---
 
-## 11. Protected Redirects and Launch Gate
+## 11. Protected Redirects and Launch Gateway
 
 `public/_redirects` currently contains:
 
 ```text
-/coming-soon/ /coming-soon/index.html 200
-/coming-soon/* /coming-soon/:splat 200
+/launch-gateway/ /launch-gateway/index.html 200
+/launch-gateway/* /launch-gateway/:splat 200
 /assets/* /assets/:splat 200
 /preview/ /preview/index.html 200
 /preview/* /preview/:splat 200
-/* /coming-soon/ 302
+/* /launch-gateway/ 302
 ```
 
 Meaning:
 
-- `/coming-soon/` is directly served.
+- `/launch-gateway/` is directly served.
 - Shared assets remain accessible.
 - `/preview/` is directly served.
-- All other routes redirect to `/coming-soon/`.
+- All other routes redirect to `/launch-gateway/`.
 
-The user has repeatedly instructed that the Coming Soon page and redirects must remain unchanged unless they explicitly authorise otherwise.
+The user has repeatedly instructed that the Launch Gateway page and redirects must remain unchanged unless they explicitly authorise otherwise.
 
 Do not remove the final wildcard redirect as an incidental part of another change.
 
@@ -937,11 +937,11 @@ Recently edited CSS/JS may appear stale on the custom domain. Use `Ctrl+F5` or a
 
 The sitemap currently contains 284 URLs.
 
-However, the launch gate redirects almost all routes to Coming Soon.
+However, the Launch Gateway redirects almost all routes to Launch Gateway.
 
 Before launch, review:
 
-- Whether the Coming Soon phase should be indexed.
+- Whether the Launch Gateway phase should be indexed.
 - Whether temporary `noindex` rules are needed.
 - Canonical URLs.
 - Open Graph images.
@@ -999,9 +999,9 @@ The recent implementation sequence includes:
 6. Added GetYourGuide widgets and original approved city/tour IDs.
 7. Added legal, support, provider and service-boundary pages.
 8. Added Cloudflare headers, redirects, sitemap and robots files.
-9. Restricted public traffic to the Coming Soon page.
+9. Restricted public traffic to the Launch Gateway page.
 10. Rebuilt the main site into a professional travel-editorial hub.
-11. Redesigned the Coming Soon page to match the main site.
+11. Redesigned the Launch Gateway page to match the main site.
 12. Added the official JA Group Services footer logo.
 13. Removed the white background from the footer logo.
 14. Reduced the footer logo size.
@@ -1011,13 +1011,13 @@ The recent implementation sequence includes:
 18. Deleted the unused duplicate `layout.js` shell implementation.
 19. Moved header and footer CSS into separate editable files beside the component HTML.
 20. Audited all 289 pages for shared header/footer linkage.
-21. Verified desktop, tablet/mobile, Coming Soon and inner-page header/footer behaviour.
+21. Verified desktop, tablet/mobile, Launch Gateway and inner-page header/footer behaviour.
 22. Connected GitHub `main` to automatic Cloudflare Pages production deployment.
 
 Relevant recent commits:
 
 - `050373e` – Deploy complete JA Experiences website
-- `0c71fe5` – Match coming soon page to travel theme
+- `0c71fe5` – Match Launch Gateway page to travel theme
 - `d6605dd` – Add official JA Group Services footer logo
 - `ae90b7f` – Remove footer logo background
 - `8f4ad77` – Use universal company footer across website
@@ -1091,7 +1091,7 @@ python -m http.server 4175 --directory public
 Then open:
 
 - `http://127.0.0.1:4175/`
-- `http://127.0.0.1:4175/coming-soon/`
+- `http://127.0.0.1:4175/launch-gateway/`
 - `http://127.0.0.1:4175/preview/`
 
 The static server allows review of routes without Cloudflare applying `_redirects`.
@@ -1171,11 +1171,11 @@ Edit:
 
 `public/assets/css/ja-travel-rebuild.css`
 
-### Change the Coming Soon page content
+### Change the Launch Gateway page content
 
 Edit:
 
-`public/coming-soon/index.html`
+`public/launch-gateway/index.html`
 
 Its page-specific styling currently remains in the main stylesheet, while all header behaviour is in `header.css`.
 
@@ -1261,8 +1261,8 @@ As of 15 June 2026:
 - The professional travel experiences and discovery website is substantially built.
 - The full site is stored in GitHub and deployed to Cloudflare Pages.
 - The custom domain is active.
-- The Coming Soon page is the current public experience.
-- The complete site remains behind the protected launch gate.
+- The Launch Gateway page is the current public experience.
+- The complete site remains behind the protected Launch Gateway.
 - Header and footer HTML and CSS are fully shared and manually editable.
 - The current visual direction is a professional editorial travel hub using navy, blue, orange, cream and soft grey.
 - The service content broadly follows the Board-approved model.

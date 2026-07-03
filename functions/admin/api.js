@@ -40,7 +40,7 @@ const PERMISSION_SECTIONS = {
   appearance: ["manage_settings"],
   affiliate: ["manage_content"],
   policies: ["manage_policies", "manage_content"],
-  comingsoon: ["manage_content"],
+  launchgateway: ["manage_content"],
   maintenance: ["manage_content"]
 };
 const DEFAULT_ROLE_PERMISSIONS = {
@@ -158,19 +158,6 @@ async function safeAlter(DB, sql) {
     await DB.prepare(sql).run();
   } catch {
     // D1 throws if the column already exists. That is expected during safe migrations.
-  }
-}
-
-async function migrateStatusPageContent(DB) {
-  for (const prefix of ["comingsoon", "maintenance"]) {
-    await DB.prepare(`
-      INSERT OR IGNORE INTO site_settings (key, value, updated_at)
-      VALUES (
-        ?,
-        COALESCE((SELECT value FROM site_settings WHERE key = ?), ''),
-        CURRENT_TIMESTAMP
-      )
-    `).bind(`${prefix}_content`, `${prefix}_message`).run();
   }
 }
 
@@ -423,7 +410,6 @@ async function ensureTables(DB, env) {
     )
   `).run();
 
-  await migrateStatusPageContent(DB);
 
   await DB.prepare(`
     CREATE TABLE IF NOT EXISTS data_protection_requests (
@@ -803,7 +789,7 @@ async function getOverview(DB) {
     DB.prepare(`SELECT COUNT(*) AS count FROM profiles WHERE admin_lifetime = 1`).first()
   ]);
 
-  const comingsoon = await getComingSoon(DB);
+  const launchgateway = await getLaunchGateway(DB);
   const maintenance = await getMaintenance(DB);
   const [recentAudit, latestCustomers, latestSupport, latestReports, sessions, activeAdmins] = await Promise.all([
     all(DB, `SELECT action, actor_email, entity_type, entity_id, summary, metadata, created_at FROM admin_audit_log ORDER BY created_at DESC LIMIT 8`),
@@ -826,7 +812,7 @@ async function getOverview(DB) {
     closureRequests: closures?.count || 0,
     lifetimeUsers: lifetime?.count || 0,
     admins: admins?.count || 0,
-    comingSoonStatus: comingsoon.comingsoon_enabled === "true" ? "On" : "Off",
+    launchGatewayStatus: launchgateway.launchgateway_enabled === "true" ? "On" : "Off",
     maintenanceStatus: maintenance.maintenance_enabled === "true" ? "On" : "Off",
     recentAudit,
     latestCustomers,
@@ -1139,14 +1125,14 @@ async function getRoleSummary(DB) {
 function dashboardPresetForRole(role, permissions) {
   role = canonicalRoleName(role);
   if (role === "Platform Owner" || permissions.includes("*")) {
-    return ["overview", "status", "analytics", "customers", "customer", "admins", "roles", "sessions", "plans", "stripe", "enquiries", "support", "notifications", "membership", "security", "cms", "systemreports", "datarequests", "closures", "policies", "branding", "comingsoon", "maintenance", "audit", "email", "reports"];
+    return ["overview", "status", "analytics", "customers", "customer", "admins", "roles", "sessions", "plans", "stripe", "enquiries", "support", "notifications", "membership", "security", "cms", "systemreports", "datarequests", "closures", "policies", "branding", "launchgateway", "maintenance", "audit", "email", "reports"];
   }
   if (role === "Senior Administrator") {
-    return ["overview", "customers", "customer", "users", "plans", "branding", "comingsoon", "maintenance", "status", "analytics", "enquiries", "support", "notifications", "membership", "security", "cms", "systemreports", "audit", "reports"];
+    return ["overview", "customers", "customer", "users", "plans", "branding", "launchgateway", "maintenance", "status", "analytics", "enquiries", "support", "notifications", "membership", "security", "cms", "systemreports", "audit", "reports"];
   }
   if (role === "Finance") return ["overview", "stripe", "plans", "audit", "reports"];
   if (role === "Customer Support") return ["overview", "customers", "customer", "enquiries", "support", "notifications", "membership", "security", "datarequests", "closures", "systemreports", "audit"];
-  if (role === "Marketing & Content") return ["overview", "branding", "cms", "comingsoon", "maintenance", "policies", "affiliate", "email"];
+  if (role === "Marketing & Content") return ["overview", "branding", "cms", "launchgateway", "maintenance", "policies", "affiliate", "email"];
   if (role === "Compliance & Data Protection") return ["overview", "audit", "datarequests", "closures", "policies", "reports"];
   if (role === "Auditor") return ["overview", "audit"];
   return ["overview", "customers", "plans", "status", "analytics", "enquiries", "support"];
@@ -1280,7 +1266,7 @@ async function removeAdmin(DB, body, identity, env) {
 }
 
 async function saveAdminPreferences(DB, body, identity) {
-  const allowedSections = new Set(["overview", "operations", "status", "analytics", "audit", "admins", "roles", "sessions", "customers", "datarequests", "systemreports", "closures", "support", "enquiries", "system", "plans", "stripe", "email", "branding", "appearance", "affiliate", "comingsoon", "maintenance", "policies"]);
+  const allowedSections = new Set(["overview", "operations", "status", "analytics", "audit", "admins", "roles", "sessions", "customers", "datarequests", "systemreports", "closures", "support", "enquiries", "system", "plans", "stripe", "email", "branding", "appearance", "affiliate", "launchgateway", "maintenance", "policies"]);
   const favourites = Array.isArray(body.favourites)
     ? body.favourites.map((item) => clean(item, 80)).filter((item) => allowedSections.has(item)).slice(0, 12)
     : [];
@@ -2452,12 +2438,20 @@ function saveMaintenance(DB, body) {
   return saveStatusPage(DB, "maintenance", body);
 }
 
-function getComingSoon(DB) {
-  return getStatusPage(DB, "comingsoon");
+function getLaunchGateway(DB) {
+  return getStatusPage(DB, "launchgateway");
 }
 
-function saveComingSoon(DB, body) {
-  return saveStatusPage(DB, "comingsoon", body);
+function saveLaunchGateway(DB, body) {
+  return saveStatusPage(DB, "launchgateway", body);
+}
+
+async function getPlans(DB) {
+  return all(DB, `
+    SELECT id, plan_name, plan_type, is_active, sort_order
+    FROM service_plans
+    ORDER BY sort_order ASC, plan_name ASC
+  `);
 }
 
 async function getStripeSettings(DB, env) {
@@ -2661,7 +2655,7 @@ export async function onRequest(context) {
       if (section === "appearance") return json({ admin: adminContext, appearance: await getAppearance(env.DB) });
       if (section === "email") return json({ admin: adminContext, email: await getEmailSettings(env.DB, env) });
       if (section === "maintenance") return json({ admin: adminContext, maintenance: await getMaintenance(env.DB) });
-      if (section === "comingsoon") return json({ admin: adminContext, comingsoon: await getComingSoon(env.DB) });
+      if (section === "launchgateway") return json({ admin: adminContext, launchgateway: await getLaunchGateway(env.DB) });
       if (section === "stripe") return json({ admin: adminContext, stripe: await getStripe(env.DB, env, true) });
     }
 
@@ -2851,15 +2845,15 @@ export async function onRequest(context) {
         });
         return json({ maintenance, saved: true });
       }
-      if (section === "comingsoon") {
+      if (section === "launchgateway") {
         if (!ownerAccess && !hasAnyPermission(adminContext.permissions, ["manage_content"])) return json({ error: "Forbidden.", section }, 403);
-        const previous = await getComingSoon(env.DB);
-        const comingsoon = await saveComingSoon(env.DB, body);
-        await writeAudit(env.DB, identity, "comingsoon_update", "site_settings", "comingsoon", `Coming Soon page ${body.comingsoon_enabled ? "enabled" : "disabled"}.`, {
+        const previous = await getLaunchGateway(env.DB);
+        const launchgateway = await saveLaunchGateway(env.DB, body);
+        await writeAudit(env.DB, identity, "launchgateway_update", "site_settings", "launchgateway", `Launch Gateway page ${body.launchgateway_enabled ? "enabled" : "disabled"}.`, {
           previousValue: previous,
-          newValue: comingsoon
+          newValue: launchgateway
         });
-        return json({ comingsoon, saved: true });
+        return json({ launchgateway, saved: true });
       }
       if (section === "stripe") {
         if (!ownerAccess && !hasAnyPermission(adminContext.permissions, ["manage_stripe"])) return json({ error: "Forbidden.", section }, 403);

@@ -112,7 +112,7 @@ Customer portal:
 
 Administrator portal:
 
-- `functions/admin/api.js` is the main read/write router for administrators, roles, permissions, preferences, sessions, profiles, plans, policies, branding, support, enquiries, system events/reports, data-protection requests, closure requests, affiliate content, appearance, email, maintenance, coming-soon settings, Stripe settings and audit records;
+- `functions/admin/api.js` is the main read/write router for administrators, roles, permissions, preferences, sessions, profiles, plans, policies, branding, support, enquiries, system events/reports, data-protection requests, closure requests, affiliate content, appearance, email, maintenance, Launch Gateway settings, Stripe settings and audit records;
 - `functions/admin/customers.js` and `functions/admin/customer.js` provide CRM list/detail operations and customer record updates.
 
 Public/business functions:

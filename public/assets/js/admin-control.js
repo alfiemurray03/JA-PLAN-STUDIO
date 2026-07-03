@@ -45,7 +45,7 @@ const sectionTitles = {
   appearance: "Appearance",
   email: "Email",
   audit: "Audit Log",
-  comingsoon: "Launch Gate",
+  launchgateway: "Launch Gateway",
   maintenance: "Maintenance Mode",
   sessions: "Sessions"
 };
@@ -79,7 +79,7 @@ const sectionDescriptions = {
   appearance: "Control the public website colour theme.",
   affiliate: "Manage affiliate notices, widgets and content blocks.",
   policies: "Maintain legal, privacy and compliance content.",
-  comingsoon: "Control the public launch-gate experience.",
+  launchgateway: "Control the public Launch Gateway experience.",
   maintenance: "Control maintenance mode and service messaging."
 };
 
@@ -635,7 +635,7 @@ function dashboardQuickCards() {
     ["customers", "users", "View CRM", "Search and manage customer profiles"],
     ["status", "pulse", "Status Centre", "Review live service health and incidents"],
     ["maintenance", "shield", "Maintenance mode", "Manage public maintenance controls"],
-    ["comingsoon", "clock", "Publish website", "Review launch-gate visibility"],
+    ["launchgateway", "clock", "Publish website", "Review Launch Gateway visibility"],
     ["stripe", "card", "Stripe dashboard", "Review connection and API controls"],
     ["audit", "clock", "Audit logs", "Review sensitive administrative activity"],
     ["datarequests", "file", "Data requests", "Process UK GDPR rights requests"],
@@ -746,7 +746,7 @@ function renderSection(section, data) {
   if (section === "membership") renderMembershipCentre(data.membership);
   if (section === "security") renderSecurityCentre(data.security);
   if (section === "cms") renderCmsCentre(data.cms);
-  if (section === "comingsoon") renderComingSoon(data.comingsoon);
+  if (section === "launchgateway") renderLaunchGateway(data.launchgateway);
   if (section === "maintenance") renderMaintenance(data.maintenance);
   if (section === "system") renderSystem(data.system);
   if (section === "datarequests") renderDataRequests(data.datarequests);
@@ -773,9 +773,9 @@ function renderOverview(overview) {
   const sessions = Array.isArray(overview.sessions) ? overview.sessions : [];
   const activeAdmins = Array.isArray(overview.activeAdmins) ? overview.activeAdmins : [];
   const maintenanceOn = String(overview.maintenanceStatus).toLowerCase() === "on";
-  const comingSoonOn = String(overview.comingSoonStatus).toLowerCase() === "on";
-      const websiteLabel = maintenanceOn ? "Maintenance" : comingSoonOn ? "Launch gate" : "Online";
-  const websiteTone = maintenanceOn ? "critical" : comingSoonOn ? "warning" : "online";
+  const launchGatewayOn = String(overview.launchGatewayStatus).toLowerCase() === "on";
+      const websiteLabel = maintenanceOn ? "Maintenance" : launchGatewayOn ? "Launch Gateway" : "Online";
+  const websiteTone = maintenanceOn ? "critical" : launchGatewayOn ? "warning" : "online";
   const widgetCards = widgets.map((widget) => `
     <article class="admin-card widget-card">
       <div class="section-head"><div><h3>${escapeHtml(widget.label)}</h3><p>${escapeHtml(widget.section)}</p></div></div>
@@ -806,7 +806,7 @@ function renderOverview(overview) {
       ${kpi("Revenue", "Not available", "No revenue API is connected")}
       ${kpi("Pending data requests", overview.dataProtectionRequests, "Active rights requests")}
       ${kpi("Support tickets", overview.supportTickets, "All recorded tickets")}
-      ${kpi("Website status", websiteLabel, maintenanceOn ? "Maintenance mode enabled" : comingSoonOn ? "Launch gate enabled" : "Public site available")}
+      ${kpi("Website status", websiteLabel, maintenanceOn ? "Maintenance mode enabled" : launchGatewayOn ? "Launch Gateway enabled" : "Public site available")}
       ${kpi("Worker status", "Online", "Admin API responded successfully")}
     </section>
 
@@ -3522,17 +3522,17 @@ function priorityColour(priority = "") {
   return "amber";
 }
 
-function renderComingSoon(settings = {}) {
-  renderStatusForm("comingsoon", settings, {
-    title: "Launch Gate Page",
+function renderLaunchGateway(settings = {}) {
+  renderStatusForm("launchgateway", settings, {
+    title: "Launch Gateway Page",
     description: "Switch the public website into a pre-launch page while keeping the admin portal available.",
-    enabledKey: "comingsoon_enabled",
-    modeKey: "comingsoon_content_mode",
-    contentKey: "comingsoon_content",
-    enabledLabel: "Enable launch gate page",
-    contentLabel: "Launch gate page content",
-    previewLabel: "Preview launch gate page",
-    saveLabel: "Save launch gate page"
+    enabledKey: "launchgateway_enabled",
+    modeKey: "launchgateway_content_mode",
+    contentKey: "launchgateway_content",
+    enabledLabel: "Enable Launch Gateway page",
+    contentLabel: "Launch Gateway page content",
+    previewLabel: "Preview Launch Gateway page",
+    saveLabel: "Save Launch Gateway page"
   });
 }
 

@@ -109,13 +109,13 @@ async function hasAdminBypass(request, env) {
 }
 
 function pageHtml(settings, page) {
-  const prefix = page === "coming-soon" ? "comingsoon" : "maintenance";
+  const prefix = page === "launch-gateway" ? "launchgateway" : "maintenance";
   const mode = settings[`${prefix}_content_mode`] === "html" ? "html" : "plain";
   const content = String(settings[`${prefix}_content`] ?? "");
 
   if (mode === "html") return content;
 
-  const title = prefix === "comingsoon" ? "Coming Soon" : "Maintenance";
+  const title = prefix === "launchgateway" ? "Launch Gateway" : "Maintenance";
   const plainContent = escapeHtml(content).replace(/\r?\n/g, "<br>");
 
   return `<!doctype html>
@@ -156,22 +156,8 @@ function pageHtml(settings, page) {
 </html>`;
 }
 
-async function migrateStatusPageContent(DB) {
-  for (const prefix of ["comingsoon", "maintenance"]) {
-    await DB.prepare(`
-      INSERT OR IGNORE INTO site_settings (key, value, updated_at)
-      VALUES (
-        ?,
-        COALESCE((SELECT value FROM site_settings WHERE key = ?), ''),
-        CURRENT_TIMESTAMP
-      )
-    `).bind(`${prefix}_content`, `${prefix}_message`).run();
-  }
-}
-
 async function getSiteSettings(DB) {
   try {
-    await migrateStatusPageContent(DB);
     const result = await DB.prepare(`
       SELECT key, value
       FROM site_settings
@@ -179,9 +165,9 @@ async function getSiteSettings(DB) {
         'maintenance_enabled',
         'maintenance_content_mode',
         'maintenance_content',
-        'comingsoon_enabled',
-        'comingsoon_content_mode',
-        'comingsoon_content',
+        'launchgateway_enabled',
+        'launchgateway_content_mode',
+        'launchgateway_content',
         'site_theme_mode'
       )
     `).all();
@@ -198,9 +184,9 @@ async function getSiteSettings(DB) {
       maintenance_enabled: "false",
       maintenance_content_mode: "plain",
       maintenance_content: "",
-      comingsoon_enabled: "false",
-      comingsoon_content_mode: "plain",
-      comingsoon_content: "",
+      launchgateway_enabled: "false",
+      launchgateway_content_mode: "plain",
+      launchgateway_content: "",
       site_theme_mode: "dark"
     };
   }
@@ -548,6 +534,8 @@ export async function onRequest(context) {
     path.startsWith("/api/status/") ||
     path === "/api/enquiries" ||
     path.startsWith("/api/enquiries/") ||
+    path === "/stripe-webhook" ||
+    path === "/stripe-webhook/" ||
     path.startsWith("/cdn-cgi") ||
     path.startsWith("/assets") ||
     path === "/signed-out" ||
@@ -579,8 +567,8 @@ export async function onRequest(context) {
     });
   }
 
-  if (settings.comingsoon_enabled === "true") {
-    return new Response(pageHtml(settings, "coming-soon"), {
+  if (settings.launchgateway_enabled === "true") {
+    return new Response(pageHtml(settings, "launch-gateway"), {
       status: 200,
       headers: {
         "Content-Type": "text/html; charset=utf-8",

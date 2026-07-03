@@ -2,6 +2,18 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { onRequest } from "../functions/_middleware.js";
 
+test("middleware always bypasses public-site modes for Stripe webhooks", async () => {
+  const response = await onRequest({
+    request: new Request("https://experiences.example.test/stripe-webhook", { method: "POST", body: "{}" }),
+    env: {
+      DB: { prepare() { throw new Error("Stripe webhook bypass must not query site settings."); } }
+    },
+    next: async () => new Response("webhook route", { status: 202 })
+  });
+  assert.equal(response.status, 202);
+  assert.equal(await response.text(), "webhook route");
+});
+
 class MiddlewareD1 {
   constructor({ session = true, adminStatus = "Active", customerStatus = "Active" } = {}) {
     this.hasSession = session;

@@ -1,135 +1,247 @@
+const SUPPORTED_EVENTS = new Set([
+  "checkout.session.completed",
+  "customer.subscription.created",
+  "customer.subscription.updated",
+  "customer.subscription.deleted",
+  "invoice.paid",
+  "invoice.payment_failed",
+  "invoice.finalized"
+]);
+
 export async function onRequestPost({ request, env }) {
-const payload = await request.text();
-const signatureHeader = request.headers.get("stripe-signature");
+  const payload = await request.text();
+  const signatureHeader = request.headers.get("stripe-signature");
 
-if (!env.STRIPE_WEBHOOK_SECRET) {
-console.error("Missing STRIPE_WEBHOOK_SECRET environment variable.");
-return new Response("Webhook secret not configured.", { status: 500 });
-}
+  try {
+    if (!env.DB) return response("Database binding DB is missing.", 500);
 
-const verified = await verifyStripeWebhookSignature(
-payload,
-signatureHeader,
-env.STRIPE_WEBHOOK_SECRET
-);
+    const webhookSecret = await getWebhookSecret(env);
+    if (!webhookSecret) {
+      console.error("Missing Stripe webhook signing secret.");
+      return response("Webhook secret not configured.", 500);
+    }
 
-if (!verified) {
-console.error("Stripe webhook signature verification failed.");
-return new Response("Invalid Stripe signature.", { status: 400 });
-}
+    if (!(await verifyStripeWebhookSignature(payload, signatureHeader, webhookSecret))) {
+      console.error("Stripe webhook signature verification failed.");
+      return response("Invalid Stripe signature.", 400);
+    }
 
-let event;
+    let event;
+    try {
+      event = JSON.parse(payload);
+    } catch (error) {
+      console.error("Invalid Stripe webhook JSON payload.", error);
+      return response("Invalid payload.", 400);
+    }
 
-try {
-event = JSON.parse(payload);
-} catch (error) {
-console.error("Invalid Stripe webhook JSON payload.", error);
-return new Response("Invalid payload.", { status: 400 });
-}
+    if (!event?.id || !event?.type || !event?.data?.object) {
+      return response("Invalid Stripe event.", 400);
+    }
 
-if (event.type === "checkout.session.completed") {
-const session = event.data.object;
+    await ensureStripeTables(env.DB);
+    const existing = await env.DB.prepare(`SELECT status FROM stripe_webhook_events WHERE event_id = ?`).bind(event.id).first();
+    if (existing?.status === "processed") return response("Webhook already processed.", 200);
 
-const paymentRecord = {
-  event_id: event.id,
-  session_id: session.id,
-  payment_status: session.payment_status,
-  customer_id: session.customer || null,
-  customer_email: session.customer_details?.email || null,
-  customer_name: session.customer_details?.name || null,
-  amount_total: session.amount_total,
-  currency: session.currency,
-  plan_code: session.metadata?.plan_code || null,
-  plan_name: session.metadata?.plan_name || null,
-  service_line: session.metadata?.service_line || null,
-  payment_intent: session.payment_intent || null,
-  created: session.created,
-};
+    await env.DB.prepare(`
+      INSERT INTO stripe_webhook_events (event_id, event_type, object_id, status, payload, received_at, error)
+      VALUES (?, ?, ?, 'processing', ?, CURRENT_TIMESTAMP, NULL)
+      ON CONFLICT(event_id) DO UPDATE SET status = 'processing', payload = excluded.payload, error = NULL
+    `).bind(event.id, event.type, event.data.object.id || null, payload).run();
 
-/*
-  Later, this is where we can add:
-  - Send an internal email notification
-  - Save the payment to a database / Google Sheet / CRM
-  - Trigger a customer onboarding email
-  - Link payment to a JA Experiences account
-*/
+    if (SUPPORTED_EVENTS.has(event.type)) await processEvent(env.DB, event);
 
-}
+    await env.DB.prepare(`
+      UPDATE stripe_webhook_events
+      SET status = 'processed', processed_at = CURRENT_TIMESTAMP, error = NULL
+      WHERE event_id = ?
+    `).bind(event.id).run();
 
-return new Response("Webhook received.", { status: 200 });
+    return response(SUPPORTED_EVENTS.has(event.type) ? "Webhook processed." : "Webhook acknowledged.", 200);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(JSON.stringify({ event: "stripe_webhook_failure", message }));
+    try {
+      const eventId = JSON.parse(payload)?.id;
+      if (eventId && env.DB) {
+        await env.DB.prepare(`UPDATE stripe_webhook_events SET status = 'failed', error = ? WHERE event_id = ?`)
+          .bind(message.slice(0, 1000), eventId).run();
+      }
+    } catch {
+      // Preserve the original processing failure.
+    }
+    return response("Webhook processing failed.", 500);
+  }
 }
 
 export async function onRequestGet() {
-return new Response("Stripe webhook endpoint is active.", { status: 200 });
+  return response("Stripe webhook endpoint is active.", 200);
 }
 
-async function verifyStripeWebhookSignature(
-payload,
-signatureHeader,
-webhookSecret
-) {
-if (!payload || !signatureHeader || !webhookSecret) {
-return false;
+async function getWebhookSecret(env) {
+  const stored = await env.DB.prepare(`SELECT value FROM site_settings WHERE key = 'stripe_webhook_signing_secret'`).first().catch(() => null);
+  return String(stored?.value || env.STRIPE_WEBHOOK_SECRET || "").trim();
 }
 
-const parts = signatureHeader.split(",");
-const timestampPart = parts.find((part) => part.startsWith("t="));
-const signatureParts = parts.filter((part) => part.startsWith("v1="));
-
-if (!timestampPart || signatureParts.length === 0) {
-return false;
+async function ensureStripeTables(DB) {
+  await DB.batch([
+    DB.prepare(`CREATE TABLE IF NOT EXISTS stripe_webhook_events (
+      event_id TEXT PRIMARY KEY, event_type TEXT NOT NULL, object_id TEXT, status TEXT NOT NULL,
+      payload TEXT NOT NULL, error TEXT, received_at TEXT DEFAULT CURRENT_TIMESTAMP, processed_at TEXT
+    )`),
+    DB.prepare(`CREATE TABLE IF NOT EXISTS stripe_checkout_sessions (
+      id TEXT PRIMARY KEY, customer_id TEXT, customer_email TEXT, payment_status TEXT,
+      amount_total INTEGER, currency TEXT, plan_code TEXT, plan_name TEXT, payment_intent_id TEXT,
+      stripe_created_at TEXT, updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )`),
+    DB.prepare(`CREATE TABLE IF NOT EXISTS stripe_subscriptions (
+      id TEXT PRIMARY KEY, customer_id TEXT, customer_email TEXT, plan_code TEXT, price_id TEXT,
+      status TEXT, current_period_start TEXT, current_period_end TEXT, cancel_at_period_end INTEGER DEFAULT 0,
+      latest_invoice_id TEXT, updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )`),
+    DB.prepare(`CREATE TABLE IF NOT EXISTS stripe_invoices (
+      id TEXT PRIMARY KEY, customer_id TEXT, customer_email TEXT, subscription_id TEXT, status TEXT,
+      amount_due INTEGER, amount_paid INTEGER, currency TEXT, hosted_invoice_url TEXT, invoice_pdf TEXT,
+      period_start TEXT, period_end TEXT, updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )`)
+  ]);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN stripe_customer_id TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN stripe_customer_synced_at TEXT`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN membership_status TEXT DEFAULT 'Standard'`);
+  await safeAlter(DB, `ALTER TABLE profiles ADD COLUMN membership_renewal_at TEXT`);
 }
 
-const timestamp = timestampPart.slice(2);
-const currentTimestamp = Math.floor(Date.now() / 1000);
-const toleranceSeconds = 300;
-
-if (Math.abs(currentTimestamp - Number(timestamp)) > toleranceSeconds) {
-console.error("Stripe webhook timestamp outside tolerance.");
-return false;
+async function safeAlter(DB, sql) {
+  try {
+    await DB.prepare(sql).run();
+  } catch {
+    // Existing columns are expected in production.
+  }
 }
 
-const signedPayload = `${timestamp}.${payload}`;
-const encoder = new TextEncoder();
-
-const key = await crypto.subtle.importKey(
-"raw",
-encoder.encode(webhookSecret),
-{ name: "HMAC", hash: "SHA-256" },
-false,
-["sign"]
-);
-
-const signatureBuffer = await crypto.subtle.sign(
-"HMAC",
-key,
-encoder.encode(signedPayload)
-);
-
-const expectedSignature = bufferToHex(signatureBuffer);
-
-return signatureParts.some((part) => {
-const receivedSignature = part.slice(3);
-return timingSafeEqual(expectedSignature, receivedSignature);
-});
+async function processEvent(DB, event) {
+  const object = event.data.object;
+  if (event.type === "checkout.session.completed") return saveCheckoutSession(DB, object);
+  if (event.type.startsWith("customer.subscription.")) return saveSubscription(DB, object, event.type);
+  if (event.type.startsWith("invoice.")) return saveInvoice(DB, object, event.type);
 }
 
-function bufferToHex(buffer) {
-return [...new Uint8Array(buffer)]
-.map((byte) => byte.toString(16).padStart(2, "0"))
-.join("");
+async function saveCheckoutSession(DB, session) {
+  const email = session.customer_details?.email || session.customer_email || null;
+  const customerId = idValue(session.customer);
+  await DB.prepare(`
+    INSERT INTO stripe_checkout_sessions (
+      id, customer_id, customer_email, payment_status, amount_total, currency,
+      plan_code, plan_name, payment_intent_id, stripe_created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(id) DO UPDATE SET
+      customer_id = excluded.customer_id, customer_email = excluded.customer_email,
+      payment_status = excluded.payment_status, amount_total = excluded.amount_total,
+      currency = excluded.currency, plan_code = excluded.plan_code, plan_name = excluded.plan_name,
+      payment_intent_id = excluded.payment_intent_id, updated_at = CURRENT_TIMESTAMP
+  `).bind(
+    session.id, customerId, email, session.payment_status || null, session.amount_total ?? null,
+    session.currency || null, session.metadata?.plan_code || null, session.metadata?.plan_name || null,
+    idValue(session.payment_intent), stripeTime(session.created)
+  ).run();
+  await updateProfile(DB, customerId, email, session.metadata?.plan_name || null, null);
+}
+
+async function saveSubscription(DB, subscription, eventType) {
+  const customerId = idValue(subscription.customer);
+  const email = subscription.customer_details?.email || subscription.metadata?.customer_email || null;
+  const item = subscription.items?.data?.[0] || null;
+  const planCode = subscription.metadata?.plan_code || item?.price?.metadata?.plan_code || null;
+  const status = eventType === "customer.subscription.deleted" ? "canceled" : (subscription.status || null);
+  await DB.prepare(`
+    INSERT INTO stripe_subscriptions (
+      id, customer_id, customer_email, plan_code, price_id, status, current_period_start,
+      current_period_end, cancel_at_period_end, latest_invoice_id, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(id) DO UPDATE SET
+      customer_id = excluded.customer_id, customer_email = excluded.customer_email,
+      plan_code = excluded.plan_code, price_id = excluded.price_id, status = excluded.status,
+      current_period_start = excluded.current_period_start, current_period_end = excluded.current_period_end,
+      cancel_at_period_end = excluded.cancel_at_period_end, latest_invoice_id = excluded.latest_invoice_id,
+      updated_at = CURRENT_TIMESTAMP
+  `).bind(
+    subscription.id, customerId, email, planCode, idValue(item?.price), status,
+    stripeTime(subscription.current_period_start), stripeTime(subscription.current_period_end),
+    subscription.cancel_at_period_end ? 1 : 0, idValue(subscription.latest_invoice)
+  ).run();
+  await updateProfile(DB, customerId, email, status, stripeTime(subscription.current_period_end));
+}
+
+async function saveInvoice(DB, invoice, eventType) {
+  const customerId = idValue(invoice.customer);
+  const email = invoice.customer_email || null;
+  const status = eventType === "invoice.payment_failed" ? "payment_failed" : (invoice.status || null);
+  await DB.prepare(`
+    INSERT INTO stripe_invoices (
+      id, customer_id, customer_email, subscription_id, status, amount_due, amount_paid,
+      currency, hosted_invoice_url, invoice_pdf, period_start, period_end, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(id) DO UPDATE SET
+      customer_id = excluded.customer_id, customer_email = excluded.customer_email,
+      subscription_id = excluded.subscription_id, status = excluded.status,
+      amount_due = excluded.amount_due, amount_paid = excluded.amount_paid, currency = excluded.currency,
+      hosted_invoice_url = excluded.hosted_invoice_url, invoice_pdf = excluded.invoice_pdf,
+      period_start = excluded.period_start, period_end = excluded.period_end, updated_at = CURRENT_TIMESTAMP
+  `).bind(
+    invoice.id, customerId, email, idValue(invoice.subscription), status,
+    invoice.amount_due ?? null, invoice.amount_paid ?? null, invoice.currency || null,
+    invoice.hosted_invoice_url || null, invoice.invoice_pdf || null,
+    stripeTime(invoice.period_start), stripeTime(invoice.period_end)
+  ).run();
+  if (eventType === "invoice.payment_failed") await updateProfile(DB, customerId, email, "Past due", null);
+}
+
+async function updateProfile(DB, customerId, email, membershipStatus, renewalAt) {
+  if (!customerId && !email) return;
+  await DB.prepare(`
+    UPDATE profiles SET
+      stripe_customer_id = COALESCE(?, stripe_customer_id),
+      stripe_customer_synced_at = CURRENT_TIMESTAMP,
+      membership_status = COALESCE(?, membership_status),
+      membership_renewal_at = COALESCE(?, membership_renewal_at),
+      updated_at = CURRENT_TIMESTAMP
+    WHERE (? IS NOT NULL AND stripe_customer_id = ?)
+       OR (? IS NOT NULL AND (lower(email) = lower(?) OR lower(contact_email) = lower(?)))
+  `).bind(customerId, membershipStatus, renewalAt, customerId, customerId, email, email, email).run();
+}
+
+function idValue(value) {
+  if (!value) return null;
+  return typeof value === "string" ? value : value.id || null;
+}
+
+function stripeTime(value) {
+  return Number.isFinite(Number(value)) && Number(value) > 0 ? new Date(Number(value) * 1000).toISOString() : null;
+}
+
+async function verifyStripeWebhookSignature(payload, signatureHeader, webhookSecret) {
+  if (!payload || !signatureHeader || !webhookSecret) return false;
+  const parts = signatureHeader.split(",");
+  const timestampPart = parts.find((part) => part.startsWith("t="));
+  const signatureParts = parts.filter((part) => part.startsWith("v1="));
+  if (!timestampPart || signatureParts.length === 0) return false;
+
+  const timestamp = timestampPart.slice(2);
+  if (!/^\d+$/.test(timestamp) || Math.abs(Math.floor(Date.now() / 1000) - Number(timestamp)) > 300) return false;
+
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey("raw", encoder.encode(webhookSecret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const signatureBuffer = await crypto.subtle.sign("HMAC", key, encoder.encode(`${timestamp}.${payload}`));
+  const expectedSignature = [...new Uint8Array(signatureBuffer)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  return signatureParts.some((part) => timingSafeEqual(expectedSignature, part.slice(3)));
 }
 
 function timingSafeEqual(a, b) {
-if (!a || !b || a.length !== b.length) {
-return false;
+  if (!a || !b || a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i += 1) result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return result === 0;
 }
 
-let result = 0;
-
-for (let i = 0; i < a.length; i += 1) {
-result |= a.charCodeAt(i) ^ b.charCodeAt(i);
-}
-
-return result === 0;
+function response(body, status) {
+  return new Response(body, { status, headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" } });
 }
