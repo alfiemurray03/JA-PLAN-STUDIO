@@ -11,6 +11,7 @@ const CLOSURE_STATUSES = ["Open", "In Progress", "Approved", "Rejected", "Comple
 const DPR_STATUSES = ["Received", "Verifying Identity", "In Progress", "Ready to Send", "Sent", "Closed", "Rejected"];
 const SYSTEM_REPORT_STATUSES = ["Open", "In Progress", "Resolved", "Rejected"];
 const THEME_MODES = ["light", "dark", "system"];
+const ADMIN_SCHEMA_VERSION = "2026-07-03-rc3.1";
 const PERMISSION_SECTIONS = {
   overview: ["view_dashboard"],
   operations: ["view_dashboard", "manage_status", "manage_analytics", "manage_api", "manage_settings"],
@@ -543,6 +544,61 @@ async function ensureTables(DB, env) {
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `).run();
+}
+
+async function ensureNotificationTable(DB) {
+  await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS customer_notifications (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      category TEXT NOT NULL,
+      priority TEXT DEFAULT 'Normal',
+      title TEXT NOT NULL,
+      body TEXT,
+      status TEXT DEFAULT 'Unread',
+      archived_at TEXT,
+      reference_type TEXT,
+      reference_id TEXT,
+      template_key TEXT,
+      scheduled_for TEXT,
+      sent_at TEXT,
+      delivery_status TEXT DEFAULT 'Draft',
+      read_at TEXT,
+      acknowledged_at TEXT,
+      send_history TEXT DEFAULT '[]',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+  await safeAlter(DB, `ALTER TABLE customer_notifications ADD COLUMN archived_at TEXT`);
+  await safeAlter(DB, `ALTER TABLE customer_notifications ADD COLUMN reference_type TEXT`);
+  await safeAlter(DB, `ALTER TABLE customer_notifications ADD COLUMN reference_id TEXT`);
+  await safeAlter(DB, `ALTER TABLE customer_notifications ADD COLUMN template_key TEXT`);
+  await safeAlter(DB, `ALTER TABLE customer_notifications ADD COLUMN scheduled_for TEXT`);
+  await safeAlter(DB, `ALTER TABLE customer_notifications ADD COLUMN sent_at TEXT`);
+  await safeAlter(DB, `ALTER TABLE customer_notifications ADD COLUMN delivery_status TEXT DEFAULT 'Draft'`);
+  await safeAlter(DB, `ALTER TABLE customer_notifications ADD COLUMN read_at TEXT`);
+  await safeAlter(DB, `ALTER TABLE customer_notifications ADD COLUMN acknowledged_at TEXT`);
+  await safeAlter(DB, `ALTER TABLE customer_notifications ADD COLUMN send_history TEXT DEFAULT '[]'`);
+}
+
+async function initialiseAdminSchema(DB, env) {
+  const version = await DB.prepare(`SELECT value FROM site_settings WHERE key = 'admin_schema_version'`).first().catch(() => null);
+  if (version?.value === ADMIN_SCHEMA_VERSION) return;
+
+  const existingDatabase = await DB.prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'profiles'`).first().catch(() => null);
+  if (!existingDatabase) {
+    await ensureTables(DB, env);
+    await ensureEnquiryTables(DB);
+    await seedDefaults(DB);
+  }
+
+  await ensureNotificationTable(DB);
+  await DB.prepare(`
+    INSERT INTO site_settings (key, value, updated_at)
+    VALUES ('admin_schema_version', ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
+  `).bind(ADMIN_SCHEMA_VERSION).run();
 }
 
 async function isAllowedAdmin(DB, identity, env) {
@@ -2547,22 +2603,20 @@ export async function onRequest(context) {
 
   if (!env.DB) return json({ error: "Database binding DB is missing." }, 500);
 
-  await ensureTables(env.DB, env);
-  await ensureEnquiryTables(env.DB);
-  await seedDefaults(env.DB);
-
-  const identity = getAccessIdentity(request);
-  if (!identity.email) return json({ error: "Not signed in." }, 401);
-  if (!(await isAllowedAdmin(env.DB, identity, env))) {
-    return json({ error: "Forbidden.", signedInAs: identity.email }, 403);
-  }
-  const adminContext = await adminPayload(env.DB, identity, env);
-
-  const url = new URL(request.url);
-  const section = url.searchParams.get("section") || "overview";
-  const ownerAccess = ownerBypass(adminContext.permissions, adminContext);
-
   try {
+    await initialiseAdminSchema(env.DB, env);
+
+    const identity = getAccessIdentity(request);
+    if (!identity.email) return json({ error: "Not signed in." }, 401);
+    if (!(await isAllowedAdmin(env.DB, identity, env))) {
+      return json({ error: "Forbidden.", signedInAs: identity.email }, 403);
+    }
+    const adminContext = await adminPayload(env.DB, identity, env);
+
+    const url = new URL(request.url);
+    const section = url.searchParams.get("section") || "overview";
+    const ownerAccess = ownerBypass(adminContext.permissions, adminContext);
+
     if (request.method === "GET") {
       if (!ownerAccess && !canAccessSection(adminContext.permissions, section)) return json({ error: "Forbidden.", section }, 403);
       if (section === "overview") return json({ admin: adminContext, overview: await getOverview(env.DB) });
