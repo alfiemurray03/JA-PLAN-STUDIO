@@ -25,4 +25,5 @@ test("Production Health does not invent unavailable observability or delivery te
   assert.match(api, /Worker error rate requires Cloudflare observability access/);
   assert.match(api, /delivery is not tested by this read-only check/);
   assert.match(api, /delivery history cannot be verified/);
+  assert.match(api, /D1 storage size requires account-level Cloudflare telemetry/);
 });

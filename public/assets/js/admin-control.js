@@ -937,6 +937,7 @@ function productionHealthTone(status) {
 }
 
 function formatBytes(value) {
+  if (value === null || value === undefined || value === "") return "Unavailable";
   const bytes = Number(value);
   if (!Number.isFinite(bytes) || bytes < 0) return "Unavailable";
   if (bytes < 1024) return `${bytes} B`;

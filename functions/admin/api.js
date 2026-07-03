@@ -148,7 +148,7 @@ async function getProductionHealth(DB, env) {
       database_bytes: pageCount && pageSize ? pageCount * pageSize : null
     },
     recent_errors: recentErrors,
-    limitations: ["Worker error rate requires Cloudflare observability access and is not inferred from application records.", "Email status confirms configuration only; use the Email test action to verify delivery."]
+    limitations: ["Worker error rate requires Cloudflare observability access and is not inferred from application records.", "D1 storage size requires account-level Cloudflare telemetry when page-size pragmas are unavailable to the Worker.", "Email status confirms configuration only; use the Email test action to verify delivery."]
   };
 }
 const DEFAULT_ROLE_PERMISSIONS = {
