@@ -719,17 +719,24 @@ export async function completeLogin(context, realm) {
       ["email", "?", email],
       ["name", "?", String(claims.name || email).trim()],
       ["refresh_token_encrypted", "?", encryptedRefreshToken],
-      ["access_token_encrypted", "?", await stage(context, realm, "access_token_encryption", () => encryptSecret(tokens.access_token, context.env), {
-        requestId,
-        customerEmail: email
-      })],
-      ["access_token_expires_at", "?", tokens.expires_in ? new Date(Date.now() + Number(tokens.expires_in) * 1000).toISOString() : ""],
       ["idle_expires_at", "datetime('now', ?)", `+${config.idleMinutes} minutes`],
       ["absolute_expires_at", "datetime('now', ?)", `+${config.absoluteMinutes} minutes`],
       ["refresh_after", "datetime('now', '+50 minutes')", null],
       ["ip_hash", "?", ipHash],
       ["user_agent", "?", String(context.request.headers.get("User-Agent") || "").slice(0, 500)]
     ];
+    const accessTokenEncrypted = await stage(context, realm, "access_token_encryption", () => encryptSecret(tokens.access_token, context.env), {
+      requestId,
+      customerEmail: email
+    });
+    const accessTokenExpiresAt = tokens.expires_in ? new Date(Date.now() + Number(tokens.expires_in) * 1000).toISOString() : "";
+    if (columns.has("access_token_encrypted")) {
+      insertSpec.splice(6, 0, ["access_token_encrypted", "?", accessTokenEncrypted]);
+    }
+    if (columns.has("access_token_expires_at")) {
+      const index = insertSpec.findIndex(([column]) => column === "idle_expires_at");
+      insertSpec.splice(index, 0, ["access_token_expires_at", "?", accessTokenExpiresAt]);
+    }
     const optional = [
       ["microsoft_object_id", "?", firstClaim(claims, "oid", "sub")],
       ["microsoft_given_name", "?", firstClaim(claims, "given_name")],
