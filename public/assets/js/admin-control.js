@@ -50,10 +50,6 @@ const sectionTitles = {
   maintenance: "Maintenance Mode",
   sessions: "Sessions"
 };
-
-<<<<<<< HEAD
-// ... [ALL EXISTING CODE REMAINS UNCHANGED - omitted for brevity] ...
-=======
 const sectionDescriptions = {
   overview: "Executive summary of your customer and platform operations.",
   health: "Live dependency checks, operational totals and verified platform limitations.",
@@ -2233,9 +2229,6 @@ function openPlanModal(id = "") {
   });
 }
 
-<<<<<<< HEAD
-// ... [REMAINDER OF EXISTING CODE UNCHANGED] ...
-=======
 async function savePlan(plan) {
   const data = await api("plans", { method: "POST", body: JSON.stringify(plan) });
   state.data.plans = data;
