@@ -2292,28 +2292,64 @@ function syncPlanControls() {
 
 async function savePlanChanges() {
   if (!state.planDirty || state.planSaving) return;
+
   state.planSaving = true;
   syncPlanControls();
+
   try {
-    const plans = (state.planDraft || []).map((plan) => ({ id: plan.id, is_active: Number(plan.is_active || 0) }));
-    const data = await api("plans", {
-      method: "POST",
-      body: JSON.stringify({ action: "save_visibility", plans })
-    });
-    if (!data || data.success !== true || !Array.isArray(data.plans)) {
-      throw new Error("The server did not confirm the saved plan state.");
+    const plans = state.planDraft || [];
+
+    for (const plan of plans) {
+      const response = await api("plans", {
+        method: "POST",
+        body: JSON.stringify({
+          id: plan.id,
+          plan_name: plan.plan_name,
+          plan_type: plan.plan_type,
+          description: plan.description,
+          price_label: plan.price_label,
+          price_pence: Number(plan.price_pence || 0),
+          delivery_time: plan.delivery_time,
+          revisions: plan.revisions,
+          stripe_product_id: plan.stripe_product_id,
+          stripe_price_id: plan.stripe_price_id,
+          button_label: plan.button_label,
+          sort_order: Number(plan.sort_order || 100),
+          is_active: Number(plan.is_active || 0),
+          is_featured: Number(plan.is_featured || 0)
+        })
+      });
+
+      if (!response || response.success !== true) {
+        throw new Error(`Failed to save plan "${plan.plan_name}".`);
+      }
+
+      state.data.plans = response;
     }
+
     state.planDraft = null;
     state.planDirty = false;
-    state.data.plans = data;
-    renderPlans(data.plans);
-    showPlanSaveProof(data.database_after_save || []);
-    setSaved("plansSaved", "Changes saved successfully.");
+
+    renderPlans(state.data.plans.plans);
+
+    setSaved(
+      "plansSaved",
+      "All plan changes have been saved successfully."
+    );
+
   } catch (error) {
-    setSaved("plansSaved", error.message || "Unable to save plan changes.", true);
+
+    setSaved(
+      "plansSaved",
+      error.message || "Unable to save plan changes.",
+      true
+    );
+
   } finally {
+
     state.planSaving = false;
     syncPlanControls();
+
   }
 }
 
