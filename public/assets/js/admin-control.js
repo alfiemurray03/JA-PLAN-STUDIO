@@ -2170,7 +2170,7 @@ async function togglePlan(id, isActive) {
   syncPlanControls();
   setSaved("plansSaved", "You have unsaved changes.");
 }
->>>>>>> 87927f4 (RC4.5 – Administrator improvements and communications updates)
+
 
 function openPlanModal(id = "") {
   const plan = (state.data.plans?.plans || []).find((item) => item.id === id) || {};
@@ -4048,4 +4048,4 @@ function formatMoney(amount, currency) {
     currency: (currency || "gbp").toUpperCase()
   }).format(Number(amount) / 100);
 }
->>>>>>> 87927f4 (RC4.5 – Administrator improvements and communications updates)
+
