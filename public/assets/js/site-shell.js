@@ -188,70 +188,97 @@ function initCookieConsent() {
     window[`ga-disable-${GA_MEASUREMENT_ID}`] = true;
   };
 
+  const openPreferencesModal = (currentConsent = { analytics: false }) => {
+    const existingModal = document.getElementById("cookiePreferencesModal");
+    if (existingModal) existingModal.remove();
+
+    const modal = document.createElement("div");
+    modal.id = "cookiePreferencesModal";
+    modal.className = "ja-cookie-modal";
+    modal.innerHTML = `
+      <div class="ja-cookie-modal-head">
+        <h3>Cookie Preferences</h3>
+        <button id="closeCookieModal" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:inherit;">&times;</button>
+      </div>
+      <div class="ja-cookie-prefs-body">
+        <div class="ja-cookie-pref-item">
+          <div class="ja-cookie-pref-info">
+            <strong>Essential Cookies</strong>
+            <span>Required for the website to function.</span>
+          </div>
+          <input type="checkbox" checked disabled>
+        </div>
+        <div class="ja-cookie-pref-item">
+          <div class="ja-cookie-pref-info">
+            <strong>Analytics Cookies</strong>
+            <span>Help us improve our services.</span>
+          </div>
+          <input type="checkbox" id="analyticsConsent" ${currentConsent.analytics ? "checked" : ""}>
+        </div>
+      </div>
+      <div class="ja-cookie-actions" style="margin-top:2rem;">
+        <button id="saveCookiePrefs" class="primary">Save Preferences</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    document.getElementById("closeCookieModal").onclick = () => modal.remove();
+    document.getElementById("saveCookiePrefs").onclick = () => {
+      const analytics = document.getElementById("analyticsConsent").checked;
+      setConsent({ essential: true, analytics });
+      modal.remove();
+      const card = document.getElementById("cookieConsentCard");
+      if (card) card.remove();
+    };
+  };
+
   const renderBanner = () => {
-    if (getConsent()) {
-      applyConsent(getConsent());
+    const current = getConsent();
+    if (current) {
+      applyConsent(current);
       return;
     }
 
-    const banner = document.createElement("div");
-    banner.id = "cookieConsentBanner";
-    banner.className = "cookie-banner";
-    banner.innerHTML = `
-      <div class="container">
-        <div class="cookie-content">
-          <h3>Cookie Consent</h3>
-          <p>We use cookies to enhance your browsing experience and analyze our traffic. Essential cookies are always enabled.</p>
-          <div class="cookie-actions">
-            <button id="acceptAllCookies" class="clean-button primary">Accept All</button>
-            <button id="rejectNonEssentialCookies" class="clean-button secondary">Reject Non-Essential</button>
-            <button id="manageCookiePrefs" class="clean-button secondary">Manage Preferences</button>
-          </div>
-        </div>
-        <div id="cookiePrefs" class="cookie-prefs" hidden>
-          <label><input type="checkbox" checked disabled> Essential (Always On)</label>
-          <label><input type="checkbox" id="analyticsConsent"> Analytics</label>
-          <button id="saveCookiePrefs" class="clean-button primary">Save Preferences</button>
-        </div>
+    const card = document.createElement("div");
+    card.id = "cookieConsentCard";
+    card.className = "ja-cookie-card";
+    card.innerHTML = `
+      <h3>Cookie Consent</h3>
+      <p>We use cookies to enhance your experience and analyze traffic. Essential cookies are always active.</p>
+      <div class="ja-cookie-actions">
+        <button id="acceptAllCookies" class="primary">Accept All</button>
+        <button id="rejectNonEssentialCookies" class="secondary">Reject Non-Essential</button>
+        <button id="manageCookiePrefs" class="secondary">Manage Preferences</button>
       </div>
     `;
-    document.body.appendChild(banner);
+    document.body.appendChild(card);
 
     document.getElementById("acceptAllCookies").onclick = () => {
       setConsent({ essential: true, analytics: true });
-      banner.remove();
+      card.remove();
     };
 
     document.getElementById("rejectNonEssentialCookies").onclick = () => {
       setConsent({ essential: true, analytics: false });
-      banner.remove();
+      card.remove();
     };
 
     document.getElementById("manageCookiePrefs").onclick = () => {
-      document.getElementById("cookiePrefs").hidden = false;
-    };
-
-    document.getElementById("saveCookiePrefs").onclick = () => {
-      setConsent({
-        essential: true,
-        analytics: document.getElementById("analyticsConsent").checked
-      });
-      banner.remove();
+      openPreferencesModal({ analytics: false });
     };
   };
 
   renderBanner();
 
-  // Add "Manage Cookies" to footer if possible
-  const footer = document.querySelector("#site-footer, #siteShellFooter");
+  // Add "Manage Cookies" to footer
+  const footer = document.querySelector("#siteShellFooter, footer");
   if (footer) {
     const manageBtn = document.createElement("button");
     manageBtn.textContent = "Manage Cookie Preferences";
     manageBtn.className = "manage-cookies-link";
-    manageBtn.style.cssText = "background:none;border:none;color:inherit;font:inherit;cursor:pointer;text-decoration:underline;padding:0;margin-top:1rem;display:block;";
+    manageBtn.style.cssText = "background:none;border:none;color:inherit;font:inherit;cursor:pointer;text-decoration:underline;padding:0;margin-top:1rem;display:block;font-size:0.8rem;opacity:0.8;";
     manageBtn.onclick = () => {
-      localStorage.removeItem(CONSENT_KEY);
-      renderBanner();
+      openPreferencesModal(getConsent() || { analytics: false });
     };
     footer.appendChild(manageBtn);
   }
