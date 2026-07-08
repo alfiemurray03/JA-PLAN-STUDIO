@@ -196,6 +196,8 @@ document.addEventListener("click", async (event) => {
 });
 
 document.addEventListener("DOMContentLoaded", async () => {
+  if (!document.getElementById("portalRoot")) return;
+
   const page = document.body.dataset.portalPage || "dashboard";
   const needsRequests = new Set(["dashboard", "membership", "support", "messages", "data", "bookings", "saved"]);
   const needsPins = page === "security";
