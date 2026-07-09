@@ -2,18 +2,19 @@ const portalState = { profile: null, requests: null, pins: null, saved: null, bi
 
 const navItems = [
   ["/account/dashboard/", "Overview"],
+  ["/account/profile/", "My Account"],
   ["/account/profile/", "My Profile"],
   ["/account/tokens/", "Builder Usage Tokens"],
   ["/account/builders/", "My Builders"],
-  ["/account/settings/", "Settings"],
-  ["/account/security/", "Security"],
+  ["/account/saved/", "Saved Plans"],
+  ["/account/saved/", "Saved Experiences"],
   ["/account/bookings/", "Bookings"],
   ["/account/subscription/", "Membership"],
-  ["/account/saved/", "Saved Experiences"],
-  ["/account/messages/", "Messages"],
-  ["/account/enquiries/", "Support"],
+  ["/account/support/", "Support"],
+  ["/account/security/", "Security"],
+  ["/account/settings/", "Settings"],
   ["/account/data-protection/", "Data Protection"],
-  ["/account/downloads/", "Downloads"]
+  ["/account/logout/", "Sign out"]
 ];
 
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[c]));
@@ -31,10 +32,9 @@ function shell(title, lead) {
     <div class="portal-shell">
       <aside class="portal-sidebar">
         <div class="portal-brand">
-          <div class="portal-mark">JA</div>
-          <div class="portal-brand-copy">
-            <strong>JA Experiences &amp; Discovery</strong>
-            <span>Customer account centre</span>
+          <div class="portal-brand-copy" style="margin-left: 0;">
+            <strong style="font-size: 1.1rem; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">JA Experiences & Discovery</strong>
+            <span>Customer portal</span>
           </div>
         </div>
         <div class="portal-person">

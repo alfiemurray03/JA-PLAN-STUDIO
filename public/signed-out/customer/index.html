@@ -4,44 +4,41 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
-  <title>Signed Out | JA Experiences &amp; Discovery</title>
+  <title>Signed Out | JA Experiences & Discovery</title>
   <link rel="icon" href="/assets/favicons/favicon.svg?v=20260704-1" type="image/svg+xml">
-  <link rel="shortcut icon" href="/assets/favicons/favicon.ico?v=20260704-1" type="image/x-icon">
-  <link rel="apple-touch-icon" href="/assets/favicons/apple-touch-icon.png?v=20260704-1">
-  <link rel="manifest" href="/assets/favicons/site.webmanifest?v=20260704-1">
   <link rel="stylesheet" href="/assets/css/glass-theme.css">
-</head>
-<body class="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-  <main class="w-full max-w-md">
-    <div class="glass-strong bg-card p-8 shadow-sm text-center">
-      <div class="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center text-muted-foreground mx-auto mb-6">
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-      </div>
-      <h1 class="text-2xl font-bold mb-2">You have signed out</h1>
-      <p class="text-sm text-muted-foreground mb-8">
-        Your customer session has ended successfully. Please sign in again with JA Group Services ID to continue.
-      </p>
-      <a href="/account/login/" class="w-full inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-base font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90">
-        Sign in with JA Group Services ID
-      </a>
-    </div>
-    
-    <div class="mt-8 text-center">
-      <a href="/" class="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-        Return to website
-      </a>
-    </div>
-  </main>
-  
   <style>
-    .min-h-screen { min-height: 100vh; }
-    .flex-col { flex-direction: column; }
-    .justify-center { justify-content: center; }
-    .max-w-md { max-width: 28rem; }
-    .mx-auto { margin-left: auto; margin-right: auto; }
-    .w-full { width: 100%; }
-    .text-2xl { font-size: 1.5rem; }
+    .checkmark {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+    }
+    .checkmark svg {
+      width: 32px;
+      height: 32px;
+      color: var(--success);
+    }
   </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+  <main class="w-full max-w-md">
+    <div class="glass p-8 rounded-3xl text-center">
+      <div class="checkmark">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+      </div>
+      <h1 class="text-2xl font-extrabold mb-2" style="font-family: 'Plus Jakarta Sans', sans-serif;">You have signed out</h1>
+      <p class="text-secondary mb-8">Your customer session has ended successfully. Sign in again with JA Group Services ID to continue accessing your account.</p>
+      <a href="/account/login/?return_to=%2Faccount%2Fdashboard%2F" class="btn btn-primary w-full mb-4">Sign in with JA Group Services ID</a>
+      <a href="/" class="btn btn-secondary w-full">Return to website</a>
+    </div>
+    <p class="text-center text-sm text-muted mt-6">JA Group Services ID is the secure Single Sign-On system for JA Experiences & Discovery.</p>
+  </main>
 </body>
 </html>
