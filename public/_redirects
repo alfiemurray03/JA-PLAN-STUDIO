@@ -25,6 +25,7 @@
 /affiliate-disclosure/ /affiliate-disclosure/index.html 200
 /booking-partners/ /booking-partners/index.html 200
 /complaints/ /complaints/index.html 200
+/coming-soon/ /coming-soon/index.html 200
 
 # Legal pages
 /legal/terms/ /legal/terms/index.html 200
@@ -45,8 +46,7 @@
 /couples-experiences/ /couples-experiences/index.html 200
 
 # Legacy routes - redirect to homepage or relevant page
-/coming-soon/ / 301
-/coming-soon/* / 301
+/coming-soon/* /coming-soon/index.html 200
 /launch-gateway/ / 301
 /launch-gateway/* / 301
 
