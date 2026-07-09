@@ -116,6 +116,37 @@ const systemReportStatuses = ["Open", "In Progress", "Resolved", "Rejected"];
 const closureStatuses = ["Open", "In Progress", "Approved", "Rejected", "Completed"];
 const priorities = ["Low", "Normal", "High", "Urgent"];
 const localScaffoldSections = new Set(["builders", "credits", "usage", "addons", "platformsettings"]);
+const platformAdminConfig = {
+  builders: [
+    { id: "day-trip", name: "Day Trip Builder", type: "Everyday", category: "Everyday experiences", credits: 10, plans: "Membership, Plus, Family", availability: "Available", visibility: "trial" },
+    { id: "travel-itinerary", name: "Travel Itinerary Builder", type: "Travel", category: "Travel experiences", credits: 35, plans: "Plus, Family", availability: "Available", visibility: "paid" },
+    { id: "accessible-checklist", name: "Accessible Travel Checklist", type: "Accessibility/support", category: "Accessibility and support", credits: 40, plans: "Plus, Family", availability: "Configuration ready", visibility: "paid" }
+  ],
+  plans: [
+    { plan: "Trial", allowance: "30 once only", status: "One-time token" },
+    { plan: "Membership", allowance: "150 monthly", status: "Paid plan" },
+    { plan: "Plus", allowance: "350 monthly", status: "Paid plan" },
+    { plan: "Family", allowance: "750 monthly", status: "Paid plan" }
+  ],
+  creditBands: [
+    ["Small", "10 credits"],
+    ["Standard", "15 credits"],
+    ["Advanced", "25 credits"],
+    ["Travel", "35 credits"],
+    ["Accessibility/support", "35-40 credits"]
+  ],
+  addOns: [
+    ["Extra 10 Builder Credits", "£5.00", "10 credits", "Not connected to live billing yet"],
+    ["Extra 25 Builder Credits", "£10.00", "25 credits", "Not connected to live billing yet"],
+    ["Extra 50 Builder Credits", "£18.00", "50 credits", "Not connected to live billing yet"],
+    ["Extra 100 Builder Credits", "£30.00", "100 credits", "Not connected to live billing yet"],
+    ["Quick Human Help", "£25 one-off", "Human support", "Not connected to live billing yet"],
+    ["Human Plan Review", "£50 per plan", "Human support", "Not connected to live billing yet"],
+    ["Human-Made Experience Plan", "£100 per plan/destination", "Human support", "Not connected to live billing yet"]
+  ],
+  usageRows: [],
+  blockedAttempts: []
+};
 
 document.addEventListener("DOMContentLoaded", () => {
   applyAdminBranding();
@@ -223,6 +254,41 @@ function bindAdminActions() {
 
     if (type === "load-section") {
       loadSection(action.dataset.section);
+    }
+
+    if (type === "open-builder") {
+      openBuilderModal(action.dataset.id || "");
+      return;
+    }
+
+    if (type === "save-admin-builder") {
+      saveBuilderConfiguration();
+      return;
+    }
+
+    if (type === "toggle-builder-state") {
+      updateBuilderState(action.dataset.id, "Disabled");
+      return;
+    }
+
+    if (type === "archive-builder") {
+      updateBuilderState(action.dataset.id, "Archived");
+      return;
+    }
+
+    if (type === "validate-credit-adjustment") {
+      validateCreditAdjustment();
+      return;
+    }
+
+    if (type === "validate-platform-settings") {
+      const status = document.getElementById("platformSettingsStatus");
+      if (status) {
+        status.hidden = false;
+        status.className = "admin-success";
+        status.textContent = "Configuration validation passed. Settings are not written to backend persistence yet.";
+      }
+      return;
     }
 
     if (type === "remove-admin") {
@@ -650,6 +716,10 @@ function setAdmin(admin) {
   state.adminName = name;
   state.adminRole = admin.role || state.adminRole || "Administrator";
   state.allowedSections = Array.isArray(admin.allowed_sections) && admin.allowed_sections.length ? admin.allowed_sections : ["overview"];
+  const maySeePlatformControls = state.allowedSections.includes("plans") || state.allowedSections.includes("system") || state.allowedSections.includes("overview");
+  if (maySeePlatformControls) {
+    state.allowedSections = Array.from(new Set([...state.allowedSections, ...localScaffoldSections]));
+  }
   state.favourites = Array.isArray(admin.preferences?.favourites) ? admin.preferences.favourites : state.favourites;
   state.adminRecentSections = Array.isArray(admin.preferences?.recently_used) ? admin.preferences.recently_used : state.adminRecentSections;
   state.dashboardPreferences = admin.preferences?.dashboard_preferences || state.dashboardPreferences || {};
@@ -779,32 +849,12 @@ function renderSection(section, data) {
   if (section === "roles") renderRoles(data.roles, data.permission_catalog);
   if (section === "customers") renderCustomers(data.customers);
   if (section === "customer") renderCustomerProfile(data.customer, data.plans);
-  if (section === "builders") renderPlatformScaffold("Experience Builders", "Create, edit, disable and archive self-service builders.", [
-    ["Builder controls", "Create builder, view builder, edit builder, disable builder, archive builder"],
-    ["Configuration", "Type, category, credit cost, availability, plan inclusion and public/trial/paid/add-on/hidden status"],
-    ["Oversight", "Usage count and blocked attempt visibility once backend usage records are connected"]
-  ]);
+  if (section === "builders") renderExperienceBuilders();
   if (section === "plans") renderPlans(data.plans);
-  if (section === "credits") renderPlatformScaffold("Builder Credits", "Manage allowances, costs, add-on packages and manual credit adjustments.", [
-    ["Allowances", "Monthly plan allowances, customer remaining credits, used credits and purchased add-on credits"],
-    ["Credit costs", "Cost per builder, cost by type, override cost and disable if cost is not configured"],
-    ["Manual adjustments", "Add/remove credits, reason, adjustment type, admin user, date/time and permanent log"]
-  ]);
-  if (section === "usage") renderPlatformScaffold("Customer Usage", "Review customer usage, blocked attempts, trial windows and enforcement readiness.", [
-    ["Customer status", "Customer, plan, active subscription/trial, trial activation and expiry"],
-    ["Usage", "Remaining credits, used credits, completed builders, purchased credits and add-ons"],
-    ["Blocked attempts", "Customer, builder, reason blocked, date/time, plan status, available credits, required credits and action offered"]
-  ]);
-  if (section === "addons") renderPlatformScaffold("Paid Add-Ons", "Review extra credit purchases and human support add-ons without pretending Stripe charging is live.", [
-    ["Extra credits", "Package, customer, price, credits added, purchase date and payment status when available"],
-    ["Human support", "Quick Human Help, Human Plan Review and Human-Made Experience Plan status"],
-    ["Boundary", "Builder Credits are for self-service platform tools only; human support remains separate"]
-  ]);
-  if (section === "platformsettings") renderPlatformScaffold("Platform Settings", "Configuration-ready controls for trial, usage enforcement and platform launch direction.", [
-    ["Trial rules", "One 14-day trial per account, exact activation/expiry, 30 credits once only"],
-    ["Enforcement", "Check active paid subscription/trial, plan inclusion, credits and restrictions before completion"],
-    ["Operational target", "Full platform direction targeted for Mid-September 2026"]
-  ]);
+  if (section === "credits") renderBuilderCredits();
+  if (section === "usage") renderCustomerUsage();
+  if (section === "addons") renderPaidAddOns();
+  if (section === "platformsettings") renderPlatformSettings();
   if (section === "stripe") renderStripe(data.stripe);
   if (section === "branding") renderBranding(data.branding);
   if (section === "policies") renderPolicies(data.policies);
@@ -826,6 +876,194 @@ function renderSection(section, data) {
   if (section === "email") renderEmail(data.email, data.test);
   if (section === "audit") renderAudit(data.audit);
   if (section === "sessions") renderSessions(data.sessions);
+}
+
+function renderConfigurationReadyNotice() {
+  return `
+    <div class="admin-alert">
+      Configuration-ready: these controls are usable for review and validation, but are not connected to live D1 persistence or Stripe charging yet. No fake usage, payment, or production billing records are created.
+    </div>
+  `;
+}
+
+function renderExperienceBuilders() {
+  const rows = platformAdminConfig.builders.map((builder) => `
+    <tr>
+      <td><strong>${escapeHtml(builder.name)}</strong><br><span class="muted">${escapeHtml(builder.category)}</span></td>
+      <td>${escapeHtml(builder.type)}</td>
+      <td>${escapeHtml(String(builder.credits))}</td>
+      <td>${escapeHtml(builder.plans)}</td>
+      <td>${badge(builder.availability, builder.availability === "Available" ? "green" : "blue")}</td>
+      <td>${badge(builder.visibility, "blue")}</td>
+      <td>
+        <button class="mini-button" type="button" data-action="open-builder" data-id="${escapeAttr(builder.id)}">Edit</button>
+        <button class="mini-button" type="button" data-action="toggle-builder-state" data-id="${escapeAttr(builder.id)}">Disable</button>
+        <button class="mini-button" type="button" data-action="archive-builder" data-id="${escapeAttr(builder.id)}">Archive</button>
+      </td>
+    </tr>
+  `).join("");
+  setPanel(`
+    <div class="section-head">
+      <div><span class="eyebrow">Platform controls</span><h1>Experience Builders</h1><p>Create, edit, disable and archive self-service builders.</p></div>
+      <div class="section-actions"><button class="admin-button" type="button" data-action="open-builder">Create builder</button></div>
+    </div>
+    ${renderConfigurationReadyNotice()}
+    ${table(["Builder", "Type", "Credit cost", "Plan inclusion", "Availability", "Visibility", "Actions"], rows)}
+  `);
+}
+
+function openBuilderModal(id = "") {
+  const builder = platformAdminConfig.builders.find((item) => item.id === id) || {};
+  openModal(`
+    <div class="modal-head">
+      <div><h2>${id ? "Edit builder" : "Create builder"}</h2><p>Configuration-ready builder record. Backend persistence is not connected yet.</p></div>
+      <button class="drawer-close" type="button" data-action="close-modal">×</button>
+    </div>
+    <form class="admin-form" id="builderConfigForm">
+      <input type="hidden" id="builderId" value="${escapeAttr(builder.id || "")}">
+      <label>Builder name<input id="builderName" value="${escapeAttr(builder.name || "")}" required></label>
+      <label>Builder type<select id="builderType"><option${builder.type === "Everyday" ? " selected" : ""}>Everyday</option><option${builder.type === "Travel" ? " selected" : ""}>Travel</option><option${builder.type === "Accessibility/support" ? " selected" : ""}>Accessibility/support</option><option${builder.type === "Organisation" ? " selected" : ""}>Organisation</option></select></label>
+      <label>Builder category<input id="builderCategory" value="${escapeAttr(builder.category || "Everyday experiences")}"></label>
+      <label>Credit cost<input id="builderCredits" type="number" min="0" step="1" value="${escapeAttr(String(builder.credits ?? 10))}"></label>
+      <label>Plan inclusion<input id="builderPlans" value="${escapeAttr(builder.plans || "Membership, Plus, Family")}"></label>
+      <label>Availability/status<select id="builderAvailability"><option${builder.availability === "Available" ? " selected" : ""}>Available</option><option${builder.availability === "Disabled" ? " selected" : ""}>Disabled</option><option${builder.availability === "Archived" ? " selected" : ""}>Archived</option><option${builder.availability === "Configuration ready" ? " selected" : ""}>Configuration ready</option></select></label>
+      <label>Visibility<select id="builderVisibility"><option${builder.visibility === "public" ? " selected" : ""}>public</option><option${builder.visibility === "trial" ? " selected" : ""}>trial</option><option${builder.visibility === "paid" ? " selected" : ""}>paid</option><option${builder.visibility === "add-on" ? " selected" : ""}>add-on</option><option${builder.visibility === "hidden" ? " selected" : ""}>hidden</option></select></label>
+      <div class="admin-alert" id="builderFormStatus" hidden></div>
+      <button class="admin-button" type="button" data-action="save-admin-builder">Save configuration</button>
+    </form>
+  `);
+}
+
+function saveBuilderConfiguration() {
+  const name = document.getElementById("builderName")?.value.trim();
+  const credits = Number(document.getElementById("builderCredits")?.value);
+  const status = document.getElementById("builderFormStatus");
+  if (!name) {
+    status.hidden = false;
+    status.textContent = "Builder name is required.";
+    return;
+  }
+  if (!Number.isFinite(credits) || credits < 0) {
+    status.hidden = false;
+    status.textContent = "Credit cost must be zero or higher.";
+    return;
+  }
+  const id = document.getElementById("builderId")?.value || name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const next = {
+    id,
+    name,
+    type: document.getElementById("builderType")?.value || "Everyday",
+    category: document.getElementById("builderCategory")?.value || "Everyday experiences",
+    credits,
+    plans: document.getElementById("builderPlans")?.value || "Membership, Plus, Family",
+    availability: document.getElementById("builderAvailability")?.value || "Configuration ready",
+    visibility: document.getElementById("builderVisibility")?.value || "hidden"
+  };
+  const index = platformAdminConfig.builders.findIndex((item) => item.id === id);
+  if (index >= 0) platformAdminConfig.builders[index] = next;
+  else platformAdminConfig.builders.push(next);
+  closeModal();
+  renderExperienceBuilders();
+}
+
+function updateBuilderState(id, stateName) {
+  const builder = platformAdminConfig.builders.find((item) => item.id === id);
+  if (!builder) return;
+  builder.availability = stateName;
+  renderExperienceBuilders();
+}
+
+function renderBuilderCredits() {
+  const allowanceRows = platformAdminConfig.plans.map((item) => `<tr><td>${escapeHtml(item.plan)}</td><td>${escapeHtml(item.allowance)}</td><td>${badge(item.status, "blue")}</td></tr>`).join("");
+  const bandRows = platformAdminConfig.creditBands.map(([type, cost]) => `<tr><td>${escapeHtml(type)}</td><td>${escapeHtml(cost)}</td><td>${badge("Configured", "green")}</td></tr>`).join("");
+  setPanel(`
+    <div class="section-head"><div><span class="eyebrow">Platform controls</span><h1>Builder Credits</h1><p>Review allowances, credit cost bands and manual adjustment workflow.</p></div></div>
+    ${renderConfigurationReadyNotice()}
+    <div class="admin-grid">
+      <article class="admin-card"><h2>Plan allowances</h2>${table(["Plan", "Allowance", "Status"], allowanceRows)}</article>
+      <article class="admin-card"><h2>Builder credit cost bands</h2>${table(["Builder type", "Cost", "Status"], bandRows)}</article>
+    </div>
+    <article class="admin-card">
+      <h2>Manual credit adjustment</h2>
+      <p>Manual adjustments must be permanently logged once backend support is connected.</p>
+      <form class="admin-form">
+        <label>Customer/account reference<input id="creditCustomerRef" placeholder="Customer email or account reference"></label>
+        <label>Amount<input id="creditAdjustmentAmount" type="number" step="1" placeholder="Positive or negative amount"></label>
+        <label>Adjustment type<select id="creditAdjustmentType"><option>Add credits</option><option>Remove credits</option><option>Correction</option></select></label>
+        <label>Admin user<input id="creditAdminUser" value="${escapeAttr(state.adminName || "")}" placeholder="Signed-in admin"></label>
+        <label class="admin-form-wide">Reason<textarea id="creditAdjustmentReason" rows="3" placeholder="Required audit reason"></textarea></label>
+        <div class="admin-alert" id="creditAdjustmentStatus" hidden></div>
+        <button class="admin-button" type="button" data-action="validate-credit-adjustment">Validate adjustment</button>
+      </form>
+    </article>
+  `);
+}
+
+function validateCreditAdjustment() {
+  const ref = document.getElementById("creditCustomerRef")?.value.trim();
+  const amount = Number(document.getElementById("creditAdjustmentAmount")?.value);
+  const reason = document.getElementById("creditAdjustmentReason")?.value.trim();
+  const status = document.getElementById("creditAdjustmentStatus");
+  status.hidden = false;
+  status.className = "admin-alert";
+  if (!ref) {
+    status.textContent = "Customer/account reference is required.";
+    return;
+  }
+  if (!Number.isFinite(amount) || amount === 0) {
+    status.textContent = "Adjustment amount must be a non-zero number.";
+    return;
+  }
+  if (!reason) {
+    status.textContent = "Reason is required for auditability.";
+    return;
+  }
+  status.className = "admin-success";
+  status.textContent = "Validation passed. Configuration-ready only: no live credit ledger entry was written.";
+}
+
+function renderCustomerUsage() {
+  const usageRows = platformAdminConfig.usageRows.length ? platformAdminConfig.usageRows.map((item) => `<tr><td>${escapeHtml(item.customer)}</td><td>${escapeHtml(item.plan)}</td><td>${escapeHtml(item.trial)}</td><td>${escapeHtml(item.activated)}</td><td>${escapeHtml(item.expires)}</td><td>${escapeHtml(item.remaining)}</td><td>${escapeHtml(item.used)}</td><td>${escapeHtml(item.completed)}</td><td>${escapeHtml(item.blocked)}</td><td>${escapeHtml(item.purchased)}</td><td>${escapeHtml(item.addons)}</td></tr>`).join("") : "";
+  const blockedRows = platformAdminConfig.blockedAttempts.length ? platformAdminConfig.blockedAttempts.map((item) => `<tr><td>${escapeHtml(item.customer)}</td><td>${escapeHtml(item.builder)}</td><td>${escapeHtml(item.reason)}</td><td>${escapeHtml(item.date)}</td><td>${escapeHtml(item.available)}</td><td>${escapeHtml(item.required)}</td><td>${escapeHtml(item.action)}</td></tr>`).join("") : "";
+  setPanel(`
+    <div class="section-head"><div><span class="eyebrow">Platform controls</span><h1>Customer Usage</h1><p>Review trial status, credits, completed builders and blocked usage attempts.</p></div></div>
+    ${renderConfigurationReadyNotice()}
+    <div class="admin-card">
+      <div class="admin-form">
+        <label>Search customers<input type="search" placeholder="Search customer, plan or status"></label>
+        <label>Plan filter<select><option>All plans</option><option>Trial</option><option>Membership</option><option>Plus</option><option>Family</option></select></label>
+      </div>
+    </div>
+    ${table(["Customer", "Plan", "Trial status", "Trial activation", "Trial expiry", "Remaining credits", "Used credits", "Completed builders", "Blocked attempts", "Purchased credits", "Add-ons"], usageRows)}
+    <article class="admin-card">
+      <h2>Blocked usage attempts</h2>
+      ${table(["Customer", "Builder", "Reason blocked", "Date/time", "Credits available", "Required credits", "Action offered"], blockedRows)}
+    </article>
+  `);
+}
+
+function renderPaidAddOns() {
+  const rows = platformAdminConfig.addOns.map(([name, price, credits, status]) => `<tr><td><strong>${escapeHtml(name)}</strong></td><td>${escapeHtml(price)}</td><td>${escapeHtml(credits)}</td><td>${badge(status, "blue")}</td><td>Payment status visible when available</td></tr>`).join("");
+  setPanel(`
+    <div class="section-head"><div><span class="eyebrow">Platform controls</span><h1>Paid Add-Ons</h1><p>Review extra credit packages and separate human support add-ons.</p></div></div>
+    ${renderConfigurationReadyNotice()}
+    ${table(["Add-on", "Price", "Credits/service", "Billing connection", "Payment status"], rows)}
+  `);
+}
+
+function renderPlatformSettings() {
+  setPanel(`
+    <div class="section-head"><div><span class="eyebrow">Platform controls</span><h1>Platform Settings</h1><p>Review trial, credit, plan and enforcement rules.</p></div></div>
+    ${renderConfigurationReadyNotice()}
+    <div class="admin-grid">
+      <article class="admin-card"><h2>Trial settings</h2><form class="admin-form single"><label>Trial length<input value="14 days"></label><label>Trial credits<input value="30 once only"></label><label><input type="checkbox" checked> One trial per customer/account</label></form></article>
+      <article class="admin-card"><h2>Builder credit rules</h2><form class="admin-form single"><label><input type="checkbox" checked> Deduct only on completed/saved/generated output</label><label><input type="checkbox" checked> No deduction for opening/viewing a builder</label><label><input type="checkbox" checked> Block completion when credits are insufficient</label></form></article>
+      <article class="admin-card"><h2>Plan rules</h2><form class="admin-form single"><label><input type="checkbox" checked> Paid plans only</label><label><input type="checkbox" checked> No permanent free plan</label><label><input type="checkbox" checked> Trial can upgrade to paid subscription</label></form></article>
+      <article class="admin-card"><h2>Affiliate/service boundary wording</h2><p>Headout and GetYourGuide remain third-party providers. JA Group Services Ltd may receive commission from qualifying bookings. Bookings are made directly with the relevant provider and are subject to that provider's terms, cancellation rules, refund rules and privacy notice.</p></article>
+    </div>
+    <button class="admin-button" type="button" data-action="validate-platform-settings">Validate settings</button>
+    <div class="admin-alert" id="platformSettingsStatus" hidden></div>
+  `);
 }
 
 function renderPlatformScaffold(title, description, rows = []) {

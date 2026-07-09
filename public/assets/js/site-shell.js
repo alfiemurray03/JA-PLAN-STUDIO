@@ -5,11 +5,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if (main && !main.id) main.id = "main";
 
-  // Load Theme CSS
-  const themeLink = document.createElement("link");
-  themeLink.rel = "stylesheet";
-  themeLink.href = "/assets/css/theme.css?v=" + new Date().getTime();
-  document.head.appendChild(themeLink);
+  const themeLink = document.querySelector('link[href^="/assets/css/theme.css"]') || document.createElement("link");
+  if (!themeLink.parentNode) {
+    themeLink.rel = "stylesheet";
+    themeLink.href = "/assets/css/theme.css?v=20260709-airo-2";
+    document.head.appendChild(themeLink);
+  }
 
   function ensureFaviconLink(rel, attrs = {}) {
     let link = document.querySelector(`link[rel="${rel}"]`);
@@ -56,9 +57,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       const response = await fetch(path);
       if (!response.ok) throw new Error(`Failed to load ${path}`);
       target.innerHTML = await response.text();
-      setupThemeToggle();
-      setupMobileMenu();
-      updateActiveLinks();
     } catch (error) {
       console.error(error);
     }
@@ -83,7 +81,30 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     toggle.addEventListener("click", () => {
       const isOpen = nav.classList.toggle("open");
-      toggle.setAttribute("aria-expanded", isOpen);
+      toggle.setAttribute("aria-expanded", String(isOpen));
+      toggle.setAttribute("aria-label", isOpen ? "Close navigation" : "Open navigation");
+    });
+
+    nav.querySelectorAll("a").forEach((link) => {
+      link.addEventListener("click", () => {
+        nav.classList.remove("open");
+        toggle.setAttribute("aria-expanded", "false");
+        toggle.setAttribute("aria-label", "Open navigation");
+      });
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      nav.classList.remove("open");
+      toggle.setAttribute("aria-expanded", "false");
+      toggle.setAttribute("aria-label", "Open navigation");
+    });
+
+    document.addEventListener("click", (event) => {
+      if (event.target.closest(".site-header-card")) return;
+      nav.classList.remove("open");
+      toggle.setAttribute("aria-expanded", "false");
+      toggle.setAttribute("aria-label", "Open navigation");
     });
   }
 
@@ -97,9 +118,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   await Promise.all([
-    loadPartial(headerTarget, "/assets/includes/header.html?v=20260707-1"),
-    loadPartial(footerTarget, "/assets/includes/footer.html?v=20260707-1")
+    loadPartial(headerTarget, "/assets/includes/header.html?v=20260709-2"),
+    loadPartial(footerTarget, "/assets/includes/footer.html?v=20260709-2")
   ]);
+
+  setupThemeToggle();
+  setupMobileMenu();
+  updateActiveLinks();
 
   // Load legacy scripts if needed
   if (!window.JAFreePlanVisibility) {

@@ -1,61 +1,74 @@
 <footer class="site-footer">
   <div class="container">
-    <div class="site-footer-grid">
-      <section>
-        <a class="site-footer-brand" href="/">JA Experiences &amp; Discovery</a>
-        <p>Subscription-based self-service tools for members creating everyday life and travel experience plans inside their own account.</p>
-      </section>
+    <div class="site-footer-card">
+      <div class="site-footer-grid">
+        <section class="site-footer-brand-block">
+          <a class="site-footer-brand" href="/">JA Experiences &amp; Discovery</a>
+          <p>A subscription-based self-service platform for building, saving and managing everyday and travel experience plans.</p>
+        </section>
 
-      <section>
-        <h2>Platform</h2>
-        <nav>
-          <a href="/builders/">Experience Builders</a>
-          <a href="/pricing/">Plans &amp; Builder Credits</a>
-          <a href="/destinations/">Discovery Boards</a>
-          <a href="/account/">Member Account</a>
-        </nav>
-      </section>
+        <section>
+          <h2>Platform</h2>
+          <nav>
+            <a href="/builders/">Builders</a>
+            <a href="/destinations/">Destinations</a>
+            <a href="/experiences/">Experiences</a>
+            <a href="/pricing/">Pricing</a>
+            <a href="/account/">Account</a>
+          </nav>
+        </section>
 
-      <section>
-        <h2>Support</h2>
-        <nav>
-          <a href="/contact/">Contact Support</a>
-          <a href="/status/">System Status</a>
-          <a href="/accessibility-support/">Accessibility Planning</a>
-          <a href="/affiliate-disclosure/">Affiliate Disclosure</a>
-        </nav>
-      </section>
+        <section>
+          <h2>Support</h2>
+          <nav>
+            <a href="/contact/">Contact</a>
+            <a href="/status/">Status</a>
+            <a href="/accessibility-support/">Accessibility</a>
+            <a href="/contact/">Help / Support</a>
+          </nav>
+        </section>
 
-      <section>
-        <h2>Legal</h2>
-        <nav>
-          <a href="/legal/terms/">Terms of Service</a>
-          <a href="/legal/privacy/">Privacy Notice</a>
-          <a href="/legal/cookies/">Cookie Policy</a>
-          <button type="button" onclick="Cookiebot.renew()">Cookie Preferences</button>
-        </nav>
-      </section>
-    </div>
+        <section>
+          <h2>Legal</h2>
+          <nav>
+            <a href="/legal/terms/">Terms of Service</a>
+            <a href="/legal/privacy/">Privacy Notice</a>
+            <a href="/legal/cookies/">Cookie Policy</a>
+            <button type="button" onclick="Cookiebot.renew()">Cookie Preferences</button>
+          </nav>
+        </section>
+      </div>
 
-    <div class="site-footer-bottom">
-      <p>&copy; 2026 JA Group Services Ltd.</p>
-      <p>Company No. 14227845. Registered in England and Wales.</p>
+      <div class="site-footer-bottom">
+        <p>&copy; 2026 JA Group Services Ltd.</p>
+        <p>Company No. 14227845</p>
+        <p>Registered in England &amp; Wales</p>
+      </div>
     </div>
   </div>
 </footer>
 
 <style>
   .site-footer {
-    border-top: 1px solid hsl(var(--border));
-    background: hsl(var(--card));
+    background:
+      radial-gradient(circle at top right, hsl(var(--primary) / .08), transparent 30rem),
+      hsl(var(--background));
     color: hsl(var(--foreground));
     padding: clamp(3rem, 6vw, 5rem) 0 2rem;
   }
+  .site-footer-card {
+    border: 1px solid hsl(var(--glass-border));
+    border-radius: 1.5rem;
+    background: hsl(var(--card) / .82);
+    box-shadow: 0 24px 70px hsl(var(--glass-shadow));
+    padding: clamp(1.3rem, 3vw, 2rem);
+  }
   .site-footer-grid { display: grid; grid-template-columns: 1.25fr repeat(3, 1fr); gap: clamp(1.5rem, 4vw, 3rem); }
   .site-footer-brand { display: inline-flex; margin-bottom: .8rem; font-family: var(--font-heading); font-size: 1.05rem; font-weight: 800; }
-  .site-footer h2 { margin: 0 0 .8rem; font-size: .86rem; letter-spacing: .08em; text-transform: uppercase; }
-  .site-footer p { margin: 0; font-size: .92rem; }
-  .site-footer nav { display: grid; gap: .65rem; }
+  .site-footer-brand-block p { max-width: 24rem; }
+  .site-footer h2 { margin: 0 0 .9rem; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: hsl(var(--foreground)); }
+  .site-footer p { margin: 0; color: hsl(var(--muted-foreground)); font-size: .92rem; line-height: 1.6; }
+  .site-footer nav { display: grid; gap: .68rem; }
   .site-footer a, .site-footer button {
     width: fit-content;
     border: 0;
@@ -69,16 +82,17 @@
   .site-footer a:hover, .site-footer button:hover { color: hsl(var(--primary)); }
   .site-footer-bottom {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
-    gap: 1rem;
+    gap: .75rem 1rem;
     border-top: 1px solid hsl(var(--border));
-    margin-top: 3rem;
-    padding-top: 1.25rem;
+    margin-top: 2rem;
+    padding-top: 1.2rem;
   }
-  .site-footer-bottom p { font-size: .78rem; font-weight: 700; color: hsl(var(--muted-foreground)); }
+  .site-footer-bottom p { font-size: .78rem; font-weight: 750; }
   @media (max-width: 860px) {
     .site-footer-grid { grid-template-columns: 1fr 1fr; }
-    .site-footer-bottom { flex-direction: column; }
+    .site-footer-brand-block { grid-column: 1 / -1; }
   }
   @media (max-width: 560px) { .site-footer-grid { grid-template-columns: 1fr; } }
 </style>

@@ -603,6 +603,7 @@ button:disabled { opacity: .48; cursor: not-allowed; box-shadow: none; }
 
 .admin-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .9rem; }
 .admin-form.single { grid-template-columns: 1fr; }
+.admin-form-wide { grid-column: 1 / -1; }
 .admin-form > button, .admin-form > .admin-alert, .admin-form > .admin-success, .admin-form > .check { width: fit-content; }
 .admin-label, .admin-form label:not(.check) { display: grid; gap: .4rem; color: var(--text); font-size: .72rem; font-weight: 650; }
 .admin-label input, .admin-label select, .admin-label textarea, .admin-form input, .admin-form select, .admin-form textarea, select {
