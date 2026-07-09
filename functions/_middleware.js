@@ -107,7 +107,8 @@ async function getSiteSettings(DB) {
         'launchgateway_enabled',
         'launchgateway_content_mode',
         'launchgateway_content',
-        'site_theme_mode'
+        'site_theme_mode',
+        'site_status'
       )
     `).all();
 
@@ -126,7 +127,8 @@ async function getSiteSettings(DB) {
       launchgateway_enabled: "false",
       launchgateway_content_mode: "plain",
       launchgateway_content: "",
-      site_theme_mode: "dark"
+      site_theme_mode: "dark",
+      site_status: "normal"
     };
   }
 }
@@ -348,14 +350,16 @@ function isPublicDocumentPath(path) {
 }
 
 function shouldGateCustomerDocument(request, path, publicAuthPath) {
-  if (publicAuthPath || isPublicDocumentPath(path)) return false;
-  if (path.startsWith("/admin/") || path === "/admin/dashboard") return false;
-  if (path.startsWith("/assets/") || path.startsWith("/api/")) return false;
-  if (path === "/favicon.ico" || path === "/robots.txt" || path === "/sitemap.xml") return false;
-  if (hasFileExtension(path)) return false;
-  const accept = (request.headers.get("Accept") || "").toLowerCase();
-  const destination = (request.headers.get("Sec-Fetch-Dest") || "").toLowerCase();
-  return destination === "document" || accept.includes("text/html") || accept.includes("*/*");
+  if (publicAuthPath) return false;
+  if (path.startsWith("/account/") || path === "/account/dashboard") {
+    if (path.startsWith("/assets/") || path.startsWith("/api/") || path === "/favicon.ico" || path === "/robots.txt" || path === "/sitemap.xml" || hasFileExtension(path)) {
+      return false;
+    }
+    const accept = (request.headers.get("Accept") || "").toLowerCase();
+    const destination = (request.headers.get("Sec-Fetch-Dest") || "").toLowerCase();
+    return destination === "document" || accept.includes("text/html") || accept.includes("*/*");
+  }
+  return false;
 }
 
 async function getAuthenticatedAdminIdentity(request, env) {
@@ -543,7 +547,15 @@ export async function onRequest(context) {
     path.startsWith("/signed-out/") ||
     path === "/favicon.ico" ||
     path === "/robots.txt" ||
-    path === "/sitemap.xml";
+    path === "/sitemap.xml" ||
+    path === "/coming-soon" ||
+    path === "/coming-soon/" ||
+    path.startsWith("/coming-soon/") ||
+    path === "/maintenance" ||
+    path === "/maintenance/" ||
+    path.startsWith("/maintenance/") ||
+    path === "/api/coming-soon-config" ||
+    path === "/api/site-status";
 
   if (bypass || !env.DB) {
     return next(request);
@@ -573,13 +585,33 @@ export async function onRequest(context) {
     maintenanceEnabled: String(settings.maintenance_enabled || "false")
   }));
 
-  if (settings.maintenance_enabled === "true") {
+  if (settings.site_status === "maintenance" || settings.maintenance_enabled === "true") {
     return new Response(pageHtml(settings, "maintenance"), {
       status: 503,
       headers: {
         "Content-Type": "text/html; charset=utf-8",
         "Cache-Control": "no-store",
         "Retry-After": "3600"
+      }
+    });
+  }
+
+  if (settings.site_status === "coming_soon") {
+    const acceptsHtml = (request.headers.get("Accept") || "").toLowerCase().includes("text/html");
+    if (acceptsHtml) {
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: "/coming-soon/",
+          "Cache-Control": "no-store"
+        }
+      });
+    }
+    return new Response(JSON.stringify({ error: "Site is in coming soon mode." }), {
+      status: 503,
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store"
       }
     });
   }

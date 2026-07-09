@@ -3080,6 +3080,15 @@ async function saveManualTokenAdjustment(DB, body, identity) {
   return getBuilderPlatform(DB);
 }
 
+async function getSiteStatus(DB) {
+  try {
+    const row = await DB.prepare("SELECT value FROM site_settings WHERE key = 'site_status'").first();
+    return row?.value || "normal";
+  } catch {
+    return "normal";
+  }
+}
+
 export async function onRequest(context) {
   const { request, env } = context;
 
@@ -3174,7 +3183,8 @@ export async function onRequest(context) {
       }
       if (["builders", "credits", "usage", "addons", "platformsettings"].includes(section)) {
         const platform = await getBuilderPlatform(env.DB);
-        return json({ admin: adminContext, platform });
+        const siteStatus = await getSiteStatus(env.DB);
+        return json({ admin: adminContext, platform, site_status: siteStatus });
       }
       if (section === "notifications") return json({ admin: adminContext, notifications: await getNotifications(env.DB) });
       if (section === "membership") return json({ admin: adminContext, membership: await getMembership(env.DB) });
@@ -3215,6 +3225,31 @@ export async function onRequest(context) {
         if (!ownerAccess && !hasAnyPermission(adminContext.permissions, ["manage_plans", "manage_pricing", "manage_crm"])) return json({ error: "Forbidden.", section }, 403);
         if (body.action === "manual_adjustment") return json({ admin: adminContext, platform: await saveManualTokenAdjustment(env.DB, body, identity), saved: true });
         return json({ admin: adminContext, platform: await getBuilderPlatform(env.DB), saved: false });
+      }
+      if (section === "platformsettings") {
+        if (!ownerAccess && !hasAnyPermission(adminContext.permissions, ["manage_plans", "manage_pricing", "manage_settings"])) {
+          return json({ error: "Forbidden.", section }, 403);
+        }
+        if (body.action === "update_site_status") {
+          const nextStatus = clean(body.site_status, 80) || "normal";
+          if (!["normal", "coming_soon", "maintenance"].includes(nextStatus)) {
+            return json({ error: "Invalid site status." }, 400);
+          }
+          await env.DB.prepare(`
+            INSERT INTO site_settings (key, value, updated_at)
+            VALUES ('site_status', ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(key) DO UPDATE SET
+              value = excluded.value,
+              updated_at = CURRENT_TIMESTAMP
+          `).bind(nextStatus).run();
+
+          await writeAudit(env.DB, identity, "site_status_update", "site_settings", "site_status", `Site status updated to ${nextStatus}.`, {
+            site_status: nextStatus
+          });
+
+          const platform = await getBuilderPlatform(env.DB);
+          return json({ platform, site_status: nextStatus, saved: true });
+        }
       }
       if (body.action === "export_customer_data") {
         if (!ownerAccess && !hasAnyPermission(adminContext.permissions, ["manage_users", "manage_crm"])) {
