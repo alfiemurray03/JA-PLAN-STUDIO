@@ -176,7 +176,8 @@ export async function onRequest(context) {
   const url = new URL(request.url);
   if (wantsPortalHtml(request, url.pathname)) {
     if (env.ASSETS?.fetch) return env.ASSETS.fetch(portalAssetRequest(request, "/account/builders/index.html"));
-    return Response.redirect(new URL("/account/builders/", request.url), 302);
+    if (typeof context.next === "function") return context.next();
+    return new Response("Account builders page unavailable.", { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } });
   }
   if (!env.DB) return json({ error: "Database unavailable." }, 500);
   const identity = getAccessIdentity(request);

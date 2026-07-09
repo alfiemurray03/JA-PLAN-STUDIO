@@ -44,7 +44,8 @@ export async function onRequest(context) {
   const url = new URL(request.url);
   if (wantsPortalHtml(request, url.pathname)) {
     if (env.ASSETS?.fetch) return env.ASSETS.fetch(portalAssetRequest(request, "/account/saved/index.html"));
-    return Response.redirect(new URL("/account/saved/", request.url), 302);
+    if (typeof context.next === "function") return context.next();
+    return new Response("Saved plans page unavailable.", { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } });
   }
   if (!env.DB) return json({ error: "Database unavailable." }, 500);
   const identity = getAccessIdentity(request);
