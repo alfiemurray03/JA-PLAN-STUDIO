@@ -1,46 +1,102 @@
-<a class="skip-link" href="#main">Skip to main content</a>
-
-<header class="site-header glass sticky top-0 z-50 border-b">
-  <div class="container flex items-center justify-between h-20">
-    <a class="flex items-center gap-2" href="/" aria-label="JA Experiences and Discovery home">
-      <span class="font-heading text-xl font-bold tracking-tight">
-        <span class="text-foreground">JA</span>
-        <span class="text-primary">Experiences &amp; Discovery</span>
+<header class="site-header">
+  <div class="container site-header-inner">
+    <a class="site-brand" href="/" aria-label="JA Experiences & Discovery home">
+      <span class="site-brand-mark" aria-hidden="true">JA</span>
+      <span class="site-brand-copy">
+        <strong>JA Experiences &amp; Discovery</strong>
+        <small>Member planning platform</small>
       </span>
     </a>
 
-    <nav class="hidden lg:flex items-center gap-8" id="siteNav" aria-label="Main navigation">
-      <a href="/" data-nav-page="home" class="text-sm font-medium hover:text-accent transition-colors">Home</a>
-      <a href="/destinations/" data-nav-page="destinations" class="text-sm font-medium hover:text-accent transition-colors">Destinations</a>
-      <a href="/experiences/" data-nav-page="experiences" class="text-sm font-medium hover:text-accent transition-colors">Experiences</a>
-      <a href="/pricing/" data-nav-page="pricing" class="text-sm font-medium hover:text-accent transition-colors">Plans</a>
-      <a href="/contact/" data-nav-page="contact" class="text-sm font-medium hover:text-accent transition-colors">Contact</a>
-    </nav>
+    <button class="menu-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="siteNav">
+      <span></span><span></span><span></span>
+    </button>
 
-    <div class="flex items-center gap-4">
-      <button id="themeToggle" class="p-2 rounded-full hover:bg-muted transition-colors" aria-label="Toggle theme">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="block dark:hidden"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden dark:block"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
-      </button>
-      <a class="btn btn-outline hidden sm:flex" href="/account/">Sign In</a>
-      <a class="btn btn-primary hidden sm:flex" href="/enquiry/" data-free-plan-public>Get Started</a>
-      
-      <button class="menu-toggle lg:hidden p-2" type="button" aria-expanded="false" aria-controls="siteNav">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
-      </button>
-    </div>
+    <nav class="site-nav" id="siteNav" aria-label="Primary navigation">
+      <a href="/" data-nav-page="home">Home</a>
+      <a href="/builders/" data-nav-page="builders">Builders</a>
+      <a href="/destinations/" data-nav-page="destinations">Destinations</a>
+      <a href="/experiences/" data-nav-page="experiences">Experiences</a>
+      <a href="/pricing/" data-nav-page="pricing">Pricing</a>
+      <a href="/affiliate-disclosure/" data-nav-page="affiliates">Affiliates</a>
+      <a href="/contact/" data-nav-page="contact">Support</a>
+      <a class="site-nav-button" href="/account/" data-nav-page="account">Account</a>
+    </nav>
   </div>
 </header>
 
 <style>
-  .h-20 { height: 5rem; }
-  .z-50 { z-index: 50; }
-  .sticky { position: sticky; }
-  .top-0 { top: 0; }
-  .font-heading { font-family: 'Plus Jakarta Sans', sans-serif; }
-  .font-medium { font-weight: 500; }
-  .dark\:hidden { display: block; }
-  [data-site-theme="dark"] .dark\:hidden { display: none; }
-  .hidden.dark\:block { display: none; }
-  [data-site-theme="dark"] .hidden.dark\:block { display: block; }
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    border-bottom: 1px solid hsl(var(--border));
+    background: hsl(var(--card) / .86);
+    box-shadow: var(--shadow-sm);
+    backdrop-filter: blur(20px) saturate(1.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  }
+  .site-header-inner {
+    min-height: 4.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .site-brand { display: inline-flex; align-items: center; gap: .75rem; min-width: 0; }
+  .site-brand-mark {
+    width: 2.35rem;
+    height: 2.35rem;
+    border-radius: .85rem;
+    display: grid;
+    place-items: center;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    font-family: var(--font-heading);
+    font-weight: 800;
+    box-shadow: 0 12px 22px hsl(var(--primary) / .22);
+  }
+  .site-brand-copy { display: grid; line-height: 1.1; }
+  .site-brand-copy strong { font-family: var(--font-heading); font-size: .96rem; }
+  .site-brand-copy small { color: hsl(var(--muted-foreground)); font-size: .72rem; font-weight: 700; }
+  .site-nav { display: flex; align-items: center; gap: .25rem; }
+  .site-nav a {
+    border-radius: .75rem;
+    color: hsl(var(--muted-foreground));
+    font-size: .9rem;
+    font-weight: 750;
+    padding: .62rem .78rem;
+  }
+  .site-nav a:hover, .site-nav a.active { background: hsl(var(--muted)); color: hsl(var(--foreground)); }
+  .site-nav .site-nav-button { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); margin-left: .35rem; }
+  .site-nav .site-nav-button:hover, .site-nav .site-nav-button.active { background: hsl(221 83% 47%); color: hsl(var(--primary-foreground)); }
+  .menu-toggle {
+    display: none;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 1px solid hsl(var(--border));
+    border-radius: .85rem;
+    background: hsl(var(--card));
+    padding: .65rem;
+  }
+  .menu-toggle span { display: block; height: 2px; background: hsl(var(--foreground)); margin: 4px 0; border-radius: 999px; }
+  @media (max-width: 980px) {
+    .menu-toggle { display: block; }
+    .site-nav {
+      display: none;
+      position: absolute;
+      left: 1rem;
+      right: 1rem;
+      top: calc(100% + .5rem);
+      flex-direction: column;
+      align-items: stretch;
+      border: 1px solid hsl(var(--border));
+      border-radius: 1rem;
+      background: hsl(var(--card));
+      box-shadow: var(--shadow-xl);
+      padding: .55rem;
+    }
+    .site-nav.open { display: flex; }
+    .site-nav .site-nav-button { margin-left: 0; }
+  }
 </style>

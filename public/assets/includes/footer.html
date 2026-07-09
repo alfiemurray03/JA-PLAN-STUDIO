@@ -1,57 +1,84 @@
-<footer class="bg-primary text-primary-foreground section-padding border-t">
+<footer class="site-footer">
   <div class="container">
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
-      <div class="space-y-6">
-        <a class="flex items-center gap-2" href="/">
-          <span class="font-heading text-xl font-bold tracking-tight text-white">
-            JA Experiences &amp; Discovery
-          </span>
-        </a>
-        <p class="text-sm opacity-70 leading-relaxed">
-          Curated destination discovery, experience ideas and practical planning guidance from JA Group Services.
-        </p>
-      </div>
+    <div class="site-footer-grid">
+      <section>
+        <a class="site-footer-brand" href="/">JA Experiences &amp; Discovery</a>
+        <p>Subscription-based self-service tools for members creating everyday life and travel experience plans inside their own account.</p>
+      </section>
 
-      <div>
-        <h3 class="text-white font-bold mb-6">Explore</h3>
-        <nav class="flex flex-col gap-4 text-sm opacity-70">
-          <a href="/" class="hover:opacity-100 transition-opacity">Home</a>
-          <a href="/destinations/" class="hover:opacity-100 transition-opacity">Destinations</a>
-          <a href="/experiences/" class="hover:opacity-100 transition-opacity">Experiences</a>
-          <a href="/pricing/" class="hover:opacity-100 transition-opacity">Plans & Pricing</a>
+      <section>
+        <h2>Platform</h2>
+        <nav>
+          <a href="/builders/">Experience Builders</a>
+          <a href="/pricing/">Plans &amp; Builder Credits</a>
+          <a href="/destinations/">Discovery Boards</a>
+          <a href="/account/">Member Account</a>
         </nav>
-      </div>
+      </section>
 
-      <div>
-        <h3 class="text-white font-bold mb-6">Support</h3>
-        <nav class="flex flex-col gap-4 text-sm opacity-70">
-          <a href="/contact/" class="hover:opacity-100 transition-opacity">Contact Us</a>
-          <a href="/status/" class="hover:opacity-100 transition-opacity">System Status</a>
-          <a href="/accessibility-support/" class="hover:opacity-100 transition-opacity">Accessibility</a>
-          <a href="/account/" class="hover:opacity-100 transition-opacity">Customer Portal</a>
+      <section>
+        <h2>Support</h2>
+        <nav>
+          <a href="/contact/">Contact Support</a>
+          <a href="/status/">System Status</a>
+          <a href="/accessibility-support/">Accessibility Planning</a>
+          <a href="/affiliate-disclosure/">Affiliate Disclosure</a>
         </nav>
-      </div>
+      </section>
 
-      <div>
-        <h3 class="text-white font-bold mb-6">Legal</h3>
-        <nav class="flex flex-col gap-4 text-sm opacity-70">
-          <a href="/legal/terms/" class="hover:opacity-100 transition-opacity">Terms of Service</a>
-          <a href="/legal/privacy/" class="hover:opacity-100 transition-opacity">Privacy Notice</a>
-          <a href="/legal/cookies/" class="hover:opacity-100 transition-opacity">Cookie Policy</a>
-          <button onclick="Cookiebot.renew()" class="text-left hover:opacity-100 transition-opacity">Cookie Preferences</button>
+      <section>
+        <h2>Legal</h2>
+        <nav>
+          <a href="/legal/terms/">Terms of Service</a>
+          <a href="/legal/privacy/">Privacy Notice</a>
+          <a href="/legal/cookies/">Cookie Policy</a>
+          <button type="button" onclick="Cookiebot.renew()">Cookie Preferences</button>
         </nav>
-      </div>
+      </section>
     </div>
 
-    <div class="mt-16 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] uppercase tracking-widest font-bold opacity-50">
+    <div class="site-footer-bottom">
       <p>&copy; 2026 JA Group Services Ltd.</p>
-      <p>Company No. 14227845 � Registered in England & Wales</p>
+      <p>Company No. 14227845. Registered in England and Wales.</p>
     </div>
   </div>
 </footer>
 
 <style>
-  .tracking-widest { letter-spacing: 0.1em; }
-  .leading-relaxed { line-height: 1.625; }
-  .opacity-70 { opacity: 0.7; }
+  .site-footer {
+    border-top: 1px solid hsl(var(--border));
+    background: hsl(var(--card));
+    color: hsl(var(--foreground));
+    padding: clamp(3rem, 6vw, 5rem) 0 2rem;
+  }
+  .site-footer-grid { display: grid; grid-template-columns: 1.25fr repeat(3, 1fr); gap: clamp(1.5rem, 4vw, 3rem); }
+  .site-footer-brand { display: inline-flex; margin-bottom: .8rem; font-family: var(--font-heading); font-size: 1.05rem; font-weight: 800; }
+  .site-footer h2 { margin: 0 0 .8rem; font-size: .86rem; letter-spacing: .08em; text-transform: uppercase; }
+  .site-footer p { margin: 0; font-size: .92rem; }
+  .site-footer nav { display: grid; gap: .65rem; }
+  .site-footer a, .site-footer button {
+    width: fit-content;
+    border: 0;
+    background: transparent;
+    color: hsl(var(--muted-foreground));
+    cursor: pointer;
+    font: 700 .92rem/1.3 var(--font-sans);
+    padding: 0;
+    text-align: left;
+  }
+  .site-footer a:hover, .site-footer button:hover { color: hsl(var(--primary)); }
+  .site-footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    border-top: 1px solid hsl(var(--border));
+    margin-top: 3rem;
+    padding-top: 1.25rem;
+  }
+  .site-footer-bottom p { font-size: .78rem; font-weight: 700; color: hsl(var(--muted-foreground)); }
+  @media (max-width: 860px) {
+    .site-footer-grid { grid-template-columns: 1fr 1fr; }
+    .site-footer-bottom { flex-direction: column; }
+  }
+  @media (max-width: 560px) { .site-footer-grid { grid-template-columns: 1fr; } }
 </style>

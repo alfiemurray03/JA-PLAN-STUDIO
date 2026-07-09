@@ -25,7 +25,12 @@ const sectionTitles = {
   roles: "Roles",
   customers: "CRM",
   customer: "Customer Profile",
+  builders: "Experience Builders",
   plans: "Plans & Prices",
+  credits: "Builder Credits",
+  usage: "Customer Usage",
+  addons: "Paid Add-Ons",
+  platformsettings: "Platform Settings",
   stripe: "Stripe",
   branding: "Branding",
   policies: "Policies",
@@ -62,6 +67,7 @@ const sectionDescriptions = {
   roles: "Create, clone and edit roles plus their permissions.",
   customers: "Search customer profiles, memberships and account history.",
   customer: "Review a single customer record, support history and linked flags.",
+  builders: "Configure builder categories, credit costs, availability, plan inclusion and access status.",
   datarequests: "Manage UK GDPR and data rights workflows.",
   systemreports: "Review customer-reported website and account issues.",
   closures: "Process account closure requests safely and consistently.",
@@ -73,6 +79,10 @@ const sectionDescriptions = {
   cms: "Manage public website and portal content blocks.",
   reports: "Operational reporting and platform summaries.",
   plans: "Configure service plans, prices and public availability.",
+  credits: "Review credit allowances, costs, extra packages and manual adjustment controls.",
+  usage: "Review trial status, subscription status, completed builders, blocked attempts and customer credit usage.",
+  addons: "Review paid human support add-ons and extra credit purchases without creating fake billing records.",
+  platformsettings: "Configuration-ready controls for the member platform direction and usage enforcement.",
   stripe: "Review Stripe configuration and connection status.",
   email: "Configure outbound email and test notifications.",
   system: "Monitor operational issues and platform records.",
@@ -105,6 +115,7 @@ const dprStatuses = ["Received", "Verifying Identity", "In Progress", "Ready to 
 const systemReportStatuses = ["Open", "In Progress", "Resolved", "Rejected"];
 const closureStatuses = ["Open", "In Progress", "Approved", "Rejected", "Completed"];
 const priorities = ["Low", "Normal", "High", "Urgent"];
+const localScaffoldSections = new Set(["builders", "credits", "usage", "addons", "platformsettings"]);
 
 document.addEventListener("DOMContentLoaded", () => {
   applyAdminBranding();
@@ -457,6 +468,12 @@ async function loadSection(section) {
   panel.innerHTML = `<div class="admin-loading">Loading ${escapeHtml(sectionTitles[section] || section)}...</div>`;
 
   try {
+    if (localScaffoldSections.has(section)) {
+      touchRecentSection(section);
+      renderSection(section, {});
+      return;
+    }
+
     if (section === "status") {
       const data = await api("status");
       state.data.status = data;
@@ -661,7 +678,10 @@ function dashboardQuickCards() {
     ["stripe", "card", "Stripe dashboard", "Review connection and API controls"],
     ["audit", "clock", "Audit logs", "Review sensitive administrative activity"],
     ["datarequests", "file", "Data requests", "Process UK GDPR rights requests"],
+    ["builders", "settings", "Experience Builders", "Configure self-service builder availability and costs"],
     ["plans", "plans", "Plans & Prices", "Review plan visibility and pricing"],
+    ["credits", "card", "Builder Credits", "Review allowances, costs and manual adjustments"],
+    ["usage", "chart", "Customer Usage", "Review trial, subscription and blocked usage signals"],
     ["admins", "shield", "Admin Users", "Manage administrator access"],
     ["roles", "users", "Roles", "Manage roles and permissions"],
     ["analytics", "chart", "Analytics", "Review operational performance"]
@@ -759,7 +779,32 @@ function renderSection(section, data) {
   if (section === "roles") renderRoles(data.roles, data.permission_catalog);
   if (section === "customers") renderCustomers(data.customers);
   if (section === "customer") renderCustomerProfile(data.customer, data.plans);
+  if (section === "builders") renderPlatformScaffold("Experience Builders", "Create, edit, disable and archive self-service builders.", [
+    ["Builder controls", "Create builder, view builder, edit builder, disable builder, archive builder"],
+    ["Configuration", "Type, category, credit cost, availability, plan inclusion and public/trial/paid/add-on/hidden status"],
+    ["Oversight", "Usage count and blocked attempt visibility once backend usage records are connected"]
+  ]);
   if (section === "plans") renderPlans(data.plans);
+  if (section === "credits") renderPlatformScaffold("Builder Credits", "Manage allowances, costs, add-on packages and manual credit adjustments.", [
+    ["Allowances", "Monthly plan allowances, customer remaining credits, used credits and purchased add-on credits"],
+    ["Credit costs", "Cost per builder, cost by type, override cost and disable if cost is not configured"],
+    ["Manual adjustments", "Add/remove credits, reason, adjustment type, admin user, date/time and permanent log"]
+  ]);
+  if (section === "usage") renderPlatformScaffold("Customer Usage", "Review customer usage, blocked attempts, trial windows and enforcement readiness.", [
+    ["Customer status", "Customer, plan, active subscription/trial, trial activation and expiry"],
+    ["Usage", "Remaining credits, used credits, completed builders, purchased credits and add-ons"],
+    ["Blocked attempts", "Customer, builder, reason blocked, date/time, plan status, available credits, required credits and action offered"]
+  ]);
+  if (section === "addons") renderPlatformScaffold("Paid Add-Ons", "Review extra credit purchases and human support add-ons without pretending Stripe charging is live.", [
+    ["Extra credits", "Package, customer, price, credits added, purchase date and payment status when available"],
+    ["Human support", "Quick Human Help, Human Plan Review and Human-Made Experience Plan status"],
+    ["Boundary", "Builder Credits are for self-service platform tools only; human support remains separate"]
+  ]);
+  if (section === "platformsettings") renderPlatformScaffold("Platform Settings", "Configuration-ready controls for trial, usage enforcement and platform launch direction.", [
+    ["Trial rules", "One 14-day trial per account, exact activation/expiry, 30 credits once only"],
+    ["Enforcement", "Check active paid subscription/trial, plan inclusion, credits and restrictions before completion"],
+    ["Operational target", "Full platform direction targeted for Mid-September 2026"]
+  ]);
   if (section === "stripe") renderStripe(data.stripe);
   if (section === "branding") renderBranding(data.branding);
   if (section === "policies") renderPolicies(data.policies);
@@ -781,6 +826,45 @@ function renderSection(section, data) {
   if (section === "email") renderEmail(data.email, data.test);
   if (section === "audit") renderAudit(data.audit);
   if (section === "sessions") renderSessions(data.sessions);
+}
+
+function renderPlatformScaffold(title, description, rows = []) {
+  setPanel(`
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">Configuration-ready</span>
+        <h1>${escapeHtml(title)}</h1>
+        <p>${escapeHtml(description)}</p>
+      </div>
+      <div class="section-actions">
+        <button class="admin-button secondary" type="button" disabled>Backend persistence pending</button>
+      </div>
+    </div>
+    <div class="kpi-grid">
+      <article class="kpi-card"><span>Access model</span><strong>Admin only</strong><small>Uses existing protected admin shell</small></article>
+      <article class="kpi-card"><span>Billing state</span><strong>Not faked</strong><small>Payment status shown only when connected</small></article>
+      <article class="kpi-card"><span>Auditability</span><strong>Required</strong><small>Permanent logs before live enforcement</small></article>
+      <article class="kpi-card"><span>Launch target</span><strong>Mid-Sep 2026</strong><small>Platform direction milestone</small></article>
+    </div>
+    <div class="admin-table-card">
+      <table>
+        <thead><tr><th>Control area</th><th>Required capability</th><th>Status</th></tr></thead>
+        <tbody>
+          ${rows.map(([area, capability]) => `
+            <tr>
+              <td><strong>${escapeHtml(area)}</strong></td>
+              <td>${escapeHtml(capability)}</td>
+              <td><span class="badge blue">Scaffolded</span></td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+    <div class="empty-state">
+      <h2>Implementation boundary</h2>
+      <p>This admin view is a safe scaffold for platform configuration. It does not create fake completed usage, fake payment records or live Stripe charging. Backend persistence and enforcement should be added through additive D1 migrations and audited admin actions before these controls become live.</p>
+    </div>
+  `);
 }
 
 function renderOverview(overview) {

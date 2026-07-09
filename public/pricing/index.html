@@ -3,181 +3,50 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Plans and Pricing | JA Experiences &amp; Discovery</title>
-  <meta name="description" content="Clear prices, delivery times and service boundaries for JA Experiences and Discovery guidance plans.">
-  <link rel="icon" href="/assets/favicons/favicon.svg?v=20260704-1" type="image/svg+xml">
-  <link rel="shortcut icon" href="/assets/favicons/favicon.ico?v=20260704-1" type="image/x-icon">
-  <link rel="apple-touch-icon" href="/assets/favicons/apple-touch-icon.png?v=20260704-1">
-  <link rel="manifest" href="/assets/favicons/site.webmanifest?v=20260704-1">
-  <link rel="stylesheet" href="/assets/css/theme.css?v=20260707-1">
+  <title>Subscription Plans and Builder Credits | JA Experiences &amp; Discovery</title>
+  <meta name="description" content="Subscription-only plans, one-time 14-day trial access and Builder Credit allowances for JA Experiences & Discovery.">
+  <link rel="stylesheet" href="/assets/css/theme.css?v=20260709-airo-1">
 </head>
-<body data-page="pricing" class="bg-background">
+<body data-page="pricing">
   <div id="siteShellHeader"></div>
-  <main id="main">
-    <!-- Hero -->
-    <section class="relative py-24 overflow-hidden bg-primary/5">
-      <div class="container relative z-10 text-center max-w-3xl">
-        <span class="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-4">JA Experiences &amp; Discovery plans</span>
-        <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight mb-6">Choose the right level of discovery support.</h1>
-        <p class="text-lg text-muted-foreground leading-relaxed mb-10">Start with a free enquiry, or buy a paid guidance plan securely through Stripe. We provide guidance and planning support only.</p>
-        <div class="flex flex-wrap justify-center gap-4" id="pricingHeroActions">
-           <a href="/account/login/" class="bg-primary text-primary-foreground px-8 py-4 rounded-lg font-bold shadow-lg hover:bg-primary/90 transition-all">Sign In</a>
-           <a href="#paid-plans" class="bg-background border border-input px-8 py-4 rounded-lg font-bold shadow-sm hover:bg-accent transition-all">View paid plans</a>
-        </div>
+  <main id="main" class="platform-main">
+    <section class="platform-hero text-center">
+      <div class="container">
+        <span class="platform-eyebrow">Subscription-only platform</span>
+        <h1>Plans built around monthly Builder Credits.</h1>
+        <p style="margin-inline:auto">There is no permanent free plan, ongoing free access, unlimited free builder usage or free manual planning. The only free access is one limited 14-day trial token per customer account.</p>
+        <div class="platform-actions" style="justify-content:center"><a class="btn btn-primary" href="/account/login/?return_to=%2Faccount%2Fdashboard%2F">Claim 14-Day Free Trial</a><a class="btn btn-secondary" href="#plans">View plans</a></div>
       </div>
     </section>
-
-    <!-- Stats Strip -->
-    <section class="border-y bg-card py-10">
-       <div class="container">
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-8" id="pricingStrip">
-             <div class="text-center">
-                <strong class="text-3xl font-bold block mb-1">�0</strong>
-                <span class="text-xs text-muted-foreground uppercase font-bold tracking-widest">Free Enquiry</span>
-             </div>
-             <div class="text-center">
-                <strong class="text-3xl font-bold block mb-1">�49</strong>
-                <span class="text-xs text-muted-foreground uppercase font-bold tracking-widest">Discovery</span>
-             </div>
-             <div class="text-center">
-                <strong class="text-3xl font-bold block mb-1">�89</strong>
-                <span class="text-xs text-muted-foreground uppercase font-bold tracking-widest">Itinerary</span>
-             </div>
-             <div class="text-center">
-                <strong class="text-3xl font-bold block mb-1">3-5</strong>
-                <span class="text-xs text-muted-foreground uppercase font-bold tracking-widest">Working Days</span>
-             </div>
-          </div>
-       </div>
+    <section class="platform-section soft-band" id="plans">
+      <div class="container grid grid-3">
+        <article class="platform-card"><span class="platform-eyebrow">Membership</span><h3>JA Experience Builder Membership</h3><h2>£19.99 <small>/month</small></h2><p>150 Builder Credits per month for core self-service planning tools.</p></article>
+        <article class="platform-card glass-strong"><span class="platform-eyebrow status-info">Plus</span><h3>JA Experience Builder Plus</h3><h2>£29.99 <small>/month</small></h2><p>350 Builder Credits per month for more frequent plan creation and saved outputs.</p></article>
+        <article class="platform-card"><span class="platform-eyebrow">Family</span><h3>JA Experience Builder Family</h3><h2>£39.99 <small>/month</small></h2><p>750 Builder Credits per month for family planning, multiple boards and heavier usage.</p></article>
+      </div>
     </section>
-
-    <!-- Paid Plans -->
-    <section class="py-24" id="paid-plans">
-       <div class="container">
-          <div class="text-center max-w-2xl mx-auto mb-16">
-             <h2 class="text-3xl md:text-4xl font-bold mb-4">Standard service plans</h2>
-             <p class="text-muted-foreground">Paid plans are processed securely through Stripe. You remain responsible for your own arrangements.</p>
-          </div>
-          
-          <div class="grid md:grid-cols-3 gap-8" id="pricingPlanGrid">
-             <div class="glass-strong p-8 flex flex-col items-start bg-card">
-                <span class="px-2 py-1 rounded bg-primary/10 text-primary text-[10px] font-bold uppercase mb-4">Guidance</span>
-                <h3 class="text-2xl font-bold mb-3">Loading plans...</h3>
-             </div>
-          </div>
-       </div>
+    <section class="platform-section">
+      <div class="container grid grid-2">
+        <article class="platform-card">
+          <h2>14-Day Free Trial Access Token</h2>
+          <p>The trial activates when a customer clicks Claim 14-Day Free Trial, starts from the exact activation date/time, expires exactly 14 days after activation, is available once only per customer/account, does not restart, renew, pause or refresh automatically, and requires a paid subscription after expiry.</p>
+          <p>The trial includes 30 Builder Credits once only and must be stored against the customer account. Cookies may support user experience but must not be the sole enforcement method.</p>
+        </article>
+        <article class="platform-card">
+          <h2>Extra Builder Credits</h2>
+          <div class="table-wrap"><table><thead><tr><th>Package</th><th>Price</th><th>Credits</th></tr></thead><tbody><tr><td>Extra 10 Builder Credits</td><td>£5.00</td><td>10</td></tr><tr><td>Extra 25 Builder Credits</td><td>£10.00</td><td>25</td></tr><tr><td>Extra 50 Builder Credits</td><td>£18.00</td><td>50</td></tr><tr><td>Extra 100 Builder Credits</td><td>£30.00</td><td>100</td></tr></tbody></table></div>
+        </article>
+      </div>
     </section>
-
-    <!-- Scope -->
-    <section class="py-24 bg-muted/20">
-       <div class="container">
-          <div class="grid md:grid-cols-2 gap-8">
-             <div class="glass-strong p-10 bg-card">
-                <h2 class="text-2xl font-bold mb-6">What these plans do not include</h2>
-                <div class="space-y-4 text-muted-foreground">
-                   <p>JA Group Services Ltd does not sell flights, transport, transfers or package holidays. Affiliate activity bookings are made directly with the provider.</p>
-                   <p>Customers remain responsible for their own travel arrangements, booking checks, and suitability decisions.</p>
-                </div>
-             </div>
-             <div class="glass-strong p-10 bg-primary text-primary-foreground">
-                <h2 class="text-2xl font-bold mb-6 text-white">Need help choosing?</h2>
-                <p class="opacity-90 mb-8">If you are unsure which plan fits your request, start with a free enquiry. We can point you towards the right support.</p>
-                <a href="/enquiry/" class="inline-flex bg-white text-primary px-8 py-3 rounded-lg font-bold shadow-md hover:bg-white/90 transition-all">Start free enquiry</a>
-             </div>
-          </div>
-       </div>
+    <section class="platform-section soft-band">
+      <div class="container grid grid-3">
+        <article class="platform-card"><h3>Quick Human Help</h3><p><strong>£25 one-off.</strong> Separate paid human support add-on.</p></article>
+        <article class="platform-card"><h3>Human Plan Review</h3><p><strong>£50 per plan.</strong> Separate from Builder Credits.</p></article>
+        <article class="platform-card"><h3>Human-Made Experience Plan</h3><p><strong>£100 per plan/destination.</strong> Not included in self-service credits.</p></article>
+      </div>
     </section>
   </main>
   <div id="siteShellFooter"></div>
-  <script src="/assets/js/site-shell.js?v=20260707-1"></script>
-  <script src="/assets/js/pricing-plans.js?v=20260707-1"></script>
-  
-  <style>
-    /* Styling for JS generated cards */
-    #pricingPlanGrid .pricing-card {
-      background-color: hsl(var(--card));
-      border: 1px solid hsl(var(--border));
-      border-radius: 1.25rem;
-      padding: 2rem;
-      box-shadow: var(--shadow-sm);
-      display: flex;
-      flex-direction: column;
-      transition: all 0.2s ease;
-    }
-    #pricingPlanGrid .pricing-card:hover {
-      box-shadow: var(--shadow-md);
-      border-color: hsla(var(--primary), 0.2);
-    }
-    #pricingPlanGrid .pricing-card.featured {
-      border: 2px solid hsl(var(--primary));
-    }
-    #pricingPlanGrid .pricing-pill {
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: hsl(var(--primary));
-      background-color: hsla(var(--primary), 0.1);
-      padding: 0.25rem 0.75rem;
-      border-radius: 9999px;
-      margin-bottom: 1rem;
-      width: fit-content;
-    }
-    #pricingPlanGrid h3 {
-      font-size: 1.5rem;
-      margin-bottom: 0.75rem;
-    }
-    #pricingPlanGrid p {
-      font-size: 0.875rem;
-      margin-bottom: 1.5rem;
-      flex-grow: 1;
-    }
-    #pricingPlanGrid .pricing-price {
-      font-size: 2rem;
-      font-weight: 800;
-      margin-bottom: 1.5rem;
-      padding-top: 1.5rem;
-      border-top: 1px solid hsl(var(--border));
-    }
-    #pricingPlanGrid .pricing-price small {
-      font-size: 0.875rem;
-      color: hsl(var(--muted-foreground));
-      font-weight: 500;
-      margin-left: 0.25rem;
-    }
-    #pricingPlanGrid .pricing-features {
-      list-style: none;
-      padding: 0;
-      margin: 0 0 2rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-    #pricingPlanGrid .pricing-features li {
-      font-size: 0.875rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    #pricingPlanGrid .pricing-features li::before {
-      content: "";
-      color: hsl(var(--primary));
-      font-weight: bold;
-    }
-    #pricingPlanGrid button {
-      width: 100%;
-      background-color: hsl(var(--primary));
-      color: hsl(var(--primary-foreground));
-      padding: 0.75rem;
-      border-radius: 0.5rem;
-      font-weight: 600;
-      border: none;
-      cursor: pointer;
-      transition: opacity 0.2s;
-    }
-    #pricingPlanGrid button:hover {
-      opacity: 0.9;
-    }
-  </style>
+  <script src="/assets/js/site-shell.js?v=20260709-airo-1"></script>
 </body>
 </html>

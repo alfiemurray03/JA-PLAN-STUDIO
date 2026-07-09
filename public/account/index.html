@@ -4,51 +4,35 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
-  <title>Customer Portal | JA Experiences &amp; Discovery</title>
-  <meta name="description" content="Secure customer account access for JA Experiences &amp; Discovery customers using JA Group Services ID.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="icon" href="/assets/favicons/favicon.svg?v=20260704-1" type="image/svg+xml">
-  <link rel="shortcut icon" href="/assets/favicons/favicon.ico?v=20260704-1" type="image/x-icon">
-  <link rel="apple-touch-icon" href="/assets/favicons/apple-touch-icon.png?v=20260704-1">
-  <link rel="manifest" href="/assets/favicons/site.webmanifest?v=20260704-1">
-  <link rel="stylesheet" href="/assets/css/theme.css?v=20260707-1">
-  <link rel="stylesheet" href="/assets/css/portal.css?v=20260707-1">
-  <style>
-    body{margin:0;min-height:100vh;display:grid;place-items:center;padding:clamp(1rem,4vw,2.5rem);background:linear-gradient(180deg,#f8fafc,#e2e8f0);color:#0f172a;font-family:Inter,Arial,sans-serif}
-    main{width:min(860px,100%);border-radius:24px;background:#fff;border:1px solid rgba(148,163,184,.26);box-shadow:0 20px 60px rgba(15,23,42,.12);padding:clamp(1.5rem,5vw,3rem)}
-    .eyebrow{display:inline-flex;padding:.35rem .75rem;border-radius:999px;background:#e0f2fe;color:#0369a1;font-weight:800;letter-spacing:.08em;text-transform:uppercase;font-size:.78rem}
-    h1{font-family:"DM Sans",Inter,Arial,sans-serif;font-size:clamp(2rem,4vw,3rem);line-height:1.08;letter-spacing:-.03em;margin:1rem 0 .75rem}
-    p{color:#52607a;line-height:1.65}
-    .actions{display:flex;flex-wrap:wrap;gap:.85rem;margin-top:1.5rem}
-    .button{display:inline-flex;align-items:center;justify-content:center;min-height:3.2rem;padding:.9rem 1.2rem;border-radius:999px;text-decoration:none;font-weight:800}
-    .primary{background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff}
-    .secondary{background:#f8fafc;color:#0f172a;border:1px solid rgba(148,163,184,.35)}
-    .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;margin-top:1.5rem}
-    .card{padding:1.1rem;border-radius:18px;background:#f8fafc;border:1px solid rgba(148,163,184,.2)}
-    .card strong{display:block;margin-bottom:.3rem}
-    .meta{display:grid;gap:.35rem}
-    .meta span{color:#52607a;font-size:.95rem}
-    @media (max-width:760px){.grid{grid-template-columns:1fr}.actions{flex-direction:column}.button{width:100%}}
-  </style>
+  <title>Member Account Access | JA Experiences &amp; Discovery</title>
+  <meta name="description" content="Secure member account access for JA Experiences & Discovery customers using JA Group Services ID.">
+  <link rel="stylesheet" href="/assets/css/theme.css?v=20260709-airo-1">
+  <link rel="stylesheet" href="/assets/css/portal.css?v=20260709-airo-1">
 </head>
-<body>
-  <main>
-    <span class="eyebrow">Customer Portal</span>
-    <h1>Secure sign-in for customers</h1>
-    <p>Use your JA Group Services ID to reach your personal profile, enquiries, plans and support area. Your customer session is separate from the Administrator Control Centre.</p>
-    <div class="actions">
-      <a class="button primary" href="/account/login/?return_to=%2Faccount%2Fdashboard%2F">Sign in to customer portal</a>
-      <a class="button secondary" href="/signed-out/customer/">View customer signed-out page</a>
+<body data-page="account">
+  <main class="platform-hero">
+    <div class="container platform-hero-grid">
+      <section>
+        <span class="platform-eyebrow">Secure member account</span>
+        <h1>Sign in to manage plans, credits and support.</h1>
+        <p>Use your JA Group Services ID to access your member workspace. Authentication remains separate from the Administrator Control Centre.</p>
+        <div class="platform-actions">
+          <a class="btn btn-primary" href="/account/login/?return_to=%2Faccount%2Fdashboard%2F">Sign in</a>
+          <a class="btn btn-secondary" href="/pricing/">Create account / start trial</a>
+          <a class="btn btn-secondary" href="/contact/">Support</a>
+        </div>
+      </section>
+      <aside class="glass-strong dashboard-preview">
+        <div class="dashboard-topline"><div><strong>Member benefits</strong><p class="muted">Account-only platform tools</p></div><span class="platform-eyebrow status-info">Secure</span></div>
+        <div class="dashboard-list">
+          <div class="dashboard-row"><span>Experience Builders</span><b>Guided outputs</b></div>
+          <div class="dashboard-row"><span>Builder Credits</span><b>Usage allowance</b></div>
+          <div class="dashboard-row"><span>Saved Plans</span><b>Member workspace</b></div>
+          <div class="dashboard-row"><span>Support Requests</span><b>Auditable help</b></div>
+        </div>
+      </aside>
     </div>
-
-    <section class="grid" aria-label="Customer account overview">
-      <article class="card meta"><strong>Secure authentication</strong><span>Secure sign-in through JA Group Services ID.</span></article>
-      <article class="card meta"><strong>Profile and support</strong><span>Access your profile, enquiries, requests and account tools after sign-in.</span></article>
-      <article class="card meta"><strong>Dedicated session</strong><span>Your customer session does not affect the Administrator Control Centre.</span></article>
-    </section>
   </main>
-  <script src="/assets/js/account-portal.js?v=20260707-1"></script>
+  <script src="/assets/js/account-portal.js?v=20260709-airo-1"></script>
 </body>
 </html>
