@@ -1131,10 +1131,26 @@ function renderPaidAddOns(platform = {}) {
 }
 
 function renderPlatformSettings(platform = {}) {
+  const currentStatus = state.data.platformsettings?.site_status || "normal";
   setPanel(`
     <div class="section-head"><div><span class="eyebrow">Platform controls</span><h1>Platform Settings</h1><p>Review trial, credit, plan and enforcement rules.</p></div></div>
     ${renderConfigurationReadyNotice()}
     <div class="admin-grid">
+      <article class="admin-card">
+        <h2>Site Status Controls</h2>
+        <form class="admin-form single" id="siteStatusForm">
+          <label>Platform Status
+            <select id="siteStatusSelect">
+              <option value="normal" ${currentStatus === "normal" ? "selected" : ""}>Normal Operation</option>
+              <option value="coming_soon" ${currentStatus === "coming_soon" ? "selected" : ""}>Coming Soon Mode</option>
+              <option value="maintenance" ${currentStatus === "maintenance" ? "selected" : ""}>Maintenance Mode</option>
+            </select>
+          </label>
+          <button class="admin-button" type="submit" style="margin-top: 1rem;">Update Site Status</button>
+        </form>
+        <div id="siteStatusSaved" class="admin-alert" style="margin-top: 1rem;" hidden></div>
+      </article>
+
       <article class="admin-card"><h2>Trial settings</h2><form class="admin-form single"><label>Trial length<input value="14 days"></label><label>Trial tokens<input value="30 once only"></label><label><input type="checkbox" checked> One trial per customer/account</label></form></article>
       <article class="admin-card"><h2>Builder token rules</h2><form class="admin-form single"><label><input type="checkbox" checked> Deduct only on completed/saved/generated output</label><label><input type="checkbox" checked> No deduction for opening/viewing a builder</label><label><input type="checkbox" checked> Block completion when tokens are insufficient</label></form></article>
       <article class="admin-card"><h2>Plan rules</h2><form class="admin-form single"><label><input type="checkbox" checked> Paid plans only</label><label><input type="checkbox" checked> No permanent free plan</label><label><input type="checkbox" checked> Trial can upgrade to paid subscription</label></form></article>
@@ -1143,6 +1159,39 @@ function renderPlatformSettings(platform = {}) {
     <button class="admin-button" type="button" data-action="validate-platform-settings">Validate settings</button>
     <div class="admin-alert" id="platformSettingsStatus" hidden></div>
   `);
+
+  document.getElementById("siteStatusForm")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const statusEl = document.getElementById("siteStatusSaved");
+    const selectEl = document.getElementById("siteStatusSelect");
+    if (!statusEl || !selectEl) return;
+    statusEl.hidden = false;
+    statusEl.className = "admin-alert";
+    statusEl.textContent = "Updating status...";
+
+    try {
+      const data = await api("platformsettings", {
+        method: "POST",
+        body: JSON.stringify({
+          action: "update_site_status",
+          site_status: selectEl.value
+        })
+      });
+      state.data.platformsettings = { ...state.data.platformsettings, ...data };
+      statusEl.className = "admin-success";
+      statusEl.textContent = "Site status updated successfully.";
+      renderPlatformSettings(state.data.platformsettings?.platform);
+      const newStatusEl = document.getElementById("siteStatusSaved");
+      if (newStatusEl) {
+        newStatusEl.hidden = false;
+        newStatusEl.className = "admin-success";
+        newStatusEl.textContent = "Site status updated successfully.";
+      }
+    } catch (error) {
+      statusEl.className = "admin-alert";
+      statusEl.textContent = error.message || "Failed to update site status.";
+    }
+  });
 }
 
 function renderPlatformScaffold(title, description, rows = []) {

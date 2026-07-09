@@ -294,3 +294,132 @@
   }
 
 }
+
+/* Partners Dropdown Styles */
+.nav-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.nav-dropdown-toggle {
+  color: #26394d;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1;
+  background: none;
+  border: none;
+  padding: 10px 0;
+  cursor: pointer;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.nav-dropdown-toggle::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 3px;
+  height: 2px;
+  border-radius: 999px;
+  background: #e86f34;
+  opacity: 0;
+  transform: scaleX(.5);
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+.nav-dropdown:hover .nav-dropdown-toggle,
+.nav-dropdown-toggle:focus-visible {
+  color: #082a49;
+}
+
+.nav-dropdown:hover .nav-dropdown-toggle::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.nav-dropdown-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ffffff;
+  border: 1px solid #dce6ee;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(8, 42, 73, .12);
+  min-width: 160px;
+  z-index: 1010;
+  padding: 6px 0;
+}
+
+.nav-dropdown:hover .nav-dropdown-menu,
+.nav-dropdown-menu:focus-within {
+  display: block;
+}
+
+.nav-dropdown-menu a {
+  display: block !important;
+  padding: 10px 16px !important;
+  color: #26394d !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+  text-align: left !important;
+  transition: background 0.15s ease, color 0.15s ease !important;
+}
+
+.nav-dropdown-menu a::after {
+  display: none !important;
+}
+
+.nav-dropdown-menu a:hover,
+.nav-dropdown-menu a:focus-visible {
+  background: #f4f7f8 !important;
+  color: #082a49 !important;
+}
+
+.chevron {
+  font-size: 8px;
+  transition: transform 0.15s ease;
+}
+
+.nav-dropdown:hover .chevron {
+  transform: rotate(180deg);
+}
+
+/* Mobile Dropdown adjustment */
+@media (max-width: 1240px) {
+  .nav-dropdown {
+    display: block;
+    width: 100%;
+    text-align: left;
+  }
+  .nav-dropdown-toggle {
+    width: 100%;
+    padding: 13px 12px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .nav-dropdown-toggle::after {
+    display: none;
+  }
+  .nav-dropdown-toggle:hover {
+    background: #eef5f7;
+  }
+  .nav-dropdown-menu {
+    position: static;
+    transform: none;
+    box-shadow: none;
+    border: none;
+    background: transparent;
+    padding-left: 16px;
+    display: block; /* always visible in mobile accordion/flat list */
+  }
+  .nav-dropdown-menu a {
+    padding: 10px 12px !important;
+  }
+}
