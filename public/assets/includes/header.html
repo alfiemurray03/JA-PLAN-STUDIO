@@ -1,69 +1,39 @@
-<header class="sticky top-0 z-50 py-4">
-  <div class="container">
-    <div class="glass px-6 py-4 rounded-2xl flex items-center justify-between gap-4">
-      <a class="flex items-center gap-3" href="/" aria-label="JA Experiences & Discovery home">
-        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm" style="background: linear-gradient(135deg, var(--primary), var(--accent));">
-          JA
-        </div>
-        <div class="block">
-          <strong class="font-bold text-sm block leading-tight">JA Experiences & Discovery</strong>
-          <small class="text-xs text-muted">Experience planning platform</small>
-        </div>
-      </a>
+<header class="site-header">
+  <div class="site-header-inner">
+    <a class="site-brand" href="/" aria-label="JA Experiences &amp; Discovery home">
+      <span>JA</span>
+      <span class="site-brand-accent">Experiences &amp; Discovery</span>
+    </a>
 
-      <button class="lg:hidden p-2 rounded-lg hover:bg-white/50 transition" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="siteNav" id="menuToggle">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-        </svg>
-      </button>
+    <nav class="site-nav" aria-label="Primary navigation">
+      <a href="/" data-nav-page="home">Home</a>
+      <a href="/builders/" data-nav-page="builders">Builders</a>
+      <a href="/pricing/" data-nav-page="pricing">Pricing</a>
+      <a href="/about/" data-nav-page="about">About</a>
+      <a href="/destinations/" data-nav-page="destinations">Destinations</a>
+      <a href="/contact/" data-nav-page="contact">Contact</a>
+    </nav>
 
-      <nav class="hidden lg:flex items-center gap-1" id="siteNav" aria-label="Primary navigation">
-        <a href="/" class="px-4 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-white/50 transition" data-nav-page="home">Home</a>
-        <a href="/builders/" class="px-4 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-white/50 transition" data-nav-page="builders">Builders</a>
-        <a href="/pricing/" class="px-4 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-white/50 transition" data-nav-page="pricing">Pricing</a>
-        <a href="/about/" class="px-4 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-white/50 transition" data-nav-page="about">About</a>
-        <a href="/destinations/" class="px-4 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-white/50 transition" data-nav-page="destinations">Destinations</a>
-        <a href="/contact/" class="px-4 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-white/50 transition" data-nav-page="contact">Contact</a>
-      </nav>
-
-      <div class="hidden lg:flex items-center gap-3">
-        <a class="btn btn-ghost text-sm" href="/account/login/?return_to=%2Faccount%2Fdashboard%2F">Sign in</a>
-        <a class="btn btn-primary text-sm" href="/pricing/#trial">Create account / Start Free Trial</a>
-      </div>
+    <div class="site-header-actions">
+      <a class="site-login-link" href="/account/login/?return_to=%2Faccount%2Fdashboard%2F">Sign in</a>
+      <a class="site-create-link" href="/pricing/#trial">Create account</a>
     </div>
 
-    <!-- Mobile Menu -->
-    <div class="lg:hidden glass mt-2 p-4 rounded-2xl hidden" id="mobileMenu">
-      <nav class="flex flex-col gap-2">
-        <a href="/" class="px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/50 transition">Home</a>
-        <a href="/builders/" class="px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/50 transition">Builders</a>
-        <a href="/pricing/" class="px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/50 transition">Pricing</a>
-        <a href="/about/" class="px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/50 transition">About</a>
-        <a href="/destinations/" class="px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/50 transition">Destinations</a>
-        <a href="/contact/" class="px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/50 transition">Contact</a>
-      </nav>
-      <div class="divider my-4"></div>
-      <div class="flex flex-col gap-2">
-        <a class="btn btn-secondary w-full" href="/account/login/?return_to=%2Faccount%2Fdashboard%2F">Sign in</a>
-        <a class="btn btn-primary w-full" href="/pricing/#trial">Create account / Start Free Trial</a>
-      </div>
+    <button class="site-menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="siteMobileMenu" id="siteMenuToggle">
+      <span aria-hidden="true">☰</span>
+    </button>
+  </div>
+
+  <div class="site-mobile-menu" id="siteMobileMenu">
+    <div class="site-mobile-menu-inner">
+      <a href="/">Home</a>
+      <a href="/builders/">Builders</a>
+      <a href="/pricing/">Pricing</a>
+      <a href="/about/">About</a>
+      <a href="/destinations/">Destinations</a>
+      <a href="/contact/">Contact</a>
+      <a href="/account/login/?return_to=%2Faccount%2Fdashboard%2F">Sign in</a>
+      <a href="/pricing/#trial">Create account</a>
     </div>
   </div>
 </header>
-
-<style>
-  .lg\:flex { display: none; }
-  @media (min-width: 1024px) {
-    .lg\:flex { display: flex; }
-    .lg\:hidden { display: none; }
-  }
-  #mobileMenu.open { display: block; }
-</style>
-
-<script>
-  document.getElementById('menuToggle')?.addEventListener('click', function() {
-    const menu = document.getElementById('mobileMenu');
-    const isOpen = menu.classList.toggle('open');
-    this.setAttribute('aria-expanded', isOpen);
-  });
-</script>

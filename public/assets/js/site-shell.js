@@ -79,8 +79,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function setupMobileMenu() {
-    const toggle = document.querySelector(".menu-toggle");
-    const nav = document.querySelector("#siteNav");
+    const toggle = document.querySelector("#siteMenuToggle") || document.querySelector(".menu-toggle");
+    const nav = document.querySelector("#siteMobileMenu") || document.querySelector("#siteNav");
     if (!toggle || !nav) return;
 
     toggle.addEventListener("click", () => {
@@ -105,7 +105,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     document.addEventListener("click", (event) => {
-      if (event.target.closest(".site-header-card")) return;
+      if (event.target.closest(".site-header")) return;
       nav.classList.remove("open");
       toggle.setAttribute("aria-expanded", "false");
       toggle.setAttribute("aria-label", "Open navigation");
@@ -164,8 +164,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   await Promise.all([
-    loadPartial(headerTarget, "/assets/includes/header.html?v=20260709-auth-1"),
-    loadPartial(footerTarget, "/assets/includes/footer.html?v=20260709-footer-2")
+    loadPartial(headerTarget, "/assets/includes/header.html?v=20260709-shell-1"),
+    loadPartial(footerTarget, "/assets/includes/footer.html?v=20260709-shell-1")
   ]);
 
   setupThemeToggle();
