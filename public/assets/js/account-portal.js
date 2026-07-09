@@ -1,8 +1,10 @@
-const portalState = { profile: null, requests: null, pins: null, saved: null, billing: null };
+const portalState = { profile: null, requests: null, pins: null, saved: null, billing: null, builders: null };
 
 const navItems = [
   ["/account/dashboard/", "Overview"],
   ["/account/profile/", "My Profile"],
+  ["/account/tokens/", "Builder Usage Tokens"],
+  ["/account/builders/", "My Builders"],
   ["/account/settings/", "Settings"],
   ["/account/security/", "Security"],
   ["/account/bookings/", "Bookings"],
@@ -120,6 +122,14 @@ async function loadBilling() {
   return payload;
 }
 
+async function loadBuilders(force = false) {
+  if (!force && portalState.builders) return portalState.builders;
+  const response = await fetch("/account/builders", { credentials: "include", cache: "no-store", headers: { Accept: "application/json" } });
+  if (!response.ok) return { builders: [], outputs: [], ledger: [], blocked_attempts: [], token_summary: {} };
+  portalState.builders = await response.json().catch(() => ({ builders: [], outputs: [], ledger: [], blocked_attempts: [], token_summary: {} }));
+  return portalState.builders;
+}
+
 async function openStripeBillingPortal() {
   const response = await fetch("/account/billing", {
     method: "POST",
@@ -178,9 +188,36 @@ function timelineMarkup(items = []) {
   `).join("")}</div>`;
 }
 
-window.JAPortal = { shell, loadProfile, loadRequests, loadPins, loadSaved, loadBilling, updateShared, timelineItems, timelineMarkup, fmt, escapeHtml, initials, state: portalState };
+function portalTable(headers, rows = []) {
+  if (!rows.length) return '<div class="portal-note inline">No records yet.</div>';
+  return `
+    <div class="portal-table-wrap">
+      <table class="portal-table">
+        <thead><tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr></thead>
+        <tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${String(cell || "").startsWith("<") ? cell : escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+window.JAPortal = { shell, loadProfile, loadRequests, loadPins, loadSaved, loadBilling, loadBuilders, updateShared, timelineItems, timelineMarkup, fmt, escapeHtml, initials, state: portalState };
 
 document.addEventListener("click", async (event) => {
+  const archive = event.target.closest('[data-action="archive-builder-output"]');
+  if (archive) {
+    archive.disabled = true;
+    await fetch("/account/builders", {
+      method: "POST",
+      credentials: "include",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "archive_output", id: archive.dataset.id })
+    });
+    portalState.builders = null;
+    await loadBuilders(true);
+    await renderPage("builders");
+    return;
+  }
+
   const button = event.target.closest('[data-action="manage-stripe-billing"]');
   if (!button) return;
   button.disabled = true;
@@ -201,11 +238,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   const page = document.body.dataset.portalPage || "dashboard";
   const needsRequests = new Set(["dashboard", "membership", "support", "messages", "data", "bookings", "saved"]);
   const needsPins = page === "security";
-  const needsSaved = new Set(["dashboard", "membership", "bookings", "saved"]);
+  const needsSaved = new Set(["dashboard", "membership", "bookings", "saved", "builders"]);
+  const needsBuilders = new Set(["dashboard", "tokens", "builders", "membership"]);
   const needsBilling = new Set(["membership", "downloads"]);
   const titleMap = {
     dashboard: ["Overview", "Live overview of your account activity, support and membership."],
     profile: ["Profile", "Your master customer record, identity and preferences."],
+    tokens: ["Builder Usage Tokens", "View your token balance, allowance, usage ledger and blocked attempts."],
+    builders: ["My Builders", "Saved builder outputs, plans and self-service planning history."],
     settings: ["Settings", "Control preferences, accessibility and session behaviour."],
     security: ["Security", "Manage sessions, sign-ins and support access settings."],
     bookings: ["Bookings", "Your upcoming, past and cancelled bookings."],
@@ -225,6 +265,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (needsRequests.has(page)) bootstrap.push(loadRequests());
     if (needsPins) bootstrap.push(loadPins());
     if (needsSaved.has(page)) bootstrap.push(loadSaved());
+    if (needsBuilders.has(page)) bootstrap.push(loadBuilders());
     if (needsBilling.has(page)) bootstrap.push(loadBilling());
     await Promise.all(bootstrap);
     updateShared(portalState.profile || {});
@@ -241,12 +282,17 @@ async function renderPage(page) {
   if (!pageRoot) return;
 
   if (page === "dashboard") {
+    const builderData = portalState.builders || {};
+    const tokenSummary = builderData.token_summary || {};
+    const outputs = Array.isArray(builderData.outputs) ? builderData.outputs : [];
     pageRoot.innerHTML = `
       <section class="portal-grid">
         <article class="portal-card portal-span-8">
           <h2>Quick actions</h2>
           <div class="portal-quick-actions">
             <a class="portal-action" href="/account/profile/"><strong>View profile</strong><span>Master customer record</span></a>
+            <a class="portal-action" href="/account/tokens/"><strong>Builder Usage Tokens</strong><span>${escapeHtml(String(tokenSummary.remaining_tokens ?? "0"))} remaining</span></a>
+            <a class="portal-action" href="/builders/"><strong>Open builders</strong><span>Opening/viewing does not deduct tokens</span></a>
             <a class="portal-action" href="/account/security/"><strong>Security centre</strong><span>Sessions and PINs</span></a>
             <a class="portal-action" href="/account/support/"><strong>Support centre</strong><span>Tickets and requests</span></a>
             <a class="portal-action" href="/account/downloads/"><strong>Downloads</strong><span>Invoices and exports</span></a>
@@ -256,6 +302,8 @@ async function renderPage(page) {
           <h2>Membership summary</h2>
           <div class="portal-stack">
             <div class="portal-entry"><span class="portal-label">Plan</span><strong>${escapeHtml(profile.currentPlan || "Standard")}</strong></div>
+            <div class="portal-entry"><span class="portal-label">Builder Usage Tokens</span><strong>${escapeHtml(String(tokenSummary.remaining_tokens ?? "0"))} remaining</strong></div>
+            <div class="portal-entry"><span class="portal-label">Saved builder outputs</span><strong>${escapeHtml(String(outputs.length))}</strong></div>
             <div class="portal-entry"><span class="portal-label">Lifetime access</span><strong>${profile.lifetimeAccess ? "Enabled" : "Not enabled"}</strong></div>
             <div class="portal-entry"><span class="portal-label">Stripe status</span><strong>${profile.stripeLinked ? "Linked" : "Not linked"}</strong></div>
           </div>
@@ -545,6 +593,40 @@ async function renderPage(page) {
       alert("Security questions saved.");
       await renderPage("security");
     });
+    return;
+  }
+
+  if (page === "tokens") {
+    const data = portalState.builders || await loadBuilders();
+    const summary = data.token_summary || {};
+    const ledger = Array.isArray(data.ledger) ? data.ledger : [];
+    const attempts = Array.isArray(data.blocked_attempts) ? data.blocked_attempts : [];
+    pageRoot.innerHTML = `
+      <section class="portal-grid">
+        <article class="portal-card"><h2>Token balance</h2><div class="portal-stack">
+          <div class="portal-entry"><span class="portal-label">Plan</span><strong>${escapeHtml(summary.plan_name || "Not available")}</strong></div>
+          <div class="portal-entry"><span class="portal-label">Monthly allowance</span><strong>${escapeHtml(String(summary.monthly_allowance ?? 0))}</strong></div>
+          <div class="portal-entry"><span class="portal-label">Remaining tokens</span><strong>${escapeHtml(String(summary.remaining_tokens ?? 0))}</strong></div>
+          <div class="portal-entry"><span class="portal-label">Used tokens</span><strong>${escapeHtml(String(summary.used_tokens ?? 0))}</strong></div>
+          <div class="portal-entry"><span class="portal-label">Purchased add-on tokens</span><strong>${escapeHtml(String(summary.purchased_addon_tokens ?? 0))}</strong></div>
+          <div class="portal-entry"><span class="portal-label">Trial expiry</span><strong>${escapeHtml(fmt(summary.trial?.expires_at))}</strong></div>
+        </div></article>
+        <article class="portal-card"><h2>How tokens work</h2><p>${escapeHtml(summary.deduction_rule || "Builder Usage Tokens are deducted only on completed saved outputs.")}</p><a class="portal-button" href="/builders/">Open Experience Builders</a></article>
+      </section>
+      <section class="portal-card"><h2>Token ledger</h2>${portalTable(["Date", "Amount", "Source", "Reason", "Balance"], ledger.map((item) => [fmt(item.created_at), item.amount, item.source, item.reason, item.balance_after]))}</section>
+      <section class="portal-card"><h2>Blocked attempts</h2>${portalTable(["Date", "Builder", "Reason", "Available", "Required", "Action"], attempts.map((item) => [fmt(item.created_at), item.builder_name, item.reason, item.tokens_available, item.tokens_required, item.action_offered]))}</section>
+    `;
+    return;
+  }
+
+  if (page === "builders") {
+    const data = portalState.builders || await loadBuilders();
+    const outputs = Array.isArray(data.outputs) ? data.outputs : [];
+    pageRoot.innerHTML = `
+      <section class="portal-card"><h2>Saved builder outputs and plans</h2>
+        ${portalTable(["Created", "Builder", "Title", "Tokens used", "Status", "Action"], outputs.map((item) => [fmt(item.created_at), item.builder_name, item.title, item.token_cost, item.status, `<button class="portal-button secondary" type="button" data-action="archive-builder-output" data-id="${escapeHtml(item.id)}">Archive</button>`]))}
+      </section>
+    `;
     return;
   }
 

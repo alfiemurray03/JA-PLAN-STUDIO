@@ -1,17 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
 :root {
   --background: 210 40% 98%;
-  --foreground: 217 45% 20%;
+  --foreground: 222 47% 11%;
   --card: 0 0% 100%;
   --card-foreground: 217 45% 20%;
   --popover: 0 0% 100%;
   --popover-foreground: 217 45% 20%;
-  --primary: 217 45% 20%;
+  --primary: 221 83% 53%;
   --primary-foreground: 0 0% 100%;
   --secondary: 215 25% 95%;
   --secondary-foreground: 217 45% 20%;
   --muted: 215 20% 96%;
   --muted-foreground: 215 16% 47%;
-  --accent: 210 100% 50%;
+  --accent: 217 91% 60%;
   --accent-foreground: 0 0% 100%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
@@ -19,16 +21,16 @@
   --input: 214 32% 91%;
   --ring: 217 45% 20%;
   --radius: 0.75rem;
-  --sidebar: 217 45% 20%;
-  --sidebar-foreground: 210 40% 98%;
-  --sidebar-primary: 210 40% 98%;
-  --sidebar-primary-foreground: 217 45% 20%;
-  --sidebar-accent: 217 45% 25%;
-  --sidebar-accent-foreground: 210 40% 98%;
-  --sidebar-border: 217 45% 25%;
+  --sidebar: 0 0% 100%;
+  --sidebar-foreground: 222 47% 11%;
+  --sidebar-primary: 221 83% 53%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 210 40% 94%;
+  --sidebar-accent-foreground: 222 47% 20%;
+  --sidebar-border: 214 32% 88%;
 
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --shadow-sm: 0 2px 8px -1px rgb(37 99 235 / 0.10), 0 1px 3px -1px rgb(0 0 0 / 0.06);
+  --shadow: 0 10px 28px -10px rgb(37 99 235 / 0.18), 0 4px 10px -6px rgb(0 0 0 / 0.12);
 }
 
 [data-site-theme="dark"] {
@@ -46,9 +48,11 @@
 * { box-sizing: border-box; }
 body {
   margin: 0;
-  background-color: hsl(var(--background));
+  background:
+    radial-gradient(circle at top left, hsl(var(--accent) / .10), transparent 34rem),
+    hsl(var(--background));
   color: hsl(var(--foreground));
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
@@ -60,7 +64,9 @@ body {
 }
 
 .portal-sidebar {
-  background-color: hsl(var(--sidebar));
+  background: hsl(var(--sidebar) / .86);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
   border-right: 1px solid hsl(var(--sidebar-border));
   display: flex;
   flex-direction: column;
@@ -214,6 +220,37 @@ body {
   font-weight: 700;
   margin: 0;
 }
+
+.portal-table-wrap {
+  overflow-x: auto;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  margin-top: 1rem;
+}
+
+.portal-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+  background: hsl(var(--card));
+}
+
+.portal-table th,
+.portal-table td {
+  border-bottom: 1px solid hsl(var(--border));
+  padding: .75rem .85rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.portal-table th {
+  color: hsl(var(--muted-foreground));
+  font-size: .72rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.portal-table tr:last-child td { border-bottom: 0; }
 
 .portal-button {
   display: inline-flex;

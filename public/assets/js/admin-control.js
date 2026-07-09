@@ -27,7 +27,7 @@ const sectionTitles = {
   customer: "Customer Profile",
   builders: "Experience Builders",
   plans: "Plans & Prices",
-  credits: "Builder Credits",
+  credits: "Builder Usage Tokens",
   usage: "Customer Usage",
   addons: "Paid Add-Ons",
   platformsettings: "Platform Settings",
@@ -67,7 +67,7 @@ const sectionDescriptions = {
   roles: "Create, clone and edit roles plus their permissions.",
   customers: "Search customer profiles, memberships and account history.",
   customer: "Review a single customer record, support history and linked flags.",
-  builders: "Configure builder categories, credit costs, availability, plan inclusion and access status.",
+  builders: "Configure builder categories, token costs, availability, plan inclusion and access status.",
   datarequests: "Manage UK GDPR and data rights workflows.",
   systemreports: "Review customer-reported website and account issues.",
   closures: "Process account closure requests safely and consistently.",
@@ -79,9 +79,9 @@ const sectionDescriptions = {
   cms: "Manage public website and portal content blocks.",
   reports: "Operational reporting and platform summaries.",
   plans: "Configure service plans, prices and public availability.",
-  credits: "Review credit allowances, costs, extra packages and manual adjustment controls.",
-  usage: "Review trial status, subscription status, completed builders, blocked attempts and customer credit usage.",
-  addons: "Review paid human support add-ons and extra credit purchases without creating fake billing records.",
+  credits: "Review token allowances, costs, extra packages and manual adjustment controls.",
+  usage: "Review trial status, subscription status, completed builders, blocked attempts and customer token usage.",
+  addons: "Review paid human support add-ons and extra token purchases without creating fake billing records.",
   platformsettings: "Configuration-ready controls for the member platform direction and usage enforcement.",
   stripe: "Review Stripe configuration and connection status.",
   email: "Configure outbound email and test notifications.",
@@ -115,11 +115,11 @@ const dprStatuses = ["Received", "Verifying Identity", "In Progress", "Ready to 
 const systemReportStatuses = ["Open", "In Progress", "Resolved", "Rejected"];
 const closureStatuses = ["Open", "In Progress", "Approved", "Rejected", "Completed"];
 const priorities = ["Low", "Normal", "High", "Urgent"];
-const localScaffoldSections = new Set(["builders", "credits", "usage", "addons", "platformsettings"]);
+const localScaffoldSections = new Set([]);
 const platformAdminConfig = {
   builders: [
-    { id: "day-trip", name: "Day Trip Builder", type: "Everyday", category: "Everyday experiences", credits: 10, plans: "Membership, Plus, Family", availability: "Available", visibility: "trial" },
-    { id: "travel-itinerary", name: "Travel Itinerary Builder", type: "Travel", category: "Travel experiences", credits: 35, plans: "Plus, Family", availability: "Available", visibility: "paid" },
+    { id: "day-trip", name: "Day Trip Builder", type: "Everyday", category: "Everyday experiences", credits: 10, plans: "Membership, Plus, Family", availability: "Active", visibility: "trial" },
+    { id: "travel-itinerary", name: "Travel Itinerary Builder", type: "Travel", category: "Travel experiences", credits: 35, plans: "Plus, Family", availability: "Active", visibility: "paid" },
     { id: "accessible-checklist", name: "Accessible Travel Checklist", type: "Accessibility/support", category: "Accessibility and support", credits: 40, plans: "Plus, Family", availability: "Configuration ready", visibility: "paid" }
   ],
   plans: [
@@ -129,17 +129,17 @@ const platformAdminConfig = {
     { plan: "Family", allowance: "750 monthly", status: "Paid plan" }
   ],
   creditBands: [
-    ["Small", "10 credits"],
-    ["Standard", "15 credits"],
-    ["Advanced", "25 credits"],
-    ["Travel", "35 credits"],
-    ["Accessibility/support", "35-40 credits"]
+    ["Small", "10 tokens"],
+    ["Standard", "15 tokens"],
+    ["Advanced", "25 tokens"],
+    ["Travel", "35 tokens"],
+    ["Accessibility/support", "35-40 tokens"]
   ],
   addOns: [
-    ["Extra 10 Builder Credits", "£5.00", "10 credits", "Not connected to live billing yet"],
-    ["Extra 25 Builder Credits", "£10.00", "25 credits", "Not connected to live billing yet"],
-    ["Extra 50 Builder Credits", "£18.00", "50 credits", "Not connected to live billing yet"],
-    ["Extra 100 Builder Credits", "£30.00", "100 credits", "Not connected to live billing yet"],
+    ["Extra 10 Builder Usage Tokens", "£5.00", "10 tokens", "Not connected to live billing yet"],
+    ["Extra 25 Builder Usage Tokens", "£10.00", "25 tokens", "Not connected to live billing yet"],
+    ["Extra 50 Builder Usage Tokens", "£18.00", "50 tokens", "Not connected to live billing yet"],
+    ["Extra 100 Builder Usage Tokens", "£30.00", "100 tokens", "Not connected to live billing yet"],
     ["Quick Human Help", "£25 one-off", "Human support", "Not connected to live billing yet"],
     ["Human Plan Review", "£50 per plan", "Human support", "Not connected to live billing yet"],
     ["Human-Made Experience Plan", "£100 per plan/destination", "Human support", "Not connected to live billing yet"]
@@ -267,12 +267,12 @@ function bindAdminActions() {
     }
 
     if (type === "toggle-builder-state") {
-      updateBuilderState(action.dataset.id, "Disabled");
+      await updateBuilderState(action.dataset.id, "Disabled");
       return;
     }
 
     if (type === "archive-builder") {
-      updateBuilderState(action.dataset.id, "Archived");
+      await updateBuilderState(action.dataset.id, "Archived");
       return;
     }
 
@@ -750,7 +750,7 @@ function dashboardQuickCards() {
     ["datarequests", "file", "Data requests", "Process UK GDPR rights requests"],
     ["builders", "settings", "Experience Builders", "Configure self-service builder availability and costs"],
     ["plans", "plans", "Plans & Prices", "Review plan visibility and pricing"],
-    ["credits", "card", "Builder Credits", "Review allowances, costs and manual adjustments"],
+    ["credits", "card", "Builder Usage Tokens", "Review allowances, costs and manual adjustments"],
     ["usage", "chart", "Customer Usage", "Review trial, subscription and blocked usage signals"],
     ["admins", "shield", "Admin Users", "Manage administrator access"],
     ["roles", "users", "Roles", "Manage roles and permissions"],
@@ -849,12 +849,12 @@ function renderSection(section, data) {
   if (section === "roles") renderRoles(data.roles, data.permission_catalog);
   if (section === "customers") renderCustomers(data.customers);
   if (section === "customer") renderCustomerProfile(data.customer, data.plans);
-  if (section === "builders") renderExperienceBuilders();
+  if (section === "builders") renderExperienceBuilders(data.platform);
   if (section === "plans") renderPlans(data.plans);
-  if (section === "credits") renderBuilderCredits();
-  if (section === "usage") renderCustomerUsage();
-  if (section === "addons") renderPaidAddOns();
-  if (section === "platformsettings") renderPlatformSettings();
+  if (section === "credits") renderBuilderCredits(data.platform);
+  if (section === "usage") renderCustomerUsage(data.platform);
+  if (section === "addons") renderPaidAddOns(data.platform);
+  if (section === "platformsettings") renderPlatformSettings(data.platform);
   if (section === "stripe") renderStripe(data.stripe);
   if (section === "branding") renderBranding(data.branding);
   if (section === "policies") renderPolicies(data.policies);
@@ -886,15 +886,42 @@ function renderConfigurationReadyNotice() {
   `;
 }
 
-function renderExperienceBuilders() {
+function syncPlatformConfig(platform = {}) {
+  if (Array.isArray(platform.builders)) {
+    platformAdminConfig.builders = platform.builders.map((builder) => ({
+      id: builder.id,
+      name: builder.name,
+      type: builder.builder_type || builder.type,
+      category: builder.category,
+      credits: Number(builder.token_cost ?? builder.credits ?? 0),
+      plans: builder.plan_inclusion || builder.plans || "",
+      availability: builder.status || builder.availability || "Active",
+      visibility: builder.visibility || "paid",
+      usage_count: Number(builder.usage_count || 0),
+      blocked_attempts: Number(builder.blocked_attempts || 0),
+      description: builder.description || ""
+    }));
+  }
+  if (Array.isArray(platform.addons)) platformAdminConfig.addOns = platform.addons.map((item) => [item.name, formatPence(item.price_pence), item.token_amount ? `${item.token_amount} tokens` : item.package_type, item.status || "Configuration Ready"]);
+  return platform;
+}
+
+function formatPence(value) {
+  return Number.isFinite(Number(value)) ? new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(Number(value) / 100) : "Not available";
+}
+
+function renderExperienceBuilders(platform = {}) {
+  syncPlatformConfig(platform);
   const rows = platformAdminConfig.builders.map((builder) => `
     <tr>
       <td><strong>${escapeHtml(builder.name)}</strong><br><span class="muted">${escapeHtml(builder.category)}</span></td>
       <td>${escapeHtml(builder.type)}</td>
       <td>${escapeHtml(String(builder.credits))}</td>
       <td>${escapeHtml(builder.plans)}</td>
-      <td>${badge(builder.availability, builder.availability === "Available" ? "green" : "blue")}</td>
+      <td>${badge(builder.availability, builder.availability === "Active" ? "green" : "blue")}</td>
       <td>${badge(builder.visibility, "blue")}</td>
+      <td>${escapeHtml(String(builder.usage_count || 0))}</td>
+      <td>${escapeHtml(String(builder.blocked_attempts || 0))}</td>
       <td>
         <button class="mini-button" type="button" data-action="open-builder" data-id="${escapeAttr(builder.id)}">Edit</button>
         <button class="mini-button" type="button" data-action="toggle-builder-state" data-id="${escapeAttr(builder.id)}">Disable</button>
@@ -907,8 +934,8 @@ function renderExperienceBuilders() {
       <div><span class="eyebrow">Platform controls</span><h1>Experience Builders</h1><p>Create, edit, disable and archive self-service builders.</p></div>
       <div class="section-actions"><button class="admin-button" type="button" data-action="open-builder">Create builder</button></div>
     </div>
-    ${renderConfigurationReadyNotice()}
-    ${table(["Builder", "Type", "Credit cost", "Plan inclusion", "Availability", "Visibility", "Actions"], rows)}
+    <div class="admin-success">Live-connected: builder records are loaded from protected admin API and saved to D1. Stripe/payment charging is not changed.</div>
+    ${table(["Builder", "Type", "Token cost", "Plan inclusion", "Status", "Visibility", "Usage", "Blocked", "Actions"], rows)}
   `);
 }
 
@@ -916,25 +943,26 @@ function openBuilderModal(id = "") {
   const builder = platformAdminConfig.builders.find((item) => item.id === id) || {};
   openModal(`
     <div class="modal-head">
-      <div><h2>${id ? "Edit builder" : "Create builder"}</h2><p>Configuration-ready builder record. Backend persistence is not connected yet.</p></div>
+      <div><h2>${id ? "Edit builder" : "Create builder"}</h2><p>Builder records are saved to D1 through the protected admin API. Stripe/payment charging is not changed here.</p></div>
       <button class="drawer-close" type="button" data-action="close-modal">×</button>
     </div>
     <form class="admin-form" id="builderConfigForm">
       <input type="hidden" id="builderId" value="${escapeAttr(builder.id || "")}">
       <label>Builder name<input id="builderName" value="${escapeAttr(builder.name || "")}" required></label>
       <label>Builder type<select id="builderType"><option${builder.type === "Everyday" ? " selected" : ""}>Everyday</option><option${builder.type === "Travel" ? " selected" : ""}>Travel</option><option${builder.type === "Accessibility/support" ? " selected" : ""}>Accessibility/support</option><option${builder.type === "Organisation" ? " selected" : ""}>Organisation</option></select></label>
-      <label>Builder category<input id="builderCategory" value="${escapeAttr(builder.category || "Everyday experiences")}"></label>
-      <label>Credit cost<input id="builderCredits" type="number" min="0" step="1" value="${escapeAttr(String(builder.credits ?? 10))}"></label>
+      <label>Builder category<input id="builderCategory" value="${escapeAttr(builder.category || "Everyday experiences")}" required></label>
+      <label>Token cost<input id="builderCredits" type="number" min="0" step="1" value="${escapeAttr(String(builder.credits ?? 10))}" required></label>
       <label>Plan inclusion<input id="builderPlans" value="${escapeAttr(builder.plans || "Membership, Plus, Family")}"></label>
-      <label>Availability/status<select id="builderAvailability"><option${builder.availability === "Available" ? " selected" : ""}>Available</option><option${builder.availability === "Disabled" ? " selected" : ""}>Disabled</option><option${builder.availability === "Archived" ? " selected" : ""}>Archived</option><option${builder.availability === "Configuration ready" ? " selected" : ""}>Configuration ready</option></select></label>
+      <label>Availability/status<select id="builderAvailability"><option${builder.availability === "Active" ? " selected" : ""}>Active</option><option${builder.availability === "Disabled" ? " selected" : ""}>Disabled</option><option${builder.availability === "Archived" ? " selected" : ""}>Archived</option><option${builder.availability === "Configuration ready" ? " selected" : ""}>Configuration ready</option></select></label>
       <label>Visibility<select id="builderVisibility"><option${builder.visibility === "public" ? " selected" : ""}>public</option><option${builder.visibility === "trial" ? " selected" : ""}>trial</option><option${builder.visibility === "paid" ? " selected" : ""}>paid</option><option${builder.visibility === "add-on" ? " selected" : ""}>add-on</option><option${builder.visibility === "hidden" ? " selected" : ""}>hidden</option></select></label>
+      <label class="admin-form-wide">Description<textarea id="builderDescription" rows="3">${escapeHtml(builder.description || "")}</textarea></label>
       <div class="admin-alert" id="builderFormStatus" hidden></div>
       <button class="admin-button" type="button" data-action="save-admin-builder">Save configuration</button>
     </form>
   `);
 }
 
-function saveBuilderConfiguration() {
+async function saveBuilderConfiguration() {
   const name = document.getElementById("builderName")?.value.trim();
   const credits = Number(document.getElementById("builderCredits")?.value);
   const status = document.getElementById("builderFormStatus");
@@ -945,7 +973,7 @@ function saveBuilderConfiguration() {
   }
   if (!Number.isFinite(credits) || credits < 0) {
     status.hidden = false;
-    status.textContent = "Credit cost must be zero or higher.";
+    status.textContent = "Token cost must be zero or higher.";
     return;
   }
   const id = document.getElementById("builderId")?.value || name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -956,50 +984,79 @@ function saveBuilderConfiguration() {
     category: document.getElementById("builderCategory")?.value || "Everyday experiences",
     credits,
     plans: document.getElementById("builderPlans")?.value || "Membership, Plus, Family",
-    availability: document.getElementById("builderAvailability")?.value || "Configuration ready",
+    availability: document.getElementById("builderAvailability")?.value || "Active",
     visibility: document.getElementById("builderVisibility")?.value || "hidden"
   };
-  const index = platformAdminConfig.builders.findIndex((item) => item.id === id);
-  if (index >= 0) platformAdminConfig.builders[index] = next;
-  else platformAdminConfig.builders.push(next);
+  const response = await api("builders", {
+    method: "POST",
+    body: JSON.stringify({
+      action: "save_builder",
+      id: next.id,
+      name: next.name,
+      builder_type: next.type,
+      category: next.category,
+      token_cost: next.credits,
+      plan_inclusion: next.plans,
+      status: next.availability,
+      visibility: next.visibility,
+      description: document.getElementById("builderDescription")?.value || ""
+    })
+  });
   closeModal();
-  renderExperienceBuilders();
+  renderExperienceBuilders(response.platform || {});
 }
 
-function updateBuilderState(id, stateName) {
+async function updateBuilderState(id, stateName) {
   const builder = platformAdminConfig.builders.find((item) => item.id === id);
   if (!builder) return;
-  builder.availability = stateName;
-  renderExperienceBuilders();
+  const response = await api("builders", {
+    method: "POST",
+    body: JSON.stringify({
+      action: "save_builder",
+      id: builder.id,
+      name: builder.name,
+      builder_type: builder.type,
+      category: builder.category,
+      token_cost: builder.credits,
+      plan_inclusion: builder.plans,
+      status: stateName,
+      visibility: builder.visibility,
+      description: builder.description || ""
+    })
+  });
+  renderExperienceBuilders(response.platform || {});
 }
 
-function renderBuilderCredits() {
+function renderBuilderCredits(platform = {}) {
+  syncPlatformConfig(platform);
   const allowanceRows = platformAdminConfig.plans.map((item) => `<tr><td>${escapeHtml(item.plan)}</td><td>${escapeHtml(item.allowance)}</td><td>${badge(item.status, "blue")}</td></tr>`).join("");
   const bandRows = platformAdminConfig.creditBands.map(([type, cost]) => `<tr><td>${escapeHtml(type)}</td><td>${escapeHtml(cost)}</td><td>${badge("Configured", "green")}</td></tr>`).join("");
+  const ledgerRows = (Array.isArray(platform.ledger) ? platform.ledger : []).map((item) => `<tr><td>${escapeHtml(formatDate(item.created_at))}</td><td>${escapeHtml(item.email)}</td><td>${escapeHtml(String(item.amount))}</td><td>${escapeHtml(item.source)}</td><td>${escapeHtml(item.reason)}</td><td>${escapeHtml(String(item.balance_after))}</td></tr>`).join("");
   setPanel(`
-    <div class="section-head"><div><span class="eyebrow">Platform controls</span><h1>Builder Credits</h1><p>Review allowances, credit cost bands and manual adjustment workflow.</p></div></div>
-    ${renderConfigurationReadyNotice()}
+    <div class="section-head"><div><span class="eyebrow">Platform controls</span><h1>Builder Usage Tokens</h1><p>Review allowances, token cost bands and manual adjustment workflow.</p></div></div>
+    <div class="admin-success">Live-connected: manual Builder Usage Token adjustments write to D1 ledger and admin audit. Payment purchases remain Stripe-independent and are not faked.</div>
     <div class="admin-grid">
       <article class="admin-card"><h2>Plan allowances</h2>${table(["Plan", "Allowance", "Status"], allowanceRows)}</article>
-      <article class="admin-card"><h2>Builder credit cost bands</h2>${table(["Builder type", "Cost", "Status"], bandRows)}</article>
+      <article class="admin-card"><h2>Builder Usage Token cost bands</h2>${table(["Builder type", "Cost", "Status"], bandRows)}</article>
     </div>
     <article class="admin-card">
-      <h2>Manual credit adjustment</h2>
-      <p>Manual adjustments must be permanently logged once backend support is connected.</p>
+      <h2>Manual token adjustment</h2>
+      <p>Manual adjustments are written to the D1 token ledger with an audit reason.</p>
       <form class="admin-form">
         <label>Customer/account reference<input id="creditCustomerRef" placeholder="Customer email or account reference"></label>
         <label>Amount<input id="creditAdjustmentAmount" type="number" step="1" placeholder="Positive or negative amount"></label>
-        <label>Adjustment type<select id="creditAdjustmentType"><option>Add credits</option><option>Remove credits</option><option>Correction</option></select></label>
+        <label>Adjustment type<select id="creditAdjustmentType"><option>Add tokens</option><option>Remove tokens</option><option>Correction</option></select></label>
         <label>Admin user<input id="creditAdminUser" value="${escapeAttr(state.adminName || "")}" placeholder="Signed-in admin"></label>
         <label class="admin-form-wide">Reason<textarea id="creditAdjustmentReason" rows="3" placeholder="Required audit reason"></textarea></label>
         <div class="admin-alert" id="creditAdjustmentStatus" hidden></div>
         <button class="admin-button" type="button" data-action="validate-credit-adjustment">Validate adjustment</button>
       </form>
     </article>
+    <article class="admin-card"><h2>Token ledger</h2>${table(["Date", "Customer", "Amount", "Source", "Reason", "Balance"], ledgerRows)}</article>
   `);
 }
 
-function validateCreditAdjustment() {
+async function validateCreditAdjustment() {
   const ref = document.getElementById("creditCustomerRef")?.value.trim();
   const amount = Number(document.getElementById("creditAdjustmentAmount")?.value);
   const reason = document.getElementById("creditAdjustmentReason")?.value.trim();
@@ -1019,45 +1076,67 @@ function validateCreditAdjustment() {
     return;
   }
   status.className = "admin-success";
-  status.textContent = "Validation passed. Configuration-ready only: no live credit ledger entry was written.";
+  status.textContent = "Saving adjustment...";
+  try {
+    const response = await api("credits", {
+      method: "POST",
+      body: JSON.stringify({
+        action: "manual_adjustment",
+        email: ref,
+        amount,
+        reason,
+        adjustment_type: document.getElementById("creditAdjustmentType")?.value || "Manual adjustment"
+      })
+    });
+    renderBuilderCredits(response.platform || {});
+  } catch (error) {
+    status.className = "admin-alert";
+    status.textContent = error.message || "Adjustment could not be saved.";
+  }
 }
 
-function renderCustomerUsage() {
-  const usageRows = platformAdminConfig.usageRows.length ? platformAdminConfig.usageRows.map((item) => `<tr><td>${escapeHtml(item.customer)}</td><td>${escapeHtml(item.plan)}</td><td>${escapeHtml(item.trial)}</td><td>${escapeHtml(item.activated)}</td><td>${escapeHtml(item.expires)}</td><td>${escapeHtml(item.remaining)}</td><td>${escapeHtml(item.used)}</td><td>${escapeHtml(item.completed)}</td><td>${escapeHtml(item.blocked)}</td><td>${escapeHtml(item.purchased)}</td><td>${escapeHtml(item.addons)}</td></tr>`).join("") : "";
-  const blockedRows = platformAdminConfig.blockedAttempts.length ? platformAdminConfig.blockedAttempts.map((item) => `<tr><td>${escapeHtml(item.customer)}</td><td>${escapeHtml(item.builder)}</td><td>${escapeHtml(item.reason)}</td><td>${escapeHtml(item.date)}</td><td>${escapeHtml(item.available)}</td><td>${escapeHtml(item.required)}</td><td>${escapeHtml(item.action)}</td></tr>`).join("") : "";
+function renderCustomerUsage(platform = {}) {
+  const outputs = Array.isArray(platform.outputs) ? platform.outputs : [];
+  const attempts = Array.isArray(platform.attempts) ? platform.attempts : [];
+  const trials = Array.isArray(platform.trials) ? platform.trials : [];
+  const usageRows = outputs.map((item) => `<tr><td>${escapeHtml(item.email)}</td><td>${escapeHtml(item.builder_name)}</td><td>${escapeHtml(item.title)}</td><td>${escapeHtml(String(item.token_cost))}</td><td>${escapeHtml(item.status)}</td><td>${escapeHtml(formatDate(item.created_at))}</td></tr>`).join("");
+  const blockedRows = attempts.map((item) => `<tr><td>${escapeHtml(item.email)}</td><td>${escapeHtml(item.builder_name)}</td><td>${escapeHtml(item.reason)}</td><td>${escapeHtml(formatDate(item.created_at))}</td><td>${escapeHtml(String(item.tokens_available))}</td><td>${escapeHtml(String(item.tokens_required))}</td><td>${escapeHtml(item.action_offered)}</td></tr>`).join("");
+  const trialRows = trials.map((item) => `<tr><td>${escapeHtml(item.email)}</td><td>${escapeHtml(item.status)}</td><td>${escapeHtml(formatDate(item.activated_at))}</td><td>${escapeHtml(formatDate(item.expires_at))}</td><td>${escapeHtml(String(item.token_allowance))}</td></tr>`).join("");
   setPanel(`
-    <div class="section-head"><div><span class="eyebrow">Platform controls</span><h1>Customer Usage</h1><p>Review trial status, credits, completed builders and blocked usage attempts.</p></div></div>
-    ${renderConfigurationReadyNotice()}
+    <div class="section-head"><div><span class="eyebrow">Platform controls</span><h1>Customer Usage</h1><p>Review trial status, tokens, completed builders and blocked usage attempts.</p></div></div>
+    <div class="admin-success">Live-connected: usage, trials and blocked attempts are read from D1.</div>
     <div class="admin-card">
       <div class="admin-form">
         <label>Search customers<input type="search" placeholder="Search customer, plan or status"></label>
         <label>Plan filter<select><option>All plans</option><option>Trial</option><option>Membership</option><option>Plus</option><option>Family</option></select></label>
       </div>
     </div>
-    ${table(["Customer", "Plan", "Trial status", "Trial activation", "Trial expiry", "Remaining credits", "Used credits", "Completed builders", "Blocked attempts", "Purchased credits", "Add-ons"], usageRows)}
+    ${table(["Customer", "Builder", "Output", "Tokens used", "Status", "Created"], usageRows)}
+    <article class="admin-card"><h2>Trial tokens</h2>${table(["Customer", "Status", "Activated", "Expires", "Tokens"], trialRows)}</article>
     <article class="admin-card">
       <h2>Blocked usage attempts</h2>
-      ${table(["Customer", "Builder", "Reason blocked", "Date/time", "Credits available", "Required credits", "Action offered"], blockedRows)}
+      ${table(["Customer", "Builder", "Reason blocked", "Date/time", "Tokens available", "Required tokens", "Action offered"], blockedRows)}
     </article>
   `);
 }
 
-function renderPaidAddOns() {
-  const rows = platformAdminConfig.addOns.map(([name, price, credits, status]) => `<tr><td><strong>${escapeHtml(name)}</strong></td><td>${escapeHtml(price)}</td><td>${escapeHtml(credits)}</td><td>${badge(status, "blue")}</td><td>Payment status visible when available</td></tr>`).join("");
+function renderPaidAddOns(platform = {}) {
+  syncPlatformConfig(platform);
+  const rows = platformAdminConfig.addOns.map(([name, price, tokens, status]) => `<tr><td><strong>${escapeHtml(name)}</strong></td><td>${escapeHtml(price)}</td><td>${escapeHtml(tokens)}</td><td>${badge(status, "blue")}</td><td>Payment status visible when available</td></tr>`).join("");
   setPanel(`
-    <div class="section-head"><div><span class="eyebrow">Platform controls</span><h1>Paid Add-Ons</h1><p>Review extra credit packages and separate human support add-ons.</p></div></div>
-    ${renderConfigurationReadyNotice()}
-    ${table(["Add-on", "Price", "Credits/service", "Billing connection", "Payment status"], rows)}
+    <div class="section-head"><div><span class="eyebrow">Platform controls</span><h1>Paid Add-Ons</h1><p>Review extra token packages and separate human support add-ons.</p></div></div>
+    <div class="admin-success">Configuration-ready: add-on catalogue is D1-backed for admin visibility. Live Stripe charging was not changed.</div>
+    ${table(["Add-on", "Price", "Tokens/service", "Billing connection", "Payment status"], rows)}
   `);
 }
 
-function renderPlatformSettings() {
+function renderPlatformSettings(platform = {}) {
   setPanel(`
     <div class="section-head"><div><span class="eyebrow">Platform controls</span><h1>Platform Settings</h1><p>Review trial, credit, plan and enforcement rules.</p></div></div>
     ${renderConfigurationReadyNotice()}
     <div class="admin-grid">
-      <article class="admin-card"><h2>Trial settings</h2><form class="admin-form single"><label>Trial length<input value="14 days"></label><label>Trial credits<input value="30 once only"></label><label><input type="checkbox" checked> One trial per customer/account</label></form></article>
-      <article class="admin-card"><h2>Builder credit rules</h2><form class="admin-form single"><label><input type="checkbox" checked> Deduct only on completed/saved/generated output</label><label><input type="checkbox" checked> No deduction for opening/viewing a builder</label><label><input type="checkbox" checked> Block completion when credits are insufficient</label></form></article>
+      <article class="admin-card"><h2>Trial settings</h2><form class="admin-form single"><label>Trial length<input value="14 days"></label><label>Trial tokens<input value="30 once only"></label><label><input type="checkbox" checked> One trial per customer/account</label></form></article>
+      <article class="admin-card"><h2>Builder token rules</h2><form class="admin-form single"><label><input type="checkbox" checked> Deduct only on completed/saved/generated output</label><label><input type="checkbox" checked> No deduction for opening/viewing a builder</label><label><input type="checkbox" checked> Block completion when tokens are insufficient</label></form></article>
       <article class="admin-card"><h2>Plan rules</h2><form class="admin-form single"><label><input type="checkbox" checked> Paid plans only</label><label><input type="checkbox" checked> No permanent free plan</label><label><input type="checkbox" checked> Trial can upgrade to paid subscription</label></form></article>
       <article class="admin-card"><h2>Affiliate/service boundary wording</h2><p>Headout and GetYourGuide remain third-party providers. JA Group Services Ltd may receive commission from qualifying bookings. Bookings are made directly with the relevant provider and are subject to that provider's terms, cancellation rules, refund rules and privacy notice.</p></article>
     </div>
@@ -2316,6 +2395,13 @@ function renderCustomerIdentityVerification(customer, verification = {}, questio
   const lockedMessage = verification.locked
     ? `<div class="admin-alert">Identity verification has failed. For security, this customer profile is locked. A Supervisor or System Administrator must provide a reason and override the lock before work can continue.</div>`
     : "";
+  const activePins = Array.isArray(customer.support_pins)
+    ? customer.support_pins.filter((pin) => !pin.used_at && !pin.revoked_at && (!pin.expires_at || new Date(pin.expires_at).getTime() > Date.now()))
+    : [];
+  const hasVerificationMethod = activePins.length > 0 || questions.length > 0;
+  const unavailableMessage = !hasVerificationMethod
+    ? `<div class="admin-alert">No active Support PIN or security questions are available for this customer. Ask the customer to sign in and generate a new one-time Support PIN, or escalate to a Supervisor/System Administrator with an audit reason. Sensitive actions remain locked until identity is verified.</div>`
+    : "";
   const questionFields = questions.map((question) => `
     <label class="admin-label">
       ${escapeHtml(question.question_label)}
@@ -2329,6 +2415,7 @@ function renderCustomerIdentityVerification(customer, verification = {}, questio
         <div><h2>Verify Customer Identity</h2><p>Identity Verification Required before sensitive customer actions are available.</p></div>
       </div>
       ${lockedMessage}
+      ${unavailableMessage}
       <form class="admin-form" id="customerIdentityPinForm">
         <label class="admin-label">Support PIN<input id="customerIdentityPin" type="password" inputmode="numeric" autocomplete="off" ${verification.locked ? "disabled" : ""}></label>
         <button class="admin-button" type="submit" ${verification.locked ? "disabled" : ""}>Verify PIN</button>
@@ -2337,7 +2424,7 @@ function renderCustomerIdentityVerification(customer, verification = {}, questio
       <details style="margin-top:1rem;" ${verification.locked ? "" : ""}>
         <summary>Use Security Questions</summary>
         <form class="admin-form" id="customerSecurityQuestionsForm" style="margin-top:1rem;">
-          ${questionFields || "<p>No security questions are configured for this customer.</p>"}
+          ${questionFields || "<p>No security questions are configured for this customer. Do not continue with sensitive support actions unless another verified method or authorised supervisor override is available.</p>"}
           <button class="admin-button secondary" type="submit" ${questions.length && !verification.locked ? "" : "disabled"}>Verify by Security Questions</button>
         </form>
       </details>

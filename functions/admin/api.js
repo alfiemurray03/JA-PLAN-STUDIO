@@ -24,6 +24,11 @@ const PERMISSION_SECTIONS = {
   sessions: ["manage_admins", "manage_audit", "manage_api"],
   customers: ["manage_users", "manage_crm"],
   customer: ["manage_users", "manage_crm"],
+  builders: ["manage_plans", "manage_pricing", "manage_crm"],
+  credits: ["manage_plans", "manage_pricing", "manage_crm"],
+  usage: ["manage_users", "manage_crm"],
+  addons: ["manage_plans", "manage_pricing", "manage_crm"],
+  platformsettings: ["manage_plans", "manage_pricing", "manage_settings"],
   datarequests: ["manage_data_requests"],
   systemreports: ["manage_system_reports", "manage_audit"],
   closures: ["manage_closure_requests"],
@@ -1538,17 +1543,17 @@ async function getRoleSummary(DB) {
 function dashboardPresetForRole(role, permissions) {
   role = canonicalRoleName(role);
   if (role === "Platform Owner" || permissions.includes("*")) {
-    return ["overview", "status", "analytics", "customers", "customer", "admins", "roles", "sessions", "plans", "stripe", "enquiries", "support", "notifications", "membership", "security", "cms", "systemreports", "datarequests", "closures", "policies", "branding", "launchgateway", "maintenance", "audit", "email", "reports"];
+    return ["overview", "status", "analytics", "customers", "customer", "admins", "roles", "sessions", "builders", "plans", "credits", "usage", "addons", "platformsettings", "stripe", "enquiries", "support", "notifications", "membership", "security", "cms", "systemreports", "datarequests", "closures", "policies", "branding", "launchgateway", "maintenance", "audit", "email", "reports"];
   }
   if (role === "Senior Administrator") {
-    return ["overview", "customers", "customer", "users", "plans", "branding", "launchgateway", "maintenance", "status", "analytics", "enquiries", "support", "notifications", "membership", "security", "cms", "systemreports", "audit", "reports"];
+    return ["overview", "customers", "customer", "users", "builders", "plans", "credits", "usage", "addons", "platformsettings", "branding", "launchgateway", "maintenance", "status", "analytics", "enquiries", "support", "notifications", "membership", "security", "cms", "systemreports", "audit", "reports"];
   }
   if (role === "Finance") return ["overview", "stripe", "plans", "audit", "reports"];
-  if (role === "Customer Support") return ["overview", "customers", "customer", "enquiries", "support", "notifications", "membership", "security", "datarequests", "closures", "systemreports", "audit"];
+  if (role === "Customer Support") return ["overview", "customers", "customer", "usage", "enquiries", "support", "notifications", "membership", "security", "datarequests", "closures", "systemreports", "audit"];
   if (role === "Marketing & Content") return ["overview", "branding", "cms", "launchgateway", "maintenance", "policies", "affiliate", "email"];
   if (role === "Compliance & Data Protection") return ["overview", "audit", "datarequests", "closures", "policies", "reports"];
   if (role === "Auditor") return ["overview", "audit"];
-  return ["overview", "customers", "plans", "status", "analytics", "enquiries", "support"];
+  return ["overview", "customers", "builders", "plans", "credits", "usage", "addons", "platformsettings", "status", "analytics", "enquiries", "support"];
 }
 
 function widgetCatalog() {
@@ -1679,7 +1684,7 @@ async function removeAdmin(DB, body, identity, env) {
 }
 
 async function saveAdminPreferences(DB, body, identity) {
-  const allowedSections = new Set(["overview", "operations", "status", "analytics", "audit", "admins", "roles", "sessions", "customers", "datarequests", "systemreports", "closures", "support", "enquiries", "system", "plans", "stripe", "email", "branding", "appearance", "affiliate", "launchgateway", "maintenance", "policies"]);
+  const allowedSections = new Set(["overview", "operations", "status", "analytics", "audit", "admins", "roles", "sessions", "customers", "datarequests", "systemreports", "closures", "support", "enquiries", "system", "builders", "plans", "credits", "usage", "addons", "platformsettings", "stripe", "email", "branding", "appearance", "affiliate", "launchgateway", "maintenance", "policies"]);
   const favourites = Array.isArray(body.favourites)
     ? body.favourites.map((item) => clean(item, 80)).filter((item) => allowedSections.has(item)).slice(0, 12)
     : [];
@@ -2964,6 +2969,117 @@ async function saveStripe(DB, body, env) {
   return getStripe(DB, env, Boolean(body.test_connection));
 }
 
+const DEFAULT_PLATFORM_BUILDERS = [
+  ["day-trip", "Day Trip Builder", "Small", "Everyday experiences", 10, "trial,membership,plus,family", "trial", "Build a practical day trip outline with timings, budget prompts and checklist notes."],
+  ["family-day-out", "Family Day Out Builder", "Standard", "Everyday experiences", 15, "trial,membership,plus,family", "trial", "Plan a family day out with pace, facilities, accessibility and weather alternatives."],
+  ["school-holiday", "School Holiday Planner", "Standard", "Everyday experiences", 15, "membership,plus,family", "paid", "Organise school holiday ideas across dates, budgets and family priorities."],
+  ["occasion", "Occasion Planner", "Standard", "Everyday experiences", 15, "membership,plus,family", "paid", "Plan a birthday, anniversary or special occasion with tasks and provider checks."],
+  ["local-discovery", "Local Discovery Builder", "Small", "Everyday experiences", 10, "trial,membership,plus,family", "trial", "Create a local discovery shortlist with suitability checks."],
+  ["budget-experience", "Budget Experience Builder", "Small", "Everyday experiences", 10, "membership,plus,family", "paid", "Shape ideas around a realistic budget and priority list."],
+  ["rainy-day", "Rainy Day Plan Builder", "Small", "Everyday experiences", 10, "membership,plus,family", "paid", "Prepare an indoor or weather-resilient plan."],
+  ["date-night", "Date Night Builder", "Small", "Everyday experiences", 10, "membership,plus,family", "paid", "Build a date-night plan with timings, budget and booking prompts."],
+  ["birthday-plan", "Birthday Plan Builder", "Standard", "Everyday experiences", 15, "membership,plus,family", "paid", "Create a birthday plan with guests, venue checks and tasks."],
+  ["travel-itinerary", "Travel Itinerary Builder", "Travel", "Travel experiences", 35, "plus,family", "paid", "Create a self-service travel itinerary outline and checklist."],
+  ["country-brief", "Country Travel Brief Builder", "Travel", "Travel experiences", 35, "plus,family", "paid", "Summarise official-source checks a member should complete before travel."],
+  ["europe-entry", "Europe Entry Readiness Builder", "Travel", "Travel experiences", 35, "plus,family", "paid", "Organise Europe entry-readiness prompts without immigration advice."],
+  ["travel-checklist", "Travel Checklist Builder", "Travel", "Travel experiences", 35, "membership,plus,family", "paid", "Build a travel checklist for documents, packing, operator checks and responsibilities."],
+  ["tube-notes", "Tube Planning Notes Builder", "Travel", "Travel experiences", 35, "plus,family", "paid", "Create general Tube planning notes; customers must check operators before travel."],
+  ["bus-notes", "Bus Planning Notes Builder", "Travel", "Travel experiences", 35, "plus,family", "paid", "Create general bus planning notes; customers must check operators before travel."],
+  ["destination-board", "Destination Board Builder", "Travel", "Travel experiences", 35, "membership,plus,family", "paid", "Create a destination board with ideas, notes and provider checks."],
+  ["airport-assistance", "Airport Assistance Request Builder", "Accessibility/support", "Accessibility and support", 40, "plus,family", "paid", "Prepare general assistance request notes for the customer to check with providers."],
+  ["accessible-travel-checklist", "Accessible Travel Checklist", "Accessibility/support", "Accessibility and support", 35, "plus,family", "paid", "Build a general accessible travel planning checklist."],
+  ["mobility-equipment", "Mobility Equipment Planner", "Accessibility/support", "Accessibility and support", 40, "plus,family", "paid", "Organise mobility equipment planning prompts without medical or safety advice."],
+  ["hidden-disabilities", "Hidden Disabilities Support Planner", "Accessibility/support", "Accessibility and support", 40, "plus,family", "paid", "Prepare general hidden-disability support planning notes."],
+  ["accessible-destination", "Accessible Destination Checklist", "Accessibility/support", "Accessibility and support", 35, "plus,family", "paid", "Create accessibility checks for destinations and providers."],
+  ["accessible-venue-questions", "Accessible Venue Questions Builder", "Accessibility/support", "Accessibility and support", 35, "plus,family", "paid", "Prepare questions to ask venues directly."],
+  ["support-confirmation", "Support Confirmation Tracker", "Accessibility/support", "Accessibility and support", 35, "plus,family", "paid", "Track support confirmations and follow-up tasks."],
+  ["my-plans", "My Plans", "Organisation", "Organisation tools", 0, "trial,membership,plus,family", "trial", "View and organise saved plans."],
+  ["my-discovery-boards", "My Discovery Boards", "Organisation", "Organisation tools", 0, "trial,membership,plus,family", "trial", "View and organise discovery boards."],
+  ["saved-experiences", "Saved Experiences", "Organisation", "Organisation tools", 0, "trial,membership,plus,family", "trial", "View saved experiences."],
+  ["budget-planner", "Budget Planner", "Small", "Organisation tools", 10, "membership,plus,family", "paid", "Create a simple budget planning output."],
+  ["booking-tracker", "Booking Tracker", "Small", "Organisation tools", 10, "membership,plus,family", "paid", "Create a booking tracker output for member-managed bookings."],
+  ["checklists", "Checklists", "Small", "Organisation tools", 10, "trial,membership,plus,family", "trial", "Create a reusable checklist."]
+];
+
+const DEFAULT_TOKEN_ADDONS = [
+  ["extra-10-tokens", "Extra 10 Builder Usage Tokens", 500, 10, "tokens"],
+  ["extra-25-tokens", "Extra 25 Builder Usage Tokens", 1000, 25, "tokens"],
+  ["extra-50-tokens", "Extra 50 Builder Usage Tokens", 1800, 50, "tokens"],
+  ["extra-100-tokens", "Extra 100 Builder Usage Tokens", 3000, 100, "tokens"],
+  ["quick-human-help", "Quick Human Help", 2500, 0, "human_support"],
+  ["human-plan-review", "Human Plan Review", 5000, 0, "human_support"],
+  ["human-made-plan", "Human-Made Experience Plan", 10000, 0, "human_support"]
+];
+
+async function ensureBuilderPlatformTables(DB) {
+  await DB.prepare(`CREATE TABLE IF NOT EXISTS experience_builders (id TEXT PRIMARY KEY, name TEXT NOT NULL, builder_type TEXT NOT NULL, category TEXT NOT NULL, token_cost INTEGER NOT NULL DEFAULT 15, plan_inclusion TEXT NOT NULL DEFAULT 'trial,membership,plus,family', status TEXT NOT NULL DEFAULT 'Active', visibility TEXT NOT NULL DEFAULT 'paid', description TEXT, form_schema TEXT NOT NULL DEFAULT '[]', usage_count INTEGER NOT NULL DEFAULT 0, blocked_attempts INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`).run();
+  await DB.prepare(`CREATE TABLE IF NOT EXISTS builder_outputs (id TEXT PRIMARY KEY, email TEXT NOT NULL, builder_id TEXT NOT NULL, builder_name TEXT NOT NULL, title TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'Completed', token_cost INTEGER NOT NULL DEFAULT 0, input_payload TEXT NOT NULL DEFAULT '{}', output_payload TEXT NOT NULL DEFAULT '{}', request_id TEXT, archived_at TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE(email, request_id))`).run();
+  await DB.prepare(`CREATE TABLE IF NOT EXISTS builder_token_ledger (id TEXT PRIMARY KEY, email TEXT NOT NULL, amount INTEGER NOT NULL, balance_after INTEGER NOT NULL, source TEXT NOT NULL, reason TEXT NOT NULL, builder_output_id TEXT, builder_id TEXT, admin_email TEXT, metadata TEXT NOT NULL DEFAULT '{}', created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`).run();
+  await DB.prepare(`CREATE TABLE IF NOT EXISTS builder_blocked_attempts (id TEXT PRIMARY KEY, email TEXT NOT NULL, builder_id TEXT, builder_name TEXT, reason TEXT NOT NULL, tokens_available INTEGER NOT NULL DEFAULT 0, tokens_required INTEGER NOT NULL DEFAULT 0, action_offered TEXT, metadata TEXT NOT NULL DEFAULT '{}', created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`).run();
+  await DB.prepare(`CREATE TABLE IF NOT EXISTS trial_access_tokens (id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE, status TEXT NOT NULL DEFAULT 'Active', activated_at TEXT NOT NULL, expires_at TEXT NOT NULL, token_allowance INTEGER NOT NULL DEFAULT 30, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`).run();
+  await DB.prepare(`CREATE TABLE IF NOT EXISTS token_addon_packages (id TEXT PRIMARY KEY, name TEXT NOT NULL, price_pence INTEGER NOT NULL, token_amount INTEGER NOT NULL DEFAULT 0, package_type TEXT NOT NULL DEFAULT 'tokens', status TEXT NOT NULL DEFAULT 'Configuration Ready', created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`).run();
+  await DB.prepare(`CREATE TABLE IF NOT EXISTS manual_token_adjustments (id TEXT PRIMARY KEY, email TEXT NOT NULL, amount INTEGER NOT NULL, reason TEXT NOT NULL, adjustment_type TEXT NOT NULL, admin_email TEXT NOT NULL, ledger_id TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`).run();
+  for (const row of DEFAULT_PLATFORM_BUILDERS) await DB.prepare(`INSERT OR IGNORE INTO experience_builders (id, name, builder_type, category, token_cost, plan_inclusion, visibility, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).bind(...row).run();
+  for (const row of DEFAULT_TOKEN_ADDONS) await DB.prepare(`INSERT OR IGNORE INTO token_addon_packages (id, name, price_pence, token_amount, package_type) VALUES (?, ?, ?, ?, ?)`).bind(...row).run();
+}
+
+async function getBuilderPlatform(DB) {
+  await ensureBuilderPlatformTables(DB);
+  const [builders, outputs, ledger, attempts, addons, trials] = await Promise.all([
+    all(DB, `SELECT * FROM experience_builders ORDER BY category, token_cost, name`),
+    all(DB, `SELECT * FROM builder_outputs ORDER BY created_at DESC LIMIT 250`),
+    all(DB, `SELECT * FROM builder_token_ledger ORDER BY created_at DESC LIMIT 250`),
+    all(DB, `SELECT * FROM builder_blocked_attempts ORDER BY created_at DESC LIMIT 250`),
+    all(DB, `SELECT * FROM token_addon_packages ORDER BY package_type DESC, price_pence ASC`),
+    all(DB, `SELECT * FROM trial_access_tokens ORDER BY activated_at DESC LIMIT 250`)
+  ]);
+  return { builders, outputs, ledger, attempts, addons, trials };
+}
+
+async function saveBuilderAdmin(DB, body, identity) {
+  await ensureBuilderPlatformTables(DB);
+  const name = clean(body.name, 160);
+  const category = clean(body.category, 120);
+  const tokenCost = Number(body.token_cost);
+  if (!name) throw new Error("Builder name is required.");
+  if (!category) throw new Error("Builder category is required.");
+  if (!Number.isFinite(tokenCost) || tokenCost < 0) throw new Error("Token cost must be zero or higher.");
+  const id = clean(body.id, 120) || name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  await DB.prepare(`
+    INSERT INTO experience_builders (id, name, builder_type, category, token_cost, plan_inclusion, status, visibility, description, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(id) DO UPDATE SET
+      name = excluded.name,
+      builder_type = excluded.builder_type,
+      category = excluded.category,
+      token_cost = excluded.token_cost,
+      plan_inclusion = excluded.plan_inclusion,
+      status = excluded.status,
+      visibility = excluded.visibility,
+      description = excluded.description,
+      updated_at = CURRENT_TIMESTAMP
+  `).bind(id, name, clean(body.builder_type, 80) || "Standard", category, tokenCost, clean(body.plan_inclusion, 300) || "membership,plus,family", clean(body.status, 80) || "Active", clean(body.visibility, 40) || "paid", clean(body.description, 1000)).run();
+  await writeAudit(DB, identity, "builder_save", "experience_builders", id, `Saved builder ${name}.`, { token_cost: tokenCost });
+  return getBuilderPlatform(DB);
+}
+
+async function saveManualTokenAdjustment(DB, body, identity) {
+  await ensureBuilderPlatformTables(DB);
+  const email = cleanEmail(body.email);
+  const amount = Number(body.amount);
+  const reason = clean(body.reason, 500);
+  if (!email) throw new Error("Customer/account reference is required.");
+  if (!Number.isFinite(amount) || amount === 0) throw new Error("Adjustment amount must be a non-zero number.");
+  if (!reason) throw new Error("Reason is required.");
+  const current = await DB.prepare(`SELECT COALESCE(SUM(amount), 0) AS balance FROM builder_token_ledger WHERE lower(email) = lower(?)`).bind(email).first();
+  const balanceAfter = Number(current?.balance || 0) + amount;
+  const ledgerId = crypto.randomUUID();
+  await DB.prepare(`INSERT INTO builder_token_ledger (id, email, amount, balance_after, source, reason, admin_email, metadata) VALUES (?, ?, ?, ?, 'manual_adjustment', ?, ?, ?)`).bind(ledgerId, email, amount, balanceAfter, reason, identity.email, JSON.stringify({ adjustment_type: clean(body.adjustment_type, 80) || "Manual adjustment" })).run();
+  await DB.prepare(`INSERT INTO manual_token_adjustments (id, email, amount, reason, adjustment_type, admin_email, ledger_id) VALUES (?, ?, ?, ?, ?, ?, ?)`).bind(crypto.randomUUID(), email, amount, reason, clean(body.adjustment_type, 80) || "Manual adjustment", identity.email, ledgerId).run();
+  await writeAudit(DB, identity, "builder_token_manual_adjustment", "builder_token_ledger", ledgerId, `Adjusted Builder Usage Tokens for ${email}.`, { amount, balance_after: balanceAfter });
+  return getBuilderPlatform(DB);
+}
+
 export async function onRequest(context) {
   const { request, env } = context;
 
@@ -3056,6 +3172,10 @@ export async function onRequest(context) {
           plans: await all(env.DB, `SELECT * FROM service_plans ORDER BY sort_order ASC, plan_name ASC`)
         });
       }
+      if (["builders", "credits", "usage", "addons", "platformsettings"].includes(section)) {
+        const platform = await getBuilderPlatform(env.DB);
+        return json({ admin: adminContext, platform });
+      }
       if (section === "notifications") return json({ admin: adminContext, notifications: await getNotifications(env.DB) });
       if (section === "membership") return json({ admin: adminContext, membership: await getMembership(env.DB) });
       if (section === "security") return json({ admin: adminContext, security: await getSecurity(env.DB) });
@@ -3087,6 +3207,15 @@ export async function onRequest(context) {
       if (!isSameOriginRequest(request)) return json({ error: "This request could not be verified." }, 403);
       const body = await request.json().catch(() => ({}));
       if (section === "prefs") return json({ preferences: await saveAdminPreferences(env.DB, body, identity), saved: true });
+      if (section === "builders") {
+        if (!ownerAccess && !hasAnyPermission(adminContext.permissions, ["manage_plans", "manage_pricing", "manage_crm"])) return json({ error: "Forbidden.", section }, 403);
+        return json({ admin: adminContext, platform: await saveBuilderAdmin(env.DB, body, identity), saved: true });
+      }
+      if (section === "credits") {
+        if (!ownerAccess && !hasAnyPermission(adminContext.permissions, ["manage_plans", "manage_pricing", "manage_crm"])) return json({ error: "Forbidden.", section }, 403);
+        if (body.action === "manual_adjustment") return json({ admin: adminContext, platform: await saveManualTokenAdjustment(env.DB, body, identity), saved: true });
+        return json({ admin: adminContext, platform: await getBuilderPlatform(env.DB), saved: false });
+      }
       if (body.action === "export_customer_data") {
         if (!ownerAccess && !hasAnyPermission(adminContext.permissions, ["manage_users", "manage_crm"])) {
           return json({ error: "Forbidden.", section }, 403);
