@@ -16,9 +16,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.head.appendChild(themeLink);
   }
   const publicThemeLink = document.querySelector('link[href^="/assets/css/public-saas.css"]') || document.createElement("link");
+  publicThemeLink.rel = "stylesheet";
+  publicThemeLink.href = "/assets/css/public-saas.css?v=20260710-saas-repair-1";
   if (!publicThemeLink.parentNode) {
-    publicThemeLink.rel = "stylesheet";
-    publicThemeLink.href = "/assets/css/public-saas.css?v=20260710-partners-1";
     document.head.appendChild(publicThemeLink);
   }
 
