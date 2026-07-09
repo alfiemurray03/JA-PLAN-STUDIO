@@ -27,8 +27,16 @@
           <h3 class="font-bold text-sm mb-4">Account</h3>
           <nav class="flex flex-col gap-2">
             <a href="/account/login/?return_to=%2Faccount%2Fdashboard%2F" class="text-sm text-secondary hover:text-primary transition">Sign in</a>
-            <a href="/account/login/?return_to=%2Faccount%2Fdashboard%2F" class="text-sm text-secondary hover:text-primary transition">Create account</a>
-            <a href="/ja-group-services-id/" class="text-sm text-secondary hover:text-primary transition">JA Group Services ID</a>
+            <a href="/pricing/#trial" class="text-sm text-secondary hover:text-primary transition">Create account</a>
+          </nav>
+        </div>
+
+        <div>
+          <h3 class="font-bold text-sm mb-4">JA Group Services ID</h3>
+          <nav class="flex flex-col gap-2">
+            <a href="/ja-group-services-id/" class="text-sm text-secondary hover:text-primary transition">About sign in</a>
+            <a href="/account/login/?return_to=%2Faccount%2Fdashboard%2F" class="text-sm text-secondary hover:text-primary transition">Customer sign in</a>
+            <a href="/signed-out/customer/" class="text-sm text-secondary hover:text-primary transition">Signed-out help</a>
           </nav>
         </div>
 
@@ -47,6 +55,7 @@
             <a href="/legal/terms/" class="text-sm text-secondary hover:text-primary transition">Terms of Service</a>
             <a href="/legal/privacy/" class="text-sm text-secondary hover:text-primary transition">Privacy Notice</a>
             <a href="/legal/cookies/" class="text-sm text-secondary hover:text-primary transition">Cookie Policy</a>
+            <button type="button" class="text-sm text-secondary hover:text-primary transition text-left" onclick="if(window.Cookiebot){Cookiebot.renew()}">Cookie Preferences</button>
           </nav>
         </div>
       </div>
@@ -54,10 +63,12 @@
       <div class="divider"></div>
 
       <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-        <div class="flex flex-wrap gap-4 text-xs text-muted">
+        <div class="flex flex-col gap-2 text-xs text-muted">
           <span>&copy; 2026 JA Group Services Ltd.</span>
-          <span>Company No. 14227845</span>
-          <span>Registered in England & Wales</span>
+          <span>Company No. 16314179</span>
+          <span>Registered office: 167-169 Great Portland Street, 5th Floor, Westminster, W1W 5PF</span>
+          <span>Telephone: 020 3834 2790</span>
+          <span>Email: <a href="mailto:hello@jagroupservices.co.uk">hello@jagroupservices.co.uk</a></span>
         </div>
         <div class="flex items-center gap-3">
           <span class="badge text-xs">Secure payments</span>

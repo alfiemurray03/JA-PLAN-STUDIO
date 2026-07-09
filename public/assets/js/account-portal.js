@@ -200,6 +200,16 @@ function portalTable(headers, rows = []) {
   `;
 }
 
+function emptyPortalState(title, body, actionHref = "", actionLabel = "") {
+  return `
+    <div class="portal-empty-state">
+      <strong>${escapeHtml(title)}</strong>
+      <span>${escapeHtml(body)}</span>
+      ${actionHref ? `<a class="portal-button" href="${escapeHtml(actionHref)}">${escapeHtml(actionLabel)}</a>` : ""}
+    </div>
+  `;
+}
+
 window.JAPortal = { shell, loadProfile, loadRequests, loadPins, loadSaved, loadBilling, loadBuilders, updateShared, timelineItems, timelineMarkup, fmt, escapeHtml, initials, state: portalState };
 
 document.addEventListener("click", async (event) => {
@@ -648,7 +658,7 @@ async function renderPage(page) {
     const outputs = Array.isArray(data.outputs) ? data.outputs : [];
     pageRoot.innerHTML = `
       <section class="portal-card"><h2>Saved builder outputs and plans</h2>
-        ${portalTable(["Created", "Builder", "Title", "Tokens used", "Status", "Action"], outputs.map((item) => [fmt(item.created_at), item.builder_name, item.title, item.token_cost, item.status, `<button class="portal-button secondary" type="button" data-action="archive-builder-output" data-id="${escapeHtml(item.id)}">Archive</button>`]))}
+        ${outputs.length ? portalTable(["Created", "Builder", "Title", "Tokens used", "Status", "Action"], outputs.map((item) => [fmt(item.created_at), item.builder_name, item.title, item.token_cost, item.status, `<button class="portal-button secondary" type="button" data-action="archive-builder-output" data-id="${escapeHtml(item.id)}">Archive</button>`])) : emptyPortalState("No builder outputs yet", "Open a builder and save a finished output to see it here.", "/builders/", "Open Experience Builders")}
       </section>
     `;
     return;
@@ -800,7 +810,7 @@ async function renderPage(page) {
         <article class="portal-card portal-span-6">
           <h2>Favourite destinations</h2>
           <div class="portal-stack">
-            ${savedDestinations.map((item) => `<div class="portal-entry"><strong>${escapeHtml(item.item_title)}</strong><small>${escapeHtml(item.category || item.source_page || "Destination")}</small><button class="portal-mini" type="button" data-saved-remove="destination" data-item-key="${escapeHtml(item.item_key)}">Remove</button></div>`).join("") || '<div class="portal-note inline">No favourite destinations yet. Save destinations while browsing to build your shortlist.</div>'}
+            ${savedDestinations.map((item) => `<div class="portal-entry"><strong>${escapeHtml(item.item_title)}</strong><small>${escapeHtml(item.category || item.source_page || "Destination")}</small><button class="portal-mini" type="button" data-saved-remove="destination" data-item-key="${escapeHtml(item.item_key)}">Remove</button></div>`).join("") || emptyPortalState("No saved plans yet", "When you save a finished builder output, it will appear here.", "/builders/", "Open Experience Builders")}
           </div>
         </article>
         <article class="portal-card portal-span-6">

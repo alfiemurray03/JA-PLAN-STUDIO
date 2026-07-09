@@ -142,7 +142,10 @@ async function loadAuthenticatedBuilders() {
     if (response.status === 401) {
       builderState.signedIn = false;
       builderState.loadingAuth = false;
-      window.location.href = loginUrl;
+      builderState.builders = PUBLIC_BUILDERS;
+      builderState.outputs = [];
+      builderState.summary = null;
+      showStatusHtml('You can browse the builder catalogue while signed out. Sign in or create an account to claim the 14-day trial and save finished outputs.', "info");
       return;
     }
     if (!response.ok) throw new Error(data.error || "Builder account data could not be loaded.");

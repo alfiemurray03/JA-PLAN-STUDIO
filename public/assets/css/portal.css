@@ -468,6 +468,27 @@ body {
   padding: 0.75rem 1rem;
 }
 
+.portal-empty-state {
+  align-items: flex-start;
+  background: rgba(255, 255, 255, 0.48);
+  border: 1px dashed rgba(99, 102, 241, 0.28);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.25rem;
+}
+
+.portal-empty-state strong {
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.portal-empty-state span {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
 /* Timeline */
 .portal-timeline {
   display: flex;
