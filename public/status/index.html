@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Service Status Centre | JA Experiences &amp; Discovery</title>
   <meta name="description" content="Operational status, incidents and scheduled maintenance for JA Experiences & Discovery.">
-  <link rel="stylesheet" href="/assets/css/glass-theme.css">
+  <link rel="stylesheet" href="/assets/css/theme.css?v=20260709-airo-2">
+  <link rel="stylesheet" href="/assets/css/public-saas.css?v=20260709-saas-1">
   <script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="762d90c4-b030-45b0-9e70-c21806c665e3" data-blockingmode="auto" type="text/javascript"></script>
 </head>
 <body data-page="status">
@@ -21,7 +22,7 @@
       <div class="container">
         <div class="platform-card text-center" id="statusLoading"><strong>Loading live service status</strong><p>This should only take a moment.</p></div>
         <div id="statusError" class="platform-card hidden" role="alert"><h2>Live status is temporarily unavailable</h2><p id="statusErrorMessage">Please try again shortly or use the official status portal.</p><button class="btn btn-primary" id="retryStatus">Try again</button></div>
-        <div id="statusContent" class="hidden grid" style="gap:2rem">
+        <div id="statusContent" class="hidden grid gap-2rem">
           <div class="platform-card" id="overallStatus"><div><span class="platform-eyebrow">Overall system status</span><h2 id="overallStatusTitle">Checking systems</h2><p id="overallStatusDescription"></p></div><p><strong>Last updated:</strong> <span id="lastUpdated"></span></p></div>
           <div class="grid grid-4" id="summaryGrid"></div>
           <section><h2>Component health</h2><div class="grid grid-2" id="componentGrid"></div></section>

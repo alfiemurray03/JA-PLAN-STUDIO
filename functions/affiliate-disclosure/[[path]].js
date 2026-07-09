@@ -61,8 +61,7 @@ export async function onRequestGet({ env }) {
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Affiliate Disclosure | JA Experiences & Discovery</title>
   <meta name="description" content="How affiliate links and third-party activity bookings work on JA Experiences & Discovery.">
-  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/css/ja-travel-rebuild.css?v=20260621-1">
+  <link rel="stylesheet" href="/assets/css/theme.css?v=20260709-airo-2"><link rel="stylesheet" href="/assets/css/public-saas.css?v=20260709-saas-1">
 </head>
 <body><div id="siteShellHeader"></div><main id="main">
   <section class="page-hero"><div class="container"><span class="eyebrow">Clear commercial disclosure</span><h1>${escapeHtml(hero.title || "Affiliate links and independent providers")}</h1><p>${escapeHtml(hero.body || "")}</p></div></section>

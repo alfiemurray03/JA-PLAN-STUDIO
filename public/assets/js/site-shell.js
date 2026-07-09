@@ -15,6 +15,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     themeLink.href = "/assets/css/theme.css?v=20260709-airo-2";
     document.head.appendChild(themeLink);
   }
+  const publicThemeLink = document.querySelector('link[href^="/assets/css/public-saas.css"]') || document.createElement("link");
+  if (!publicThemeLink.parentNode) {
+    publicThemeLink.rel = "stylesheet";
+    publicThemeLink.href = "/assets/css/public-saas.css?v=20260709-saas-1";
+    document.head.appendChild(publicThemeLink);
+  }
 
   function ensureFaviconLink(rel, attrs = {}) {
     let link = document.querySelector(`link[rel="${rel}"]`);
@@ -124,7 +130,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function setupAccountDropdown() {
     const identity = nativeIdentity();
-    const actions = document.querySelector(".site-nav-actions");
+    const actions = document.querySelector(".site-header-actions, .site-nav-actions");
     if (!identity?.email || !actions) return;
     const label = identity.name || identity.email;
     actions.innerHTML = `
