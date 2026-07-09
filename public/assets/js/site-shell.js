@@ -165,7 +165,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   await Promise.all([
     loadPartial(headerTarget, "/assets/includes/header.html?v=20260709-auth-1"),
-    loadPartial(footerTarget, "/assets/includes/footer.html?v=20260709-auth-1")
+    loadPartial(footerTarget, "/assets/includes/footer.html?v=20260709-footer-2")
   ]);
 
   setupThemeToggle();
