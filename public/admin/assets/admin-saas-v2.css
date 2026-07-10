@@ -1097,7 +1097,7 @@ td span { margin-top: .13rem; color: var(--muted); font-size: .67rem; }
   .admin-topbar-title span, .admin-user-text, .pin-button { display: none; }
   .dashboard-welcome { display: grid; }
   .website-state { min-width: 0; width: 100%; }
-  .admin-grid, .kpi-grid, .settings-category-grid, .quick-grid, .plan-grid, .policy-grid, .drawer-grid, .drawer-section-grid, .admin-form, .status-editor-controls, .two-column-form { grid-template-columns: 1fr; }
+  .admin-grid, .kpi-grid, .settings-category-grid, .quick-grid, .plan-grid, .policy-grid, .drawer-grid, .drawer-section-grid, .admin-form, .status-editor-controls, .two-column-form, .status-mode-grid { grid-template-columns: 1fr; }
   .table-tools { align-items: stretch; flex-direction: column; }
   .table-filters { flex-direction: column; }
   .table-search { max-width: none; }
@@ -1118,4 +1118,118 @@ td span { margin-top: .13rem; color: var(--muted); font-size: .67rem; }
   .notification-button { display: none; }
   .account-chevron { display: none; }
   .customer-drawer { width: 100vw; }
+  .status-mode-grid { gap: .5rem; }
+  .status-mode-card { padding: .75rem; }
+}
+
+/* System Settings - Site Status */
+.status-info-card {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .75rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--brand-soft);
+  border: 1px solid var(--primary-light);
+  margin-top: 1rem;
+}
+.status-info-label {
+  font-size: .76rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.status-info-value {
+  font-size: .82rem;
+  font-weight: 800;
+  color: var(--brand);
+}
+.status-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .75rem;
+}
+.status-mode-card {
+  display: block;
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  padding: 1rem;
+  cursor: pointer;
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+  position: relative;
+}
+.status-mode-card:hover {
+  border-color: var(--primary-light);
+  box-shadow: var(--shadow-sm);
+}
+.status-mode-card.selected {
+  border-color: var(--primary);
+  background: var(--brand-soft);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+.status-mode-card input[type="radio"] {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--brand);
+  cursor: pointer;
+}
+.status-mode-card-body {
+  display: grid;
+  gap: .35rem;
+  padding-right: 1.5rem;
+}
+.status-mode-name {
+  font-size: .82rem;
+  font-weight: 800;
+  color: var(--text);
+}
+.status-mode-card.selected .status-mode-name {
+  color: var(--brand);
+}
+.status-mode-desc {
+  font-size: .72rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.status-notes-list {
+  margin: .5rem 0 0;
+  padding-left: 1.2rem;
+  color: var(--muted);
+  font-size: .76rem;
+  line-height: 1.8;
+}
+.status-notes-list li {
+  margin-bottom: .3rem;
+}
+.status-notes-list code {
+  font-size: .72rem;
+  padding: .1rem .3rem;
+  border-radius: 4px;
+  background: var(--surface-subtle);
+  color: var(--text);
+}
+.countdown-info-box {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .65rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--success-soft);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  margin-top: .5rem;
+}
+.countdown-info-label {
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.countdown-info-value {
+  font-size: .78rem;
+  font-weight: 700;
+  color: var(--success);
 }

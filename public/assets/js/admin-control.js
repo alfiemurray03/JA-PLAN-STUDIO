@@ -53,7 +53,8 @@ const sectionTitles = {
   audit: "Audit Log",
   launchgateway: "Launch Gateway",
   maintenance: "Maintenance Mode",
-  sessions: "Sessions"
+  sessions: "Sessions",
+  systemsettings: "System Settings"
 };
 const sectionDescriptions = {
   overview: "Executive summary of your customer and platform operations.",
@@ -91,7 +92,8 @@ const sectionDescriptions = {
   affiliate: "Manage affiliate notices, widgets and content blocks.",
   policies: "Maintain legal, privacy and compliance content.",
   launchgateway: "Control the public Launch Gateway experience.",
-  maintenance: "Control maintenance mode and service messaging."
+  maintenance: "Control maintenance mode and service messaging.",
+  systemsettings: "Configure platform-wide settings, branding, integrations and compliance."
 };
 
 const iconPaths = {
@@ -547,6 +549,20 @@ async function loadSection(section) {
       return;
     }
 
+    if (section === "systemsettings") {
+      const [platformData, comingSoonConfig] = await Promise.all([
+        api("platformsettings"),
+        fetch("/api/coming-soon-config", { headers: { Accept: "application/json" } })
+          .then((r) => r.ok ? r.json() : null)
+          .catch(() => null)
+      ]);
+      state.data.systemsettings = { ...platformData, coming_soon_config: comingSoonConfig };
+      if (platformData.admin) setAdmin(platformData.admin);
+      touchRecentSection(section);
+      renderSection(section, state.data.systemsettings);
+      return;
+    }
+
     if (section === "analytics") {
       const [data, status] = await Promise.all([api(section), fetchLiveStatus().catch(() => null)]);
       state.data[section] = data;
@@ -876,6 +892,7 @@ function renderSection(section, data) {
   if (section === "email") renderEmail(data.email, data.test);
   if (section === "audit") renderAudit(data.audit);
   if (section === "sessions") renderSessions(data.sessions);
+  if (section === "systemsettings") renderSystemSettings(data);
 }
 
 function renderConfigurationReadyNotice() {
@@ -1131,7 +1148,6 @@ function renderPaidAddOns(platform = {}) {
 }
 
 function renderPlatformSettings(platform = {}) {
-  const currentStatus = state.data.platformsettings?.site_status || "normal";
   const settingsCategories = [
     ["General", "Platform identity, launch mode and operating defaults."],
     ["Stripe", "Payment environment, portal state and price ID mapping."],
@@ -1162,38 +1178,10 @@ function renderPlatformSettings(platform = {}) {
     </div>
     <div class="admin-grid">
       <article class="admin-card">
-        <h2>Site Status Controls</h2>
-        <form class="admin-form single" id="siteStatusForm">
-          <label>Platform Status
-            <select id="siteStatusSelect">
-              <option value="normal" ${currentStatus === "normal" ? "selected" : ""}>Normal Operation</option>
-              <option value="coming_soon" ${currentStatus === "coming_soon" ? "selected" : ""}>Coming Soon Mode</option>
-              <option value="maintenance" ${currentStatus === "maintenance" ? "selected" : ""}>Maintenance Mode</option>
-            </select>
-          </label>
-          <button class="admin-button" type="submit" style="margin-top: 1rem;">Save Site Status</button>
-        </form>
-        <div id="siteStatusSaved" class="admin-alert" style="margin-top: 1rem;" hidden></div>
+        <h2>Site Status</h2>
+        <p>Site status and Coming Soon countdown settings are now managed in <strong>System Settings &rarr; Site Status</strong>.</p>
+        <button class="admin-button" type="button" onclick="document.querySelector('[data-section=\\'systemsettings\\']').click()">Go to Site Status</button>
       </article>
-
-      <article class="admin-card">
-        <h2>Coming Soon Settings</h2>
-        <form class="admin-form single" id="comingSoonSettingsForm">
-          <label>Page Headline
-            <input type="text" id="comingSoonHeadline" placeholder="Coming Soon" maxlength="200">
-          </label>
-          <label>Subtext
-            <input type="text" id="comingSoonSubtext" placeholder="We are putting the finishing touches on something great." maxlength="500">
-          </label>
-          <label>Launch Date &amp; Time (UK local time)
-            <input type="datetime-local" id="comingSoonLaunchDate" step="60">
-          </label>
-          <p style="font-size: 0.82rem; color: #64748b; margin-top: -0.5rem;">Enter the date and time in UK local time. BST/GMT is handled automatically. Stored as UTC.</p>
-          <button class="admin-button" type="submit" style="margin-top: 1rem;">Save Countdown Settings</button>
-        </form>
-        <div id="comingSoonSaved" class="admin-alert" style="margin-top: 1rem;" hidden></div>
-      </article>
-
       <article class="admin-card">
         <h2>Subscription Plans</h2>
         <div class="settings-plan-grid">
@@ -1212,98 +1200,7 @@ function renderPlatformSettings(platform = {}) {
       <article class="admin-card"><h2>Troubleshooting</h2><p>Use Production Health, Status Centre, Audit, Sessions and System Reports for live diagnostics. This settings overview does not expose secrets or bypass authentication.</p></article>
       <article class="admin-card"><h2>Affiliate/service boundary wording</h2><p>Headout and GetYourGuide remain third-party providers. JA Group Services Ltd may receive commission from qualifying bookings. Bookings are made directly with the relevant provider and are subject to that provider's terms, cancellation rules, refund rules and privacy notice.</p></article>
     </div>
-    <button class="admin-button" type="button" data-action="validate-platform-settings">Validate settings</button>
-    <div class="admin-alert" id="platformSettingsStatus" hidden></div>
   `);
-
-  document.getElementById("siteStatusForm")?.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const statusEl = document.getElementById("siteStatusSaved");
-    const selectEl = document.getElementById("siteStatusSelect");
-    if (!statusEl || !selectEl) return;
-    statusEl.hidden = false;
-    statusEl.className = "admin-alert";
-    statusEl.textContent = "Updating status...";
-
-    try {
-      const data = await api("platformsettings", {
-        method: "POST",
-        body: JSON.stringify({
-          action: "update_site_status",
-          site_status: selectEl.value
-        })
-      });
-      state.data.platformsettings = { ...state.data.platformsettings, ...data };
-      statusEl.className = "admin-success";
-      statusEl.textContent = "Site status updated successfully.";
-      renderPlatformSettings(state.data.platformsettings?.platform);
-      const newStatusEl = document.getElementById("siteStatusSaved");
-      if (newStatusEl) {
-        newStatusEl.hidden = false;
-        newStatusEl.className = "admin-success";
-        newStatusEl.textContent = "Site status updated successfully.";
-      }
-    } catch (error) {
-      statusEl.className = "admin-alert";
-      statusEl.textContent = error.message || "Failed to update site status.";
-    }
-  });
-
-  const comingSoonForm = document.getElementById("comingSoonSettingsForm");
-  if (comingSoonForm) {
-    fetch("/api/coming-soon-config", { headers: { Accept: "application/json" } })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((cfg) => {
-        if (!cfg) return;
-        if (cfg.headline) document.getElementById("comingSoonHeadline").value = cfg.headline;
-        if (cfg.subtext) document.getElementById("comingSoonSubtext").value = cfg.subtext;
-        if (cfg.launchDate) {
-          const d = new Date(cfg.launchDate);
-          if (!Number.isNaN(d.getTime())) {
-            const ukOffset = getUkOffset(d);
-            const local = new Date(d.getTime() - ukOffset);
-            document.getElementById("comingSoonLaunchDate").value = local.toISOString().slice(0, 16);
-          }
-        }
-      })
-      .catch(() => {});
-
-    comingSoonForm.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const savedEl = document.getElementById("comingSoonSaved");
-      if (!savedEl) return;
-      savedEl.hidden = false;
-      savedEl.className = "admin-alert";
-      savedEl.textContent = "Saving countdown settings...";
-
-      try {
-        const rawDate = document.getElementById("comingSoonLaunchDate").value;
-        let launchDate = "";
-        if (rawDate) {
-          const d = new Date(rawDate);
-          if (Number.isNaN(d.getTime())) {
-            throw new Error("Launch date is not a valid date.");
-          }
-          launchDate = d.toISOString();
-        }
-
-        const data = await api("platformsettings", {
-          method: "POST",
-          body: JSON.stringify({
-            action: "update_coming_soon_settings",
-            headline: document.getElementById("comingSoonHeadline").value,
-            subtext: document.getElementById("comingSoonSubtext").value,
-            launch_date: launchDate
-          })
-        });
-        savedEl.className = "admin-success";
-        savedEl.textContent = "Countdown settings saved successfully.";
-      } catch (error) {
-        savedEl.className = "admin-alert";
-        savedEl.textContent = error.message || "Failed to save countdown settings.";
-      }
-    });
-  }
 }
 
 function getUkOffset(date) {
@@ -4408,6 +4305,452 @@ function priorityColour(priority = "") {
   if (text === "urgent" || text === "high") return "red";
   if (text === "low") return "green";
   return "amber";
+}
+
+function renderSystemSettings(data = {}) {
+  const container = document.getElementById("sectionContent");
+  const platform = data.platform || {};
+  const siteStatus = data.site_status || "normal";
+  const csConfig = data.coming_soon_config || {};
+  const csSettings = data.coming_soon || {};
+
+  const tabs = [
+    { id: "general", label: "General", icon: "settings" },
+    { id: "stripe", label: "Stripe", icon: "card" },
+    { id: "products", label: "Products", icon: "plans" },
+    { id: "plans", label: "Plans", icon: "plans" },
+    { id: "email", label: "Email", icon: "mail" },
+    { id: "compliance", label: "Compliance", icon: "shield" },
+    { id: "appearance", label: "Appearance", icon: "palette" },
+    { id: "sitestatus", label: "Site Status", icon: "clock" },
+    { id: "troubleshooting", label: "Troubleshooting", icon: "alert" }
+  ];
+
+  container.innerHTML = `
+    <div class="section-head">
+      <div>
+        <h2>System Settings</h2>
+        <p>Configure platform-wide settings, branding, integrations and compliance.</p>
+      </div>
+    </div>
+    <div class="settings-category-tabs" id="systemSettingsTabs">
+      ${tabs.map((t, i) => `<button class="settings-category-tab${i === 0 ? " active" : ""}" data-tab="${t.id}">${t.label}</button>`).join("")}
+    </div>
+    <div id="systemSettingsTabContent"></div>
+  `;
+
+  const tabContent = document.getElementById("systemSettingsTabContent");
+  const tabButtons = container.querySelectorAll(".settings-category-tab");
+
+  function switchTab(tabId) {
+    tabButtons.forEach((b) => b.classList.toggle("active", b.dataset.tab === tabId));
+    renderSystemSettingsTab(tabId, tabContent, data);
+  }
+
+  tabButtons.forEach((btn) => btn.addEventListener("click", () => switchTab(btn.dataset.tab)));
+  switchTab("sitestatus");
+}
+
+function renderSystemSettingsTab(tabId, container, data) {
+  switch (tabId) {
+    case "general":
+      container.innerHTML = renderGeneralTab(data);
+      break;
+    case "stripe":
+      container.innerHTML = "";
+      renderStripe(data.stripe || {});
+      break;
+    case "products":
+      container.innerHTML = renderProductsTab(data);
+      break;
+    case "plans":
+      container.innerHTML = "";
+      renderPlans(data.plans || []);
+      break;
+    case "email":
+      container.innerHTML = "";
+      renderEmail(data.email || {}, data.test || null);
+      break;
+    case "compliance":
+      container.innerHTML = renderComplianceTab(data);
+      break;
+    case "appearance":
+      container.innerHTML = "";
+      renderAppearance(data.appearance || {});
+      break;
+    case "sitestatus":
+      renderSiteStatusTab(container, data);
+      break;
+    case "troubleshooting":
+      container.innerHTML = renderTroubleshootingTab(data);
+      break;
+    default:
+      container.innerHTML = "<p class=\"admin-card\">This tab has no content yet.</p>";
+  }
+}
+
+function renderGeneralTab(data) {
+  const platform = data.platform || {};
+  return `
+    <article class="admin-card">
+      <h2>Platform Information</h2>
+      <p>Core platform configuration and builder settings.</p>
+      <div class="admin-form" style="margin-top: 1rem;">
+        <label>Platform Name
+          <input type="text" value="${escapeHtml(platform.name || "JA Experiences & Discovery")}" readonly>
+        </label>
+        <label>Platform Version
+          <input type="text" value="${escapeHtml(platform.version || "2026.07")}" readonly>
+        </label>
+        <label>Schema Version
+          <input type="text" value="${escapeHtml(platform.schemaVersion || "N/A")}" readonly>
+        </label>
+        <label>Default Builder
+          <input type="text" value="${escapeHtml(platform.defaultBuilder || "experience")}" readonly>
+        </label>
+      </div>
+    </article>
+    <article class="admin-card">
+      <h2>Quick Links</h2>
+      <p>Jump to related settings sections.</p>
+      <div class="quick-grid" style="margin-top: 1rem;">
+        <button class="quick-card" onclick="document.querySelector('[data-section=\\'branding\\']').click()">
+          <span class="quick-icon">${icon("settings")}</span>
+          <span><strong>Branding</strong><span>Company name, logo, colours</span></span>
+        </button>
+        <button class="quick-card" onclick="document.querySelector('[data-section=\\'cms\\']').click()">
+          <span class="quick-icon">${icon("file")}</span>
+          <span><strong>Website CMS</strong><span>Manage public page content</span></span>
+        </button>
+        <button class="quick-card" onclick="document.querySelector('[data-section=\\'system\\']').click()">
+          <span class="quick-icon">${icon("alert")}</span>
+          <span><strong>System Events</strong><span>View system event log</span></span>
+        </button>
+      </div>
+    </article>
+  `;
+}
+
+function renderProductsTab(data) {
+  return `
+    <article class="admin-card">
+      <h2>Products</h2>
+      <p>Manage experience builder products and add-ons.</p>
+      <div class="quick-grid" style="margin-top: 1rem;">
+        <button class="quick-card" onclick="document.querySelector('[data-section=\\'builders\\']').click()">
+          <span class="quick-icon">${icon("settings")}</span>
+          <span><strong>Experience Builders</strong><span>Configure builder types</span></span>
+        </button>
+        <button class="quick-card" onclick="document.querySelector('[data-section=\\'addons\\']').click()">
+          <span class="quick-icon">${icon("plans")}</span>
+          <span><strong>Paid Add-Ons</strong><span>Manage add-on products</span></span>
+        </button>
+        <button class="quick-card" onclick="document.querySelector('[data-section=\\'credits\\']').click()">
+          <span class="quick-icon">${icon("card")}</span>
+          <span><strong>Usage Tokens</strong><span>Token packages and pricing</span></span>
+        </button>
+      </div>
+    </article>
+  `;
+}
+
+function renderComplianceTab(data) {
+  return `
+    <article class="admin-card">
+      <h2>Compliance</h2>
+      <p>Manage legal policies, data protection and affiliate disclosure.</p>
+      <div class="quick-grid" style="margin-top: 1rem;">
+        <button class="quick-card" onclick="document.querySelector('[data-section=\\'policies\\']').click()">
+          <span class="quick-icon">${icon("file")}</span>
+          <span><strong>Policy Pages</strong><span>Privacy, terms, cookies, etc.</span></span>
+        </button>
+        <button class="quick-card" onclick="document.querySelector('[data-section=\\'affiliate\\']').click()">
+          <span class="quick-icon">${icon("link")}</span>
+          <span><strong>Affiliate Disclosure</strong><span>Manage affiliate content</span></span>
+        </button>
+      </div>
+    </article>
+  `;
+}
+
+function renderTroubleshootingTab(data) {
+  return `
+    <article class="admin-card">
+      <h2>Troubleshooting</h2>
+      <p>System diagnostics, event logs and health checks.</p>
+      <div class="quick-grid" style="margin-top: 1rem;">
+        <button class="quick-card" onclick="document.querySelector('[data-section=\\'system\\']').click()">
+          <span class="quick-icon">${icon("alert")}</span>
+          <span><strong>System Events</strong><span>View system event log</span></span>
+        </button>
+        <button class="quick-card" onclick="document.querySelector('[data-section=\\'health\\']').click()">
+          <span class="quick-icon">${icon("shield")}</span>
+          <span><strong>Production Health</strong><span>Check system health</span></span>
+        </button>
+        <button class="quick-card" onclick="document.querySelector('[data-section=\\'status\\']').click()">
+          <span class="quick-icon">${icon("chart")}</span>
+          <span><strong>Status Centre</strong><span>Live service status</span></span>
+        </button>
+      </div>
+    </article>
+    <article class="admin-card">
+      <h2>Cache Behaviour</h2>
+      <p>All site status and coming soon config API responses use <code>Cache-Control: no-store</code> to ensure the latest database state is always served. No browser caching is used for status settings.</p>
+    </article>
+    <article class="admin-card">
+      <h2>Route Exclusions</h2>
+      <p>The following routes are never blocked by site status mode:</p>
+      <ul style="margin: 0.5rem 0 0 1.5rem; color: var(--muted); font-size: 0.78rem; line-height: 1.8;">
+        <li><code>/admin/*</code> - Admin portal always accessible</li>
+        <li><code>/account/*</code> - Customer dashboard always accessible</li>
+        <li><code>/login</code> and <code>/signed-out/*</code> - Authentication routes</li>
+        <li><code>/api/site-status</code> and <code>/api/coming-soon-config</code> - Status APIs</li>
+        <li><code>/assets/*</code> - Static assets</li>
+      </ul>
+    </article>
+  `;
+}
+
+function renderSiteStatusTab(container, data) {
+  const siteStatus = data.site_status || "normal";
+  const csConfig = data.coming_soon_config || {};
+  const csSettings = data.coming_soon || {};
+
+  const statusLabels = {
+    normal: "Normal",
+    coming_soon: "Coming Soon",
+    maintenance: "Maintenance"
+  };
+  const statusDescriptions = {
+    normal: "Public website is fully accessible to all visitors.",
+    coming_soon: "Public visitors see a branded Coming Soon page. Login, dashboard and admin remain accessible.",
+    maintenance: "Public visitors see a Maintenance in Progress page. Login, dashboard and admin remain accessible."
+  };
+
+  const currentLabel = statusLabels[siteStatus] || "Normal";
+  const currentDesc = siteStatus === "coming_soon"
+    ? "Public visitors see the Coming Soon page. Admin portal remains accessible."
+    : siteStatus === "maintenance"
+    ? "Public visitors see the Maintenance page. Admin portal remains accessible."
+    : "Public website is fully accessible to all visitors.";
+
+  let launchDateDisplay = "";
+  let launchDateValue = "";
+  const rawDate = csConfig.launchDate || csSettings.launchDate || "";
+  if (rawDate) {
+    const d = new Date(rawDate);
+    if (!Number.isNaN(d.getTime())) {
+      launchDateDisplay = formatUkDateTime(d);
+      const ukOffset = getUkOffset(d);
+      const local = new Date(d.getTime() - ukOffset * 60000);
+      launchDateValue = local.toISOString().slice(0, 16);
+    }
+  }
+
+  container.innerHTML = `
+    <article class="admin-card">
+      <h2>Site Status</h2>
+      <p>Control whether the public website is live, in coming soon mode, or under maintenance. The admin portal remains accessible in all modes.</p>
+      <div class="status-info-card" id="siteStatusInfoCard">
+        <span class="status-info-label">Current Site Status:</span>
+        <span class="status-info-value" id="currentStatusDisplay">${escapeHtml(currentLabel)}</span>
+      </div>
+      <p style="margin-top: 0.75rem; font-size: 0.76rem; color: var(--muted);" id="currentStatusDesc">${escapeHtml(currentDesc)}</p>
+
+      <div style="margin-top: 1.25rem;">
+        <p style="font-size: 0.76rem; font-weight: 700; color: var(--text); margin-bottom: 0.6rem;">Select mode:</p>
+        <div class="status-mode-grid">
+          ${["normal", "coming_soon", "maintenance"].map((mode) => `
+            <label class="status-mode-card${siteStatus === mode ? " selected" : ""}" data-mode="${mode}">
+              <input type="radio" name="siteStatusMode" value="${mode}" ${siteStatus === mode ? "checked" : ""}>
+              <span class="status-mode-card-body">
+                <span class="status-mode-name">${statusLabels[mode]}</span>
+                <span class="status-mode-desc">${statusDescriptions[mode]}</span>
+              </span>
+            </label>
+          `).join("")}
+        </div>
+      </div>
+
+      <button class="admin-button" type="button" id="saveSiteStatusBtn" style="margin-top: 1rem;">Save Site Status</button>
+      <div id="siteStatusSaved" class="admin-alert" style="margin-top: 0.75rem;" hidden></div>
+    </article>
+
+    <article class="admin-card">
+      <h2>Important notes</h2>
+      <ul class="status-notes-list">
+        <li>The admin portal at <code>/admin</code> is always accessible regardless of site status.</li>
+        <li>Authentication routes are never blocked — you cannot lock yourself out.</li>
+        <li>Customer dashboards remain accessible to logged-in customers.</li>
+        <li>The setting is stored in the database and persists across restarts.</li>
+      </ul>
+    </article>
+
+    <article class="admin-card">
+      <h2>Coming Soon Countdown</h2>
+      <p>Set a launch date and the countdown will appear live on the Coming Soon page. Leave the date blank to hide the countdown. All data is stored in the database — never in the browser.</p>
+      <form class="admin-form single" id="comingSoonSettingsForm" style="margin-top: 1rem;">
+        <label>Page Headline
+          <input type="text" id="comingSoonHeadline" placeholder="Coming Soon" maxlength="200" value="${escapeHtml(csConfig.headline || csSettings.headline || "Coming Soon")}">
+        </label>
+        <label>Subtext
+          <input type="text" id="comingSoonSubtext" placeholder="We are putting the finishing touches on something great." maxlength="500" value="${escapeHtml(csConfig.subtext || csSettings.subtext || "We are putting the finishing touches on something great.")}">
+        </label>
+        <label>Launch Date &amp; Time (UK local time)
+          <input type="datetime-local" id="comingSoonLaunchDate" step="60" value="${launchDateValue}">
+        </label>
+        <p style="font-size: 0.76rem; color: var(--muted); margin-top: -0.5rem;">Leave blank to hide the countdown. The timer ticks live on the Coming Soon page.</p>
+        <div class="countdown-info-box" id="countdownInfoBox"${launchDateDisplay ? "" : " hidden"}>
+          <span class="countdown-info-label">Countdown target:</span>
+          <span class="countdown-info-value" id="countdownTargetDisplay">${escapeHtml(launchDateDisplay)}</span>
+        </div>
+        <button class="admin-button" type="submit" id="saveCountdownBtn" style="margin-top: 1rem;">Save Countdown Settings</button>
+        <div id="comingSoonSaved" class="admin-alert" style="margin-top: 0.75rem;" hidden></div>
+      </form>
+    </article>
+  `;
+
+  initSiteStatusTab(container, siteStatus);
+}
+
+function initSiteStatusTab(container, savedStatus) {
+  const modeCards = container.querySelectorAll(".status-mode-card");
+  const saveBtn = container.querySelector("#saveSiteStatusBtn");
+  const statusSavedEl = container.querySelector("#siteStatusSaved");
+  let selectedMode = savedStatus;
+
+  modeCards.forEach((card) => {
+    card.addEventListener("click", () => {
+      modeCards.forEach((c) => c.classList.remove("selected"));
+      card.classList.add("selected");
+      const radio = card.querySelector("input[type=radio]");
+      radio.checked = true;
+      selectedMode = card.dataset.mode;
+    });
+  });
+
+  saveBtn.addEventListener("click", async () => {
+    if (saveBtn.disabled) return;
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving...";
+    statusSavedEl.hidden = false;
+    statusSavedEl.className = "admin-alert";
+    statusSavedEl.textContent = "Saving site status...";
+
+    try {
+      const result = await api("platformsettings", {
+        method: "POST",
+        body: JSON.stringify({
+          action: "update_site_status",
+          site_status: selectedMode
+        })
+      });
+      const newStatus = result.site_status || selectedMode;
+      const displayEl = container.querySelector("#currentStatusDisplay");
+      const descEl = container.querySelector("#currentStatusDesc");
+      if (displayEl) displayEl.textContent = newStatus === "coming_soon" ? "Coming Soon" : newStatus === "maintenance" ? "Maintenance" : "Normal";
+      if (descEl) {
+        descEl.textContent = newStatus === "coming_soon"
+          ? "Public visitors see the Coming Soon page. Admin portal remains accessible."
+          : newStatus === "maintenance"
+          ? "Public visitors see the Maintenance page. Admin portal remains accessible."
+          : "Public website is fully accessible to all visitors.";
+      }
+      modeCards.forEach((c) => c.classList.toggle("selected", c.dataset.mode === newStatus));
+      statusSavedEl.className = "admin-success";
+      statusSavedEl.textContent = "Site status saved successfully.";
+    } catch (error) {
+      statusSavedEl.className = "admin-alert";
+      statusSavedEl.textContent = error.message || "Failed to update site status.";
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Save Site Status";
+    }
+  });
+
+  const comingSoonForm = container.querySelector("#comingSoonSettingsForm");
+  if (comingSoonForm) {
+    const dateInput = container.querySelector("#comingSoonLaunchDate");
+    const infoBox = container.querySelector("#countdownInfoBox");
+    const targetDisplay = container.querySelector("#countdownTargetDisplay");
+
+    dateInput.addEventListener("change", () => {
+      if (dateInput.value) {
+        const d = new Date(dateInput.value);
+        if (!Number.isNaN(d.getTime())) {
+          infoBox.hidden = false;
+          targetDisplay.textContent = formatUkDateTime(d);
+        }
+      } else {
+        infoBox.hidden = true;
+      }
+    });
+
+    comingSoonForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const btn = container.querySelector("#saveCountdownBtn");
+      if (btn.disabled) return;
+      btn.disabled = true;
+      btn.textContent = "Saving...";
+      const savedEl = container.querySelector("#comingSoonSaved");
+      savedEl.hidden = false;
+      savedEl.className = "admin-alert";
+      savedEl.textContent = "Saving countdown settings...";
+
+      try {
+        const rawDate = dateInput.value;
+        let launchDate = "";
+        if (rawDate) {
+          const d = new Date(rawDate);
+          if (Number.isNaN(d.getTime())) throw new Error("Launch date is not a valid date.");
+          launchDate = d.toISOString();
+        }
+
+        const result = await api("platformsettings", {
+          method: "POST",
+          body: JSON.stringify({
+            action: "update_coming_soon_settings",
+            headline: container.querySelector("#comingSoonHeadline").value,
+            subtext: container.querySelector("#comingSoonSubtext").value,
+            launch_date: launchDate
+          })
+        });
+
+        if (launchDate) {
+          infoBox.hidden = false;
+          targetDisplay.textContent = formatUkDateTime(new Date(launchDate));
+        } else {
+          infoBox.hidden = true;
+        }
+
+        savedEl.className = "admin-success";
+        savedEl.textContent = "Countdown settings saved successfully.";
+      } catch (error) {
+        savedEl.className = "admin-alert";
+        savedEl.textContent = error.message || "Failed to save countdown settings.";
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Save Countdown Settings";
+      }
+    });
+  }
+}
+
+function formatUkDateTime(date) {
+  if (!date || Number.isNaN(date.getTime())) return "";
+  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const ukOffset = getUkOffset(date);
+  const uk = new Date(date.getTime() + ukOffset * 60000);
+  const dayName = days[uk.getUTCDay()];
+  const dayNum = uk.getUTCDate();
+  const monthName = months[uk.getUTCMonth()];
+  const year = uk.getUTCFullYear();
+  let hours = uk.getUTCHours();
+  const mins = String(uk.getUTCMinutes()).padStart(2, "0");
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12 || 12;
+  return `${dayName}, ${dayNum} ${monthName} ${year} at ${hours}:${mins} ${ampm}`;
 }
 
 function renderLaunchGateway(settings = {}) {

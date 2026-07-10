@@ -48,7 +48,8 @@ const PERMISSION_SECTIONS = {
   affiliate: ["manage_content"],
   policies: ["manage_policies", "manage_content"],
   launchgateway: ["manage_content"],
-  maintenance: ["manage_content"]
+  maintenance: ["manage_content"],
+  systemsettings: ["manage_settings"]
 };
 
 async function healthCount(DB, sql, bindings = []) {
@@ -1684,7 +1685,7 @@ async function removeAdmin(DB, body, identity, env) {
 }
 
 async function saveAdminPreferences(DB, body, identity) {
-  const allowedSections = new Set(["overview", "operations", "status", "analytics", "audit", "admins", "roles", "sessions", "customers", "datarequests", "systemreports", "closures", "support", "enquiries", "system", "builders", "plans", "credits", "usage", "addons", "platformsettings", "stripe", "email", "branding", "appearance", "affiliate", "launchgateway", "maintenance", "policies"]);
+  const allowedSections = new Set(["overview", "operations", "status", "analytics", "audit", "admins", "roles", "sessions", "customers", "datarequests", "systemreports", "closures", "support", "enquiries", "system", "builders", "plans", "credits", "usage", "addons", "platformsettings", "stripe", "email", "branding", "appearance", "affiliate", "launchgateway", "maintenance", "policies", "systemsettings"]);
   const favourites = Array.isArray(body.favourites)
     ? body.favourites.map((item) => clean(item, 80)).filter((item) => allowedSections.has(item)).slice(0, 12)
     : [];
@@ -3181,7 +3182,7 @@ export async function onRequest(context) {
           plans: await all(env.DB, `SELECT * FROM service_plans ORDER BY sort_order ASC, plan_name ASC`)
         });
       }
-      if (["builders", "credits", "usage", "addons", "platformsettings"].includes(section)) {
+      if (section === "platformsettings" || section === "systemsettings") {
         const platform = await getBuilderPlatform(env.DB);
         const siteStatus = await getSiteStatus(env.DB);
         const [csHeadline, csSubtext, csLaunchDate] = await Promise.all([
@@ -3231,7 +3232,7 @@ export async function onRequest(context) {
         if (body.action === "manual_adjustment") return json({ admin: adminContext, platform: await saveManualTokenAdjustment(env.DB, body, identity), saved: true });
         return json({ admin: adminContext, platform: await getBuilderPlatform(env.DB), saved: false });
       }
-      if (section === "platformsettings") {
+      if (section === "platformsettings" || section === "systemsettings") {
         if (!ownerAccess && !hasAnyPermission(adminContext.permissions, ["manage_plans", "manage_pricing", "manage_settings"])) {
           return json({ error: "Forbidden.", section }, 403);
         }

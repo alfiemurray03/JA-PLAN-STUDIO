@@ -123,18 +123,18 @@ test("Coming Soon page is responsive", async () => {
   assert.match(html, /@media.*max-width/);
 });
 
-test("Admin dashboard has Site Status Controls card with all three modes", async () => {
+test("Admin dashboard has Site Status mode-selection cards with all three modes", async () => {
   const client = await readFile(new URL("public/assets/js/admin-control.js", root), "utf8");
-  assert.match(client, /Site Status Controls/);
-  assert.match(client, /value="normal"/);
-  assert.match(client, /value="coming_soon"/);
-  assert.match(client, /value="maintenance"/);
+  assert.match(client, /renderSiteStatusTab/);
+  assert.match(client, /name="siteStatusMode"/);
+  assert.match(client, /\["normal", "coming_soon", "maintenance"\]/);
   assert.match(client, /Save Site Status/);
+  assert.match(client, /status-mode-card/);
 });
 
-test("Admin dashboard has Coming Soon Settings card with headline, subtext, launch date, and save button", async () => {
+test("Admin Site Status tab has Coming Soon Countdown section with headline, subtext, launch date, and save button", async () => {
   const client = await readFile(new URL("public/assets/js/admin-control.js", root), "utf8");
-  assert.match(client, /Coming Soon Settings/);
+  assert.match(client, /Coming Soon Countdown/);
   assert.match(client, /comingSoonHeadline/);
   assert.match(client, /comingSoonSubtext/);
   assert.match(client, /comingSoonLaunchDate/);
