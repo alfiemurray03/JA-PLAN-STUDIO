@@ -179,30 +179,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!identity?.email || !actions) return;
     const label = identity.name || identity.email;
     actions.innerHTML = `
-      <div class="site-account-menu">
-        <button class="site-button primary" type="button" id="siteAccountMenuButton" aria-expanded="false" aria-controls="siteAccountMenu">
-          ${escapeHtml(label)}
-        </button>
-        <div class="site-account-dropdown" id="siteAccountMenu" hidden>
-          <a href="/account/profile/">Profile</a>
-          <a href="/account/dashboard/">Account</a>
-          <a href="/builders/">Builders dashboard</a>
-          <a href="/account/logout">Sign out</a>
-        </div>
-      </div>
+      <span class="site-account-name">${escapeHtml(label)}</span>
+      <a class="site-button primary" href="/account/dashboard/">Dashboard</a>
     `;
-    const button = document.querySelector("#siteAccountMenuButton");
-    const menu = document.querySelector("#siteAccountMenu");
-    button?.addEventListener("click", () => {
-      const next = menu.hidden;
-      menu.hidden = !next;
-      button.setAttribute("aria-expanded", String(next));
-    });
-    document.addEventListener("click", (event) => {
-      if (event.target.closest(".site-account-menu")) return;
-      if (menu) menu.hidden = true;
-      button?.setAttribute("aria-expanded", "false");
-    });
   }
 
   function updateActiveLinks() {

@@ -3879,7 +3879,7 @@ function renderEmail(email = {}, test = null) {
   setValue("smtp_port", email.smtp_port || "587");
   setValue("smtp_username", email.smtp_username || "noreply@jagroupservices.co.uk");
   setValue("smtp_password", email.smtp_password_masked || "");
-  setValue("smtp_from_name", email.smtp_from_name || "JA Smart Profile");
+  setValue("smtp_from_name", email.smtp_from_name || "JA Experiences & Discovery");
   setValue("smtp_from_email", email.smtp_from_email || "noreply@jagroupservices.co.uk");
   setValue("smtp_security", email.smtp_security || "STARTTLS");
 
