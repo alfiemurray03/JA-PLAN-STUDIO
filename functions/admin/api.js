@@ -3090,6 +3090,53 @@ async function getSiteStatus(DB) {
   }
 }
 
+export async function saveAuthoritativeSiteStatus(DB, siteStatus) {
+  if (!["normal", "coming_soon", "maintenance"].includes(siteStatus)) throw new Error("Invalid site status.");
+  const values = { site_status: siteStatus, maintenance_enabled: "false", launchgateway_enabled: "false" };
+  const statements = Object.entries(values).map(([key, value]) => DB.prepare(`
+    INSERT INTO site_settings (key, value, updated_at)
+    VALUES (?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
+  `).bind(key, value));
+  if (typeof DB.batch === "function") await DB.batch(statements);
+  else for (const statement of statements) await statement.run();
+  return siteStatus;
+}
+
+export async function runSystemDiagnostics(DB, env, request) {
+  const checkedAt = new Date().toISOString();
+  const origin = new URL(request.url).origin;
+  const safeCheck = async (check) => {
+    try { return await check(); } catch { return "Check failed"; }
+  };
+  const [database, siteStatusApi, comingSoonApi, stripe, email, siteStatus] = await Promise.all([
+    safeCheck(async () => { await DB.prepare("SELECT 1 AS ok").first(); return "Operational"; }),
+    safeCheck(async () => { const response = await fetch(`${origin}/api/site-status`, { headers: { Accept: "application/json" }, cf: { cacheTtl: 0 } }); return response.ok || response.status === 503 ? "Operational" : "Unavailable"; }),
+    safeCheck(async () => { const response = await fetch(`${origin}/api/coming-soon-config`, { headers: { Accept: "application/json" }, cf: { cacheTtl: 0 } }); return response.ok ? "Operational" : "Unavailable"; }),
+    safeCheck(async () => { const settings = await getStripeSettings(DB, env); return settings.secretKey ? "Operational" : "Configuration required"; }),
+    safeCheck(async () => { const settings = await getEmailSettings(DB, env); return settings.configured ? "Operational" : "Configuration required"; }),
+    safeCheck(async () => getSiteStatus(DB))
+  ]);
+  const authConfigured = Boolean(env.ADMIN_OIDC_ISSUER && env.ADMIN_OIDC_CLIENT_ID && env.CUSTOMER_OIDC_ISSUER && env.CUSTOMER_OIDC_CLIENT_ID);
+  return {
+    checked_at: checkedAt,
+    checks: {
+      database,
+      site_status_api: siteStatusApi,
+      coming_soon_api: comingSoonApi,
+      authentication: authConfigured ? "Operational" : "Configuration required",
+      stripe,
+      email
+    },
+    technical: {
+      environment: clean(env.ENVIRONMENT || env.ENVIRONMENT_NAME, 80) || "Unavailable",
+      version: clean(env.APP_VERSION || env.CF_PAGES_COMMIT_SHA, 100) || "Unavailable",
+      d1_binding_detected: DB ? "Yes" : "No",
+      site_status: ["normal", "coming_soon", "maintenance"].includes(siteStatus) ? siteStatus : "Unavailable"
+    }
+  };
+}
+
 export async function onRequest(context) {
   const { request, env } = context;
 
@@ -3183,14 +3230,25 @@ export async function onRequest(context) {
         });
       }
       if (section === "platformsettings" || section === "systemsettings") {
+        if (section === "systemsettings" && url.searchParams.get("action") === "diagnostics") {
+          return json({ admin: adminContext, diagnostics: await runSystemDiagnostics(env.DB, env, request) });
+        }
         const platform = await getBuilderPlatform(env.DB);
+        const generalSettings = await settingMap(env.DB, ["platform_name", "default_builder"], {});
+        platform.name = generalSettings.platform_name || "JA Experiences & Discovery";
+        platform.defaultBuilder = generalSettings.default_builder || "experience";
         const siteStatus = await getSiteStatus(env.DB);
-        const [csHeadline, csSubtext, csLaunchDate] = await Promise.all([
+        const [csHeadline, csSubtext, csLaunchDate, stripe, plans, email, appearance, policies] = await Promise.all([
           env.DB.prepare("SELECT value FROM site_settings WHERE key = 'coming_soon_headline'").first().then((r) => r?.value || "").catch(() => ""),
           env.DB.prepare("SELECT value FROM site_settings WHERE key = 'coming_soon_subtext'").first().then((r) => r?.value || "").catch(() => ""),
-          env.DB.prepare("SELECT value FROM site_settings WHERE key = 'coming_soon_launch_date'").first().then((r) => r?.value || "").catch(() => "")
+          env.DB.prepare("SELECT value FROM site_settings WHERE key = 'coming_soon_launch_date'").first().then((r) => r?.value || "").catch(() => ""),
+          getStripe(env.DB, env, true).catch(() => ({ configured: false, message: "Stripe status unavailable." })),
+          getPlans(env.DB).catch(() => []),
+          getEmailSettings(env.DB, env).catch(() => ({ configured: false })),
+          getAppearance(env.DB).catch(() => ({})),
+          all(env.DB, `SELECT * FROM policy_pages ORDER BY title ASC`).catch(() => [])
         ]);
-        return json({ admin: adminContext, platform, site_status: siteStatus, coming_soon: { headline: csHeadline, subtext: csSubtext, launchDate: csLaunchDate } });
+        return json({ admin: adminContext, platform, site_status: siteStatus, coming_soon: { headline: csHeadline, subtext: csSubtext, launchDate: csLaunchDate }, stripe, plans, email, appearance, policies });
       }
       if (section === "notifications") return json({ admin: adminContext, notifications: await getNotifications(env.DB) });
       if (section === "membership") return json({ admin: adminContext, membership: await getMembership(env.DB) });
@@ -3242,13 +3300,7 @@ export async function onRequest(context) {
           if (!["normal", "coming_soon", "maintenance"].includes(nextStatus)) {
             return json({ error: "Invalid site status." }, 400);
           }
-          await env.DB.prepare(`
-            INSERT INTO site_settings (key, value, updated_at)
-            VALUES ('site_status', ?, CURRENT_TIMESTAMP)
-            ON CONFLICT(key) DO UPDATE SET
-              value = excluded.value,
-              updated_at = CURRENT_TIMESTAMP
-          `).bind(nextStatus).run();
+          await saveAuthoritativeSiteStatus(env.DB, nextStatus);
 
           await writeAudit(env.DB, identity, "site_status_update", "site_settings", "site_status", `Site status updated to ${nextStatus}.`, {
             site_status: nextStatus
@@ -3256,6 +3308,14 @@ export async function onRequest(context) {
 
           const platform = await getBuilderPlatform(env.DB);
           return json({ platform, site_status: nextStatus, saved: true });
+        }
+
+        if (body.action === "update_general_settings") {
+          const platformName = clean(body.platform_name, 120) || "JA Experiences & Discovery";
+          const defaultBuilder = clean(body.default_builder, 80) || "experience";
+          await saveSettings(env.DB, { platform_name: platformName, default_builder: defaultBuilder });
+          await writeAudit(env.DB, identity, "general_settings_update", "site_settings", "general", "General system settings updated.", { platform_name: platformName, default_builder: defaultBuilder });
+          return json({ general: { platform_name: platformName, default_builder: defaultBuilder }, saved: true });
         }
 
         if (body.action === "update_coming_soon_settings") {

@@ -14,7 +14,8 @@ const state = {
   planDraft: null,
   planDirty: false,
   planSaving: false,
-  initialWorkspaceApplied: false
+  initialWorkspaceApplied: false,
+  systemSettingsTab: "sitestatus"
 };
 
 const sectionTitles = {
@@ -925,6 +926,18 @@ function syncPlatformConfig(platform = {}) {
 
 function formatPence(value) {
   return Number.isFinite(Number(value)) ? new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(Number(value) / 100) : "Not available";
+}
+
+function settingsRenderPanel() {
+  if (state.currentSection === "systemsettings") {
+    const tabContent = document.getElementById("systemSettingsTabContent");
+    if (tabContent) return tabContent;
+  }
+  return document.getElementById("adminPanel");
+}
+
+function setPanel(markup) {
+  settingsRenderPanel().innerHTML = markup;
 }
 
 function renderExperienceBuilders(platform = {}) {
@@ -2745,7 +2758,7 @@ function renderPlans(plans = []) {
     </article>
   `).join("");
 
-  document.getElementById("adminPanel").innerHTML = `
+  settingsRenderPanel().innerHTML = `
     <div class="section-head">
       <div>
         <h2>Manage Plans</h2>
@@ -3014,7 +3027,7 @@ function renderStripe(stripe = {}) {
     </tr>
   `).join("");
 
-  document.getElementById("adminPanel").innerHTML = `
+  settingsRenderPanel().innerHTML = `
     <div class="admin-card">
       <div class="section-head">
         <div>
@@ -3141,7 +3154,7 @@ function renderPolicies(policies = []) {
     <button class="tab-button ${policy.slug === selected.slug ? "active" : ""}" type="button" data-action="select-policy" data-slug="${escapeAttr(policy.slug)}">${escapeHtml(shortPolicyName(policy.title))}</button>
   `).join("");
 
-  document.getElementById("adminPanel").innerHTML = `
+  settingsRenderPanel().innerHTML = `
     <div class="section-head">
       <div><h2>Legal Policies</h2><p>Manage policy content, versioning and draft/published status in D1.</p></div>
     </div>
@@ -3780,7 +3793,7 @@ function renderAffiliate(items = []) {
 }
 
 function renderAppearance(settings = {}) {
-  document.getElementById("adminPanel").innerHTML = `
+  settingsRenderPanel().innerHTML = `
     <div class="admin-card">
       <div class="section-head">
         <div><h2>Appearance</h2><p>Control the website-wide colour mode for customer-facing pages, the customer account area and the admin portal where supported.</p></div>
@@ -3811,7 +3824,7 @@ function renderAppearance(settings = {}) {
 }
 
 function renderEmail(email = {}, test = null) {
-  document.getElementById("adminPanel").innerHTML = `
+  settingsRenderPanel().innerHTML = `
     <div class="admin-card">
       <div class="section-head">
         <div><h2>Email (SMTP)</h2><p>Configure outbound email delivery for notifications and confirmations.</p></div>
@@ -4343,42 +4356,45 @@ function renderSystemSettings(data = {}) {
   const tabButtons = container.querySelectorAll(".settings-category-tab");
 
   function switchTab(tabId) {
+    state.systemSettingsTab = tabId;
     tabButtons.forEach((b) => b.classList.toggle("active", b.dataset.tab === tabId));
     renderSystemSettingsTab(tabId, tabContent, data);
   }
 
   tabButtons.forEach((btn) => btn.addEventListener("click", () => switchTab(btn.dataset.tab)));
-  switchTab("sitestatus");
+  switchTab(state.systemSettingsTab || "sitestatus");
 }
 
 function renderSystemSettingsTab(tabId, container, data) {
+  container.innerHTML = `<div class="admin-loading">Loading ${escapeHtml(tabId.replace("sitestatus", "Site Status"))}...</div>`;
   switch (tabId) {
     case "general":
       container.innerHTML = renderGeneralTab(data);
+      bindGeneralSettings(container, data);
       break;
     case "stripe":
-      container.innerHTML = renderSettingsLinkTab("Stripe", "Payment configuration and connection status.", "stripe");
+      renderStripe(data.stripe || {});
       break;
     case "products":
-      container.innerHTML = renderProductsTab(data);
+      renderExperienceBuilders(data.platform || {});
       break;
     case "plans":
-      container.innerHTML = renderSettingsLinkTab("Plans", "Plan pricing, availability and entitlements.", "plans");
+      renderPlans(data.plans || []);
       break;
     case "email":
-      container.innerHTML = renderSettingsLinkTab("Email", "Outbound email and delivery testing.", "email");
+      renderEmail(data.email || {}, null);
       break;
     case "compliance":
-      container.innerHTML = renderComplianceTab(data);
+      renderPolicies(data.policies || []);
       break;
     case "appearance":
-      container.innerHTML = renderSettingsLinkTab("Appearance", "Public website theme and presentation.", "appearance");
+      renderAppearance(data.appearance || {});
       break;
     case "sitestatus":
       renderSiteStatusTab(container, data);
       break;
     case "troubleshooting":
-      container.innerHTML = renderTroubleshootingTab(data);
+      renderTroubleshootingTab(container, data);
       break;
     default:
       container.innerHTML = "<p class=\"admin-card\">This tab has no content yet.</p>";
@@ -4396,19 +4412,15 @@ function ukLocalDateTimeToIso(value) {
   return instant.toISOString();
 }
 
-function renderSettingsLinkTab(title, description, section) {
-  return `<article class="admin-card"><h2>${escapeHtml(title)}</h2><p>${escapeHtml(description)}</p><button class="admin-button" type="button" data-action="load-section" data-section="${escapeAttr(section)}">Open ${escapeHtml(title)} settings</button></article>`;
-}
-
 function renderGeneralTab(data) {
   const platform = data.platform || {};
   return `
     <article class="admin-card">
       <h2>Platform Information</h2>
       <p>Core platform configuration and builder settings.</p>
-      <div class="admin-form" style="margin-top: 1rem;">
+      <form class="admin-form" id="generalSettingsForm" style="margin-top: 1rem;">
         <label>Platform Name
-          <input type="text" value="${escapeHtml(platform.name || "JA Experiences & Discovery")}" readonly>
+          <input type="text" id="generalPlatformName" maxlength="120" value="${escapeAttr(platform.name || "JA Experiences & Discovery")}">
         </label>
         <label>Platform Version
           <input type="text" value="${escapeHtml(platform.version || "2026.07")}" readonly>
@@ -4417,29 +4429,26 @@ function renderGeneralTab(data) {
           <input type="text" value="${escapeHtml(platform.schemaVersion || "N/A")}" readonly>
         </label>
         <label>Default Builder
-          <input type="text" value="${escapeHtml(platform.defaultBuilder || "experience")}" readonly>
+          <input type="text" id="generalDefaultBuilder" maxlength="80" value="${escapeAttr(platform.defaultBuilder || "experience")}">
         </label>
-      </div>
-    </article>
-    <article class="admin-card">
-      <h2>Quick Links</h2>
-      <p>Jump to related settings sections.</p>
-      <div class="quick-grid" style="margin-top: 1rem;">
-        <button class="quick-card" onclick="document.querySelector('[data-section=\\'branding\\']').click()">
-          <span class="quick-icon">${icon("settings")}</span>
-          <span><strong>Branding</strong><span>Company name, logo, colours</span></span>
-        </button>
-        <button class="quick-card" onclick="document.querySelector('[data-section=\\'cms\\']').click()">
-          <span class="quick-icon">${icon("file")}</span>
-          <span><strong>Website CMS</strong><span>Manage public page content</span></span>
-        </button>
-        <button class="quick-card" onclick="document.querySelector('[data-section=\\'system\\']').click()">
-          <span class="quick-icon">${icon("alert")}</span>
-          <span><strong>System Events</strong><span>View system event log</span></span>
-        </button>
-      </div>
+        <button class="admin-button" type="submit">Save General Settings</button>
+        <div id="generalSettingsSaved" class="admin-alert" hidden></div>
+      </form>
     </article>
   `;
+}
+
+function bindGeneralSettings(container, data) {
+  container.querySelector("#generalSettingsForm")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const status = container.querySelector("#generalSettingsSaved");
+    status.hidden = false; status.className = "admin-alert"; status.textContent = "Saving general settings...";
+    try {
+      const result = await api("systemsettings", { method: "POST", body: JSON.stringify({ action: "update_general_settings", platform_name: getValue("generalPlatformName"), default_builder: getValue("generalDefaultBuilder") }) });
+      data.platform = { ...(data.platform || {}), name: result.general.platform_name, defaultBuilder: result.general.default_builder };
+      status.className = "admin-success"; status.textContent = "General settings saved successfully.";
+    } catch (error) { status.textContent = error.message || "General settings could not be saved."; }
+  });
 }
 
 function renderProductsTab(data) {
@@ -4484,42 +4493,28 @@ function renderComplianceTab(data) {
   `;
 }
 
-function renderTroubleshootingTab(data) {
-  return `
-    <article class="admin-card">
-      <h2>Troubleshooting</h2>
-      <p>System diagnostics, event logs and health checks.</p>
-      <div class="quick-grid" style="margin-top: 1rem;">
-        <button class="quick-card" onclick="document.querySelector('[data-section=\\'system\\']').click()">
-          <span class="quick-icon">${icon("alert")}</span>
-          <span><strong>System Events</strong><span>View system event log</span></span>
-        </button>
-        <button class="quick-card" onclick="document.querySelector('[data-section=\\'health\\']').click()">
-          <span class="quick-icon">${icon("shield")}</span>
-          <span><strong>Production Health</strong><span>Check system health</span></span>
-        </button>
-        <button class="quick-card" onclick="document.querySelector('[data-section=\\'status\\']').click()">
-          <span class="quick-icon">${icon("chart")}</span>
-          <span><strong>Status Centre</strong><span>Live service status</span></span>
-        </button>
-      </div>
-    </article>
-    <article class="admin-card">
-      <h2>Cache Behaviour</h2>
-      <p>All site status and coming soon config API responses use <code>Cache-Control: no-store</code> to ensure the latest database state is always served. No browser caching is used for status settings.</p>
-    </article>
-    <article class="admin-card">
-      <h2>Route Exclusions</h2>
-      <p>The following routes are never blocked by site status mode:</p>
-      <ul style="margin: 0.5rem 0 0 1.5rem; color: var(--muted); font-size: 0.78rem; line-height: 1.8;">
-        <li><code>/admin/*</code> - Admin portal always accessible</li>
-        <li><code>/account/*</code> - Customer dashboard always accessible</li>
-        <li><code>/login</code> and <code>/signed-out/*</code> - Authentication routes</li>
-        <li><code>/api/site-status</code> and <code>/api/coming-soon-config</code> - Status APIs</li>
-        <li><code>/assets/*</code> - Static assets</li>
-      </ul>
-    </article>
-  `;
+function renderTroubleshootingTab(container, data) {
+  const status = data.site_status || "normal";
+  container.innerHTML = `
+    <article class="admin-card"><h2>Troubleshooting</h2><p>Run safe platform checks and review technical information to help diagnose common service problems.</p><button class="admin-button" type="button" id="runSystemDiagnostics">Run Diagnostics</button><div id="diagnosticsStatus" class="admin-alert" hidden></div></article>
+    <article class="admin-card"><h2>Platform checks</h2><div class="admin-grid" id="diagnosticsChecks">${["Database connection","Public Site Status API","Coming Soon configuration API","Authentication configuration","Stripe configuration","Email configuration"].map((label) => stat(label, "Not run")).join("")}</div></article>
+    <article class="admin-card"><h2>Site Status summary</h2><p>Currently saved public site status: <strong id="diagnosticsSiteStatus">${escapeHtml(status.replace("_", " "))}</strong></p><button class="admin-button secondary" type="button" id="goToSiteStatusTab">Go to Site Status</button></article>
+    <article class="admin-card"><h2>Useful technical information</h2><div class="drawer-grid" id="diagnosticsTechnical"><div class="drawer-field"><span>Environment</span><strong>Unavailable</strong></div><div class="drawer-field"><span>Application version / commit</span><strong>Unavailable</strong></div><div class="drawer-field"><span>D1 binding detected</span><strong>Unavailable</strong></div><div class="drawer-field"><span>Current public site mode</span><strong>${escapeHtml(status)}</strong></div><div class="drawer-field"><span>Last diagnostics run</span><strong id="diagnosticsCompletedAt">Not run</strong></div></div></article>
+    <article class="admin-card"><h2>Troubleshooting guidance</h2><div class="drawer-section-grid"><section class="drawer-section-card"><h3>Public mode is not changing</h3><p>Run diagnostics, confirm the saved site mode, then check that the public Site Status API is operational. Status responses are not cached.</p></section><section class="drawer-section-card"><h3>Countdown is not updating</h3><p>Confirm the UK local launch time in Site Status and verify the Coming Soon configuration API.</p></section><section class="drawer-section-card"><h3>Authentication problems</h3><p>Check authentication configuration here, then use the existing secure sign-in routes. No credentials are displayed by diagnostics.</p></section><section class="drawer-section-card"><h3>Payment configuration</h3><p>Check Stripe configuration and review the Stripe tab without entering secret values into support notes.</p></section><section class="drawer-section-card"><h3>Email delivery</h3><p>Check email configuration and use the Email tab's existing safe delivery test.</p></section></div></article>`;
+  container.querySelector("#goToSiteStatusTab").addEventListener("click", () => document.querySelector('[data-tab="sitestatus"]')?.click());
+  container.querySelector("#runSystemDiagnostics").addEventListener("click", async () => {
+    const button = container.querySelector("#runSystemDiagnostics"); const message = container.querySelector("#diagnosticsStatus");
+    button.disabled = true; button.textContent = "Running Diagnostics..."; message.hidden = false; message.className = "admin-alert"; message.textContent = "Running safe read-only checks...";
+    try {
+      const response = await api("systemsettings", { query: { action: "diagnostics" } });
+      const diagnostics = response.diagnostics || {}; const checks = diagnostics.checks || {}; const technical = diagnostics.technical || {};
+      const labels = [["Database connection",checks.database],["Public Site Status API",checks.site_status_api],["Coming Soon configuration API",checks.coming_soon_api],["Authentication configuration",checks.authentication],["Stripe configuration",checks.stripe],["Email configuration",checks.email]];
+      container.querySelector("#diagnosticsChecks").innerHTML = labels.map(([label,value]) => stat(label, value || "Unavailable")).join("");
+      container.querySelector("#diagnosticsTechnical").innerHTML = [["Environment",technical.environment],["Application version / commit",technical.version],["D1 binding detected",technical.d1_binding_detected],["Current public site mode",technical.site_status],["Last diagnostics run",formatDate(diagnostics.checked_at)]].map(([label,value]) => `<div class="drawer-field"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value || "Unavailable")}</strong></div>`).join("");
+      message.className = "admin-success"; message.textContent = "Diagnostics completed. No secrets or personal data were returned.";
+    } catch (error) { message.textContent = error.message || "Diagnostics could not be completed."; }
+    finally { button.disabled = false; button.textContent = "Run Diagnostics"; }
+  });
 }
 
 function renderSiteStatusTab(container, data) {
@@ -4649,7 +4644,7 @@ function initSiteStatusTab(container, savedStatus) {
     statusSavedEl.textContent = "Saving site status...";
 
     try {
-      const result = await api("platformsettings", {
+      const result = await api("systemsettings", {
         method: "POST",
         body: JSON.stringify({
           action: "update_site_status",
@@ -4715,7 +4710,7 @@ function initSiteStatusTab(container, savedStatus) {
           launchDate = ukLocalDateTimeToIso(rawDate);
         }
 
-        const result = await api("platformsettings", {
+        const result = await api("systemsettings", {
           method: "POST",
           body: JSON.stringify({
             action: "update_coming_soon_settings",

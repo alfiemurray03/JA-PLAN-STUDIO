@@ -161,6 +161,28 @@ test("Admin site status form shows saving, success, and error messages", async (
   assert.match(client, /Failed to/i);
 });
 
+test("System Settings tabs reuse real renderers inside one stable shell", async () => {
+  const client = await readFile(new URL("public/assets/js/admin-control.js", root), "utf8");
+  for (const tabId of ["general", "stripe", "products", "plans", "email", "compliance", "appearance", "sitestatus", "troubleshooting"]) assert.match(client, new RegExp(`id: "${tabId}"`));
+  assert.match(client, /settingsRenderPanel/);
+  assert.match(client, /case "stripe":[\s\S]*renderStripe/);
+  assert.match(client, /case "products":[\s\S]*renderExperienceBuilders/);
+  assert.match(client, /case "plans":[\s\S]*renderPlans/);
+  assert.match(client, /case "email":[\s\S]*renderEmail/);
+  assert.match(client, /case "compliance":[\s\S]*renderPolicies/);
+  assert.match(client, /case "appearance":[\s\S]*renderAppearance/);
+  assert.doesNotMatch(client, /renderSettingsLinkTab|Open Stripe settings|Open Plans settings|Open Email settings/);
+});
+
+test("Troubleshooting has independent diagnostics content and an internal Site Status tab action", async () => {
+  const client = await readFile(new URL("public/assets/js/admin-control.js", root), "utf8");
+  assert.match(client, /Run safe platform checks and review technical information to help diagnose common service problems/);
+  assert.match(client, /Run Diagnostics/);
+  assert.match(client, /action: "diagnostics"/);
+  assert.match(client, /Go to Site Status/);
+  assert.match(client, /data-tab=\\?"sitestatus/);
+});
+
 test("D1 site_settings table is created by migration or via API initialisation", async () => {
   const migrationFiles = await import("node:fs/promises").then((fs) =>
     fs.readdir(new URL("migrations/", root))
