@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   const publicThemeLink = document.querySelector('link[href^="/assets/css/public-saas.css"]') || document.createElement("link");
   publicThemeLink.rel = "stylesheet";
-  publicThemeLink.href = "/assets/css/public-saas.css?v=20260710-header-wordmark-1";
+  publicThemeLink.href = "/assets/css/public-saas.css?v=20260710-header-wordmark-2";
   if (!publicThemeLink.parentNode) {
     document.head.appendChild(publicThemeLink);
   }
