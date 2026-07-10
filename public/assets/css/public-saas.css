@@ -1067,6 +1067,14 @@ main {
   text-align: center;
 }
 
+.login-panel h1 {
+  max-width: 38rem;
+  margin-inline: auto;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
 .login-panel .saas-actions {
   justify-content: center;
   margin-block: 2rem;
@@ -1178,14 +1186,15 @@ main {
   gap: 2.5rem;
 }
 
-.site-footer-brand {
+.site-footer a.site-footer-brand {
   display: inline-flex;
   gap: 0.25rem;
   margin-bottom: 1rem;
   color: var(--ja-ink);
   font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
-  font-size: 1.1rem;
-  font-weight: 800;
+  font-size: clamp(1.25rem, 1.5vw, 1.45rem);
+  font-weight: 900;
+  line-height: 1.2;
   text-decoration: none;
 }
 
