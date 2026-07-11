@@ -173,7 +173,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  function setupAccountDropdown() {
+  async function setupAccountDropdown() {
     const identity = nativeIdentity();
     const actions = document.querySelector(".site-header-actions, .site-nav-actions");
     if (!identity?.email || !actions) return;
@@ -182,6 +182,23 @@ document.addEventListener("DOMContentLoaded", async () => {
       <span class="site-account-name">${escapeHtml(label)}</span>
       <a class="site-button primary" href="/account/dashboard/">Dashboard</a>
     `;
+
+    try {
+      const response = await fetch("/account/api/builders", { headers: { Accept: "application/json" } });
+      if (response.ok) {
+        const data = await response.json();
+        const hasTrial = data.token_summary?.trial;
+        if (hasTrial) {
+          document.querySelectorAll("a, button").forEach((el) => {
+            if (el.textContent.toLowerCase().includes("free trial") || el.href.includes("claim_trial")) {
+              el.style.display = "none";
+            }
+          });
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   function updateActiveLinks() {
@@ -201,7 +218,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupThemeToggle();
   setupMobileMenu();
   setupNavDropdowns();
-  setupAccountDropdown();
+  await setupAccountDropdown();
   updateActiveLinks();
 
   // Load legacy scripts if needed

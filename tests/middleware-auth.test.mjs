@@ -27,6 +27,9 @@ class MiddlewareD1 {
       bind() {
         return {
           async first() {
+            if (sql.includes("FROM site_settings") || sql.includes("site_settings")) {
+              return { value: "normal" };
+            }
             if (sql.includes("FROM admin_oidc_sessions")) {
               return database.hasSession ? {
                 token_hash: "hash", subject: "subject", tenant_id: "tenant",
@@ -51,10 +54,30 @@ class MiddlewareD1 {
             }
             return null;
           },
-          async run() { return { success: true, meta: { changes: 1 } }; }
+          async run() { return { success: true, meta: { changes: 1 } }; },
+          async all() {
+            if (sql.includes("FROM site_settings") || sql.includes("site_settings")) {
+              return { results: [
+                { key: "site_status", value: "normal" },
+                { key: "maintenance_enabled", value: "false" },
+                { key: "launchgateway_enabled", value: "false" }
+              ] };
+            }
+            return { results: [] };
+          }
         };
       },
-      async run() { return { success: true, meta: { changes: 1 } }; }
+      async run() { return { success: true, meta: { changes: 1 } }; },
+      async all() {
+        if (sql.includes("FROM site_settings") || sql.includes("site_settings")) {
+          return { results: [
+            { key: "site_status", value: "normal" },
+            { key: "maintenance_enabled", value: "false" },
+            { key: "launchgateway_enabled", value: "false" }
+          ] };
+        }
+        return { results: [] };
+      }
     };
   }
 }
@@ -211,22 +234,40 @@ test("signed-out users can view portal landing pages before authentication", asy
   }
 });
 
-test("customer authentication endpoints bypass Launch Gateway and maintenance modes", async () => {
-  for (const path of ["/account/login", "/account/auth/callback"]) {
-    const DB = new MiddlewareD1({ session: false });
-    const prepare = DB.prepare.bind(DB);
-    DB.prepare = (sql) => {
-      if (sql.includes("site_settings")) throw new Error("Customer authentication routes must not evaluate public mode settings.");
-      return prepare(sql);
-    };
-    const response = await onRequest({
-      request: new Request(`https://experiences.example.test${path}`),
-      env: environment(DB),
-      next: async () => new Response("customer authentication route")
-    });
-    assert.equal(response.status, 200);
-    assert.equal(await response.text(), "customer authentication route");
-  }
+test("customer authentication endpoints are gated during closed modes but bypass during normal mode", async () => {
+  const DB = new MiddlewareD1({ session: false });
+  // Normal mode: should load successfully
+  let response = await onRequest({
+    request: new Request("https://experiences.example.test/account/login"),
+    env: environment(DB),
+    next: async () => new Response("customer authentication route")
+  });
+  assert.equal(response.status, 200);
+  assert.equal(await response.text(), "customer authentication route");
+
+  // Closed mode (maintenance): should be blocked
+  const prepare = DB.prepare.bind(DB);
+  DB.prepare = (sql) => {
+    if (sql.includes("FROM site_settings") || sql.includes("site_settings")) {
+      return {
+        bind() {
+          return {
+            async first() { return { value: "maintenance" }; }
+          };
+        },
+        all: async () => ({ results: [{ key: "site_status", value: "maintenance" }] }),
+        first: async () => null,
+        run: async () => ({ success: true, meta: { changes: 1 } })
+      };
+    }
+    return prepare(sql);
+  };
+  response = await onRequest({
+    request: new Request("https://experiences.example.test/account/login"),
+    env: environment(DB),
+    next: async () => new Response("customer authentication route")
+  });
+  assert.equal(response.status, 503);
 });
 
 test("signed-out JSON profile checks do not start a login transaction", async () => {

@@ -463,16 +463,9 @@
           </div>
           <p class="countdown-label hidden" id="countdownComplete">Our planned launch time has arrived. Please check back shortly.</p>
         </div>
+        <div id="countdownFallback" class="countdown-label hidden">Unable to load countdown. Please check back shortly.</div>
 
         <div class="features" id="featureList" aria-label="Platform preview features"></div>
-
-        <div class="sign-in-panel">
-          <p>Already have an account?</p>
-          <a class="button" href="/account/login/?return_to=%2Faccount%2Fdashboard%2F">
-            Sign in to your dashboard
-            <span aria-hidden="true">→</span>
-          </a>
-        </div>
       </section>
     </main>
 
@@ -506,7 +499,7 @@
           'Accessibility and support planning',
           'Membership plans and add-ons'
         ],
-        launchDate: ''
+        launchDate: '2026-08-29T22:01:00+01:00'
       };
 
       var timer = null;
@@ -525,8 +518,13 @@
       }
 
       function getCountdown(targetIso) {
-        var diff = new Date(targetIso).getTime() - Date.now();
-        if (!Number.isFinite(diff) || diff <= 0) {
+        if (!targetIso) return { days: 0, hours: 0, minutes: 0, seconds: 0, expired: true };
+        var targetTime = new Date(targetIso).getTime();
+        if (!Number.isFinite(targetTime)) {
+          return { days: 0, hours: 0, minutes: 0, seconds: 0, expired: true };
+        }
+        var diff = targetTime - Date.now();
+        if (diff <= 0) {
           return { days: 0, hours: 0, minutes: 0, seconds: 0, expired: true };
         }
 
@@ -609,11 +607,23 @@
       }
 
       renderFeatures(DEFAULTS.features);
+      applyConfig(DEFAULTS);
+
+      var fallback = byId('countdownFallback');
 
       fetch('/api/coming-soon-config', { cache: 'no-store', headers: { 'Accept': 'application/json', 'Cache-Control': 'no-cache' } })
-        .then(function (response) { return response.ok ? response.json() : null; })
-        .then(function (data) { applyConfig(data && data.success !== false ? data : DEFAULTS); })
-        .catch(function () { applyConfig(DEFAULTS); });
+        .then(function (response) {
+          if (!response.ok) throw new Error('API Error');
+          return response.json();
+        })
+        .then(function (data) {
+          if (fallback) fallback.classList.add('hidden');
+          applyConfig(data && data.success !== false ? data : DEFAULTS);
+        })
+        .catch(function () {
+          if (fallback) fallback.classList.remove('hidden');
+          applyConfig(DEFAULTS);
+        });
     })();
   </script>
 </body>

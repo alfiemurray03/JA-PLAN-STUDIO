@@ -164,6 +164,15 @@ async function loadAuthenticatedBuilders() {
     } else {
       $("claimIntentNotice").hidden = true;
     }
+    if (builderState.signedIn) {
+      document.querySelectorAll(".builder-head-actions a, .builder-head-actions button").forEach((btn) => {
+        if (btn.textContent.toLowerCase().includes("free trial") || btn.textContent.toLowerCase().includes("start free trial") || btn.href.includes("claim_trial")) {
+          btn.style.display = "none";
+        }
+      });
+      const heroCard = document.querySelector(".builder-hero-card");
+      if (heroCard) heroCard.style.display = "none";
+    }
   } catch (error) {
     builderState.signedIn = false;
     builderState.loadingAuth = false;

@@ -169,6 +169,16 @@ function daysRemaining(value) {
   return Math.max(0, Math.ceil(diff / 86400000));
 }
 
+function formatDateOnly(value) {
+  if (!value) return "Not available";
+  const d = new Date(value);
+  const day = d.getDate();
+  const months = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
+  const month = months[d.getMonth()];
+  const year = d.getFullYear();
+  return `${day} ${month} ${year}`;
+}
+
 function renderTrialBanner(page) {
   const mount = document.getElementById("portalTrialBanner");
   if (!mount) return;
@@ -180,13 +190,12 @@ function renderTrialBanner(page) {
     mount.innerHTML = "";
     return;
   }
-  const remaining = daysRemaining(trial.expires_at);
   if (summary.trial_active) {
     mount.innerHTML = `
       <section class="portal-trial-banner">
         <div>
-          <strong>Free trial active — ${remaining} ${remaining === 1 ? "day" : "days"} remaining</strong>
-          <span>30 Builder Usage Tokens included once only. Trial ends ${escapeHtml(fmt(trial.expires_at))}. ${escapeHtml(String(summary.remaining_tokens ?? 0))} Builder Usage Tokens remaining.</span>
+          <strong>FREE TRIAL — ENDS ON ${formatDateOnly(trial.expires_at)}</strong>
+          <span>30 Builder Usage Tokens included once only. ${escapeHtml(String(summary.remaining_tokens ?? 0))} Builder Usage Tokens remaining.</span>
         </div>
         <a class="portal-button-secondary" href="/pricing/">View Plans / Upgrade</a>
       </section>`;

@@ -393,6 +393,45 @@ export async function onRequest(context) {
   let request = withIdentity(context.request, null);
   const url = new URL(request.url);
   const path = url.pathname;
+
+  if (env.DB) {
+    const settings = await getSiteSettings(env.DB);
+    const isClosedMode = settings.site_status === "coming_soon" || settings.site_status === "maintenance";
+    const isCustomerPath = path.startsWith("/account") || path.startsWith("/login") || path === "/login" || path === "/account";
+
+    if (isClosedMode && isCustomerPath) {
+      if (settings.site_status === "maintenance") {
+        return new Response(pageHtml(settings, "maintenance"), {
+          status: 503,
+          headers: {
+            "Content-Type": "text/html; charset=utf-8",
+            "Cache-Control": "no-store",
+            "Retry-After": "3600"
+          }
+        });
+      }
+      if (settings.site_status === "coming_soon") {
+        const acceptsHtml = (request.headers.get("Accept") || "").toLowerCase().includes("text/html");
+        if (acceptsHtml) {
+          return new Response(null, {
+            status: 302,
+            headers: {
+              Location: "/coming-soon/",
+              "Cache-Control": "no-store"
+            }
+          });
+        }
+        return new Response(JSON.stringify({ error: "Site is in coming soon mode." }), {
+          status: 503,
+          headers: {
+            "Content-Type": "application/json; charset=utf-8",
+            "Cache-Control": "no-store"
+          }
+        });
+      }
+    }
+  }
+
   const rootLanding = path === "/admin" || path === "/admin/" || path === "/account" || path === "/account/";
   const landingRealm = path.startsWith("/admin") ? "admin" : path.startsWith("/account") ? "customer" : "";
   const publicAuthPath = new Set([
@@ -524,6 +563,21 @@ export async function onRequest(context) {
     console.log(JSON.stringify({ event: "admin_bypass_diag", stage: "admin_session_cookie_detected", path }));
   }
 
+  const adminIdentity = await getAuthenticatedAdminIdentity(request, env);
+  if (adminIdentity) {
+    console.log(JSON.stringify({
+      event: "admin_bypass_diag",
+      stage: "admin_identity_resolved",
+      path,
+      email: adminIdentity.identity?.email || "",
+      role: adminIdentity.role || "",
+      permissions: adminIdentity.permissions || []
+    }));
+    return next(request);
+  }
+
+  const settings = await getSiteSettings(env.DB);
+
   const bypass =
     publicAuthPath ||
     path === "/admin" ||
@@ -566,21 +620,6 @@ export async function onRequest(context) {
   if (bypass) {
     return next(request);
   }
-
-  const adminIdentity = await getAuthenticatedAdminIdentity(request, env);
-  if (adminIdentity) {
-    console.log(JSON.stringify({
-      event: "admin_bypass_diag",
-      stage: "admin_identity_resolved",
-      path,
-      email: adminIdentity.identity?.email || "",
-      role: adminIdentity.role || "",
-      permissions: adminIdentity.permissions || []
-    }));
-    return next(request);
-  }
-
-  const settings = await getSiteSettings(env.DB);
 
   console.log(JSON.stringify({
     event: "admin_bypass_diag",
