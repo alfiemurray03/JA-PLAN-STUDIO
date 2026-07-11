@@ -26,93 +26,93 @@ const money = (value, currency = "gbp") => Number.isFinite(Number(value))
   ? new Intl.NumberFormat("en-GB", { style: "currency", currency: String(currency || "gbp").toUpperCase() }).format(Number(value) / 100)
   : "Not available";
 
-/* ---- Tailwind class fragments (shared component patterns) ---- */
+/* ---- Legacy portal-* class fragments (shared component patterns) ---- */
 const cls = {
   // sidebar navigation items
-  sidebarItem: "nav-link flex items-center min-h-[38px] px-3 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
-  sidebarItemActive: "nav-link flex items-center min-h-[38px] px-3 py-2 rounded-lg text-sm font-semibold transition-colors bg-primary/10 text-primary border-l-4 border-primary",
+  sidebarItem: "portal-nav-link",
+  sidebarItemActive: "portal-nav-link active",
   // page header (title block)
-  pageHeader: "flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6 pb-5 border-b border-border",
+  pageHeader: "portal-page-header",
   // status badges
-  statusActive: "badge-success",
-  statusPending: "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wider border border-yellow-200 bg-yellow-50/30 text-warning",
-  statusInactive: "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wider border border-border bg-muted/40 text-muted-foreground",
+  statusActive: "portal-status active",
+  statusPending: "portal-status pending",
+  statusInactive: "portal-status inactive",
   // table
-  tableBase: "w-full border-collapse min-w-[680px] bg-card text-left",
-  tableWrap: "overflow-x-auto border border-border rounded-xl",
-  tableTh: "px-4 py-3 border-b border-border bg-muted/40 text-xs font-bold uppercase tracking-wider text-muted-foreground",
-  tableTd: "px-4 py-3 border-b border-border text-sm text-foreground align-top",
+  tableBase: "portal-table",
+  tableWrap: "portal-table-wrap",
+  tableTh: "portal-table th",
+  tableTd: "portal-table td",
   // tabs
-  tabBase: "inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors border border-transparent",
-  tabActive: "inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors bg-primary/10 text-primary border border-primary/20",
+  tabBase: "portal-tab",
+  tabActive: "portal-tab active",
   // alerts
-  alertInfo: "flex items-start gap-3 p-4 rounded-lg border border-blue-500/20 bg-blue-500/5 text-sm text-foreground",
-  alertWarning: "flex items-start gap-3 p-4 rounded-lg border border-yellow-200 bg-yellow-50/30 text-sm text-foreground",
-  alertDanger: "flex items-start gap-3 p-4 rounded-lg border border-red-200 bg-red-50/40 text-sm text-foreground",
-  alertSuccess: "flex items-start gap-3 p-4 rounded-lg border border-green-500/20 bg-success/10 text-sm text-foreground",
+  alertInfo: "portal-alert info",
+  alertWarning: "portal-alert warning",
+  alertDanger: "portal-alert error",
+  alertSuccess: "portal-alert success",
   // badge-warning (not in tailwind.css)
-  badgeWarning: "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wider border border-yellow-200 bg-yellow-50/30 text-warning",
+  badgeWarning: "portal-badge warning",
   // portal-specific composites
-  shell: "grid grid-cols-1 lg:grid-cols-[292px_minmax(0,1fr)] min-h-screen bg-background",
-  sidebar: "lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto overflow-x-hidden flex flex-col gap-4 p-4 lg:p-5 bg-card border-b lg:border-b-0 lg:border-r border-border",
-  main: "min-w-0 p-4 sm:p-6 lg:p-8",
-  brandCopyStrong: "block text-base font-extrabold text-foreground leading-tight",
-  brandCopySpan: "block text-sm text-muted-foreground leading-relaxed",
-  person: "grid grid-cols-[42px_minmax(0,1fr)] gap-3 items-center p-3 border border-border rounded-xl bg-muted/30",
-  personStrong: "block overflow-hidden text-ellipsis whitespace-nowrap font-bold text-foreground text-sm",
-  personSpan: "block overflow-hidden text-ellipsis whitespace-nowrap text-sm text-muted-foreground",
-  avatar: "grid place-items-center w-[42px] h-[42px] rounded-full bg-primary/10 text-primary font-extrabold",
-  statusPill: "col-span-full w-fit px-2 py-1 rounded-full bg-success-soft text-success text-xs font-bold",
-  navGroup: "flex flex-col gap-1",
-  navHeading: "px-2 pb-2 text-xs font-extrabold uppercase tracking-wider text-muted-foreground",
-  sidebarFooter: "flex flex-col gap-2 pt-4 border-t border-border",
-  wrap: "w-full max-w-[1180px] mx-auto",
-  wrapCentered: "w-full max-w-[820px] mx-auto",
-  eyebrow: "text-xs font-extrabold uppercase tracking-wider text-muted-foreground",
-  lead: "text-sm text-muted-foreground leading-relaxed mt-1",
-  heroPanel: "grid grid-cols-2 gap-2.5 w-full md:max-w-[420px]",
-  heroEntry: "flex flex-col gap-1 p-3 border border-border rounded-lg bg-card/50",
-  heroLabel: "text-xs font-bold uppercase tracking-wider text-muted-foreground",
-  heroValue: "text-sm font-bold text-foreground",
-  grid12: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 lg:gap-5 mb-5",
-  gridMini: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4",
-  span4: "lg:col-span-4 sm:col-span-1 col-span-full",
-  span6: "lg:col-span-6 sm:col-span-2 col-span-full",
-  span8: "lg:col-span-8 sm:col-span-2 col-span-full",
-  span12: "lg:col-span-12 sm:col-span-2 col-span-full",
-  cardHeading: "flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4",
-  cardTitle: "m-0 mb-2 text-lg font-extrabold text-foreground leading-snug",
-  cardDesc: "text-sm text-muted-foreground leading-relaxed",
-  stack: "flex flex-col gap-2.5",
-  accountPage: "flex flex-col gap-4 lg:gap-5",
-  accountSummary: "flex flex-col sm:flex-row sm:items-center gap-4 lg:gap-5",
-  accountAvatar: "grid place-items-center w-[72px] h-[72px] flex-shrink-0 rounded-full bg-primary/10 text-primary text-xl font-extrabold",
-  badgeRow: "flex flex-wrap gap-2",
-  entry: "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 min-w-0 p-3 sm:p-3.5 border border-border rounded-lg bg-card",
-  entryStrong: "font-bold text-foreground break-words",
-  entrySmall: "block text-sm text-muted-foreground leading-relaxed",
-  listRow: "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 min-w-0 p-3 sm:p-3.5 border border-border rounded-lg bg-card",
-  quickActions: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3",
-  action: "flex flex-col gap-1 min-h-[82px] p-4 border border-border rounded-xl bg-card text-foreground transition-all hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5",
-  actionStrong: "block mb-1 font-bold text-foreground",
-  actionSpan: "text-sm text-muted-foreground leading-relaxed",
-  note: "p-4 border border-dashed border-border rounded-xl bg-muted/30 text-sm text-muted-foreground leading-relaxed",
-  noteInline: "mt-2 p-3 border border-dashed border-border rounded-lg bg-muted/30 text-sm text-muted-foreground leading-relaxed",
-  formGrid: "grid grid-cols-1 sm:grid-cols-2 gap-3.5",
-  field: "flex flex-col gap-1.5 min-w-0",
-  formActions: "flex flex-row flex-wrap gap-2.5 mt-4",
-  toggle: "flex items-center justify-between gap-3 p-3 sm:p-3.5 border border-border rounded-lg bg-card",
-  toggleInput: "w-[42px] h-[22px] accent-[hsl(var(--primary))]",
-  helpText: "block text-sm text-muted-foreground leading-relaxed",
-  timeline: "flex flex-col gap-3",
-  timelineItem: "grid grid-cols-[12px_minmax(0,1fr)] gap-2.5",
-  timelineDot: "w-2.5 h-2.5 mt-1.5 rounded-full bg-primary",
-  surface: "p-4 border border-border rounded-xl bg-muted/30",
-  trialBanner: "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5 p-4 border border-blue-500/20 rounded-xl bg-primary/5 text-foreground",
-  trialBannerExpired: "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5 p-4 border border-yellow-200 rounded-xl bg-yellow-50/30 text-foreground",
-  trialStrong: "block mb-1 text-sm font-bold text-foreground",
-  trialSpan: "block text-sm text-muted-foreground leading-relaxed",
-  miniBtn: "inline-flex items-center justify-center min-h-[36px] w-fit px-3 py-1.5 rounded-lg border border-border bg-card text-sm font-semibold text-foreground hover:bg-muted transition-colors"
+  shell: "portal-shell",
+  sidebar: "portal-sidebar",
+  main: "portal-main",
+  brandCopyStrong: "portal-brand-copy strong",
+  brandCopySpan: "portal-brand-copy span",
+  person: "portal-person",
+  personStrong: "portal-person strong",
+  personSpan: "portal-person span",
+  avatar: "portal-avatar",
+  statusPill: "portal-status",
+  navGroup: "portal-nav-group",
+  navHeading: "portal-nav-heading",
+  sidebarFooter: "portal-sidebar-footer",
+  wrap: "portal-wrap",
+  wrapCentered: "portal-wrap-centered",
+  eyebrow: "portal-eyebrow",
+  lead: "portal-lead",
+  heroPanel: "portal-hero-panel",
+  heroEntry: "portal-hero-panel",
+  heroLabel: "portal-eyebrow",
+  heroValue: "portal-card-title",
+  grid12: "portal-grid",
+  gridMini: "portal-grid mini",
+  span4: "portal-span-4",
+  span6: "portal-span-6",
+  span8: "portal-span-8",
+  span12: "portal-span-12",
+  cardHeading: "portal-card-heading",
+  cardTitle: "portal-card-title",
+  cardDesc: "portal-card-description",
+  stack: "portal-stack",
+  accountPage: "portal-account-page",
+  accountSummary: "portal-account-summary",
+  accountAvatar: "portal-account-avatar",
+  badgeRow: "portal-badge-row",
+  entry: "portal-entry",
+  entryStrong: "portal-entry strong",
+  entrySmall: "portal-entry small",
+  listRow: "portal-list-row",
+  quickActions: "portal-quick-actions",
+  action: "portal-action",
+  actionStrong: "portal-action strong",
+  actionSpan: "portal-action span",
+  note: "portal-note",
+  noteInline: "portal-note inline",
+  formGrid: "portal-form-grid",
+  field: "portal-field",
+  formActions: "portal-form-actions",
+  toggle: "portal-toggle",
+  toggleInput: "portal-toggle input",
+  helpText: "portal-help-text",
+  timeline: "portal-timeline",
+  timelineItem: "portal-timeline-item",
+  timelineDot: "portal-timeline-dot",
+  surface: "portal-surface",
+  trialBanner: "portal-trial-banner",
+  trialBannerExpired: "portal-trial-banner expired",
+  trialStrong: "portal-trial-banner strong",
+  trialSpan: "portal-trial-banner span",
+  miniBtn: "portal-mini"
 };
 
 function shell(title, lead, options = {}) {
@@ -124,28 +124,28 @@ function shell(title, lead, options = {}) {
   root.innerHTML = `
     <div class="${cls.shell}">
       <aside class="${cls.sidebar}">
-        <div class="px-1 pt-0.5">
+        <div class="portal-brand">
           <div class="${cls.brandCopyStrong}">JA Experiences &amp; Discovery</div>
           <div class="${cls.brandCopySpan}">Customer portal</div>
         </div>
         <div class="${cls.person}">
           <div class="${cls.avatar}" id="sidebarAvatar">JA</div>
-          <div class="min-w-0">
+          <div class="portal-account-summary-copy">
             <strong class="${cls.personStrong}" id="sidebarName">Customer account</strong>
             <span class="${cls.personSpan}" id="sidebarEmail">Signed in securely</span>
           </div>
           <span class="${cls.statusPill}" id="sidebarStatus">Secure</span>
         </div>
-        <nav class="flex-1" aria-label="Customer portal navigation">
+        <nav class="portal-nav" aria-label="Customer portal navigation">
           <div class="${cls.navGroup}">
             <div class="${cls.navHeading}">Portal</div>
             ${navItems.map(([href, label]) => `<a class="${active(href)}" href="${href}">${label}</a>`).join("")}
           </div>
         </nav>
         <div class="${cls.sidebarFooter}">
-          <a class="btn-secondary w-full" href="/">Back to JA Experiences &amp; Discovery</a>
-          <a class="btn-primary w-full" href="/account/profile/">My Account</a>
-          <a class="btn-secondary w-full" href="/account/logout">Sign out</a>
+          <a class="portal-button-secondary" href="/">Back to JA Experiences &amp; Discovery</a>
+          <a class="portal-button-primary" href="/account/profile/">My Account</a>
+          <a class="portal-button-secondary" href="/account/logout">Sign out</a>
         </div>
       </aside>
       <main class="${cls.main}">
@@ -158,7 +158,7 @@ function shell(title, lead, options = {}) {
     <section class="${cls.pageHeader}">
       <div>
         <span class="${cls.eyebrow}">Customer portal</span>
-        <h1 class="text-2xl md:text-3xl font-extrabold text-foreground mt-1">${escapeHtml(title)}</h1>
+        <h1 class="portal-page-header h1">${escapeHtml(title)}</h1>
         <p class="${cls.lead}">${escapeHtml(lead)}</p>
       </div>
       ${options.showStats === false ? "" : `<div class="${cls.heroPanel}">
@@ -284,7 +284,7 @@ function renderTrialBanner(page) {
           <strong class="${cls.trialStrong}">FREE TRIAL — ENDS ON ${formatDateOnly(trial.expires_at)}</strong>
           <span class="${cls.trialSpan}">30 Builder Usage Tokens included once only. ${escapeHtml(String(summary.remaining_tokens ?? 0))} Builder Usage Tokens remaining.</span>
         </div>
-        <a class="btn-secondary" href="/pricing/">View Plans / Upgrade</a>
+        <a class="portal-button-secondary" href="/pricing/">View Plans / Upgrade</a>
       </section>`;
     return;
   }
@@ -294,7 +294,7 @@ function renderTrialBanner(page) {
         <strong class="${cls.trialStrong}">Free trial expired</strong>
         <span class="${cls.trialSpan}">Choose a paid plan to continue using saved builder outputs and Builder Usage Tokens.</span>
       </div>
-      <a class="btn-secondary" href="/pricing/">View Plans / Upgrade</a>
+      <a class="portal-button-secondary" href="/pricing/">View Plans / Upgrade</a>
     </section>`;
 }
 
@@ -325,7 +325,7 @@ function timelineMarkup(items = []) {
     <article class="${cls.timelineItem}">
       <span class="${cls.timelineDot}" aria-hidden="true"></span>
       <div>
-        <strong class="font-bold text-foreground text-sm">${escapeHtml(item.label)}</strong>
+        <strong class="portal-entry strong">${escapeHtml(item.label)}</strong>
         <small class="${cls.entrySmall}">${escapeHtml(item.detail)}</small>
       </div>
     </article>
@@ -346,10 +346,10 @@ function portalTable(headers, rows = []) {
 
 function emptyPortalState(title, body, actionHref = "", actionLabel = "") {
   return `
-    <div class="empty-state">
+    <div class="portal-empty-state">
       <h3>${escapeHtml(title)}</h3>
       <p>${escapeHtml(body)}</p>
-      ${actionHref ? `<a class="btn-primary mt-4" href="${escapeHtml(actionHref)}">${escapeHtml(actionLabel)}</a>` : ""}
+      ${actionHref ? `<a class="portal-button-primary" href="${escapeHtml(actionHref)}">${escapeHtml(actionLabel)}</a>` : ""}
     </div>
   `;
 }
@@ -448,7 +448,7 @@ async function renderPage(page) {
     const outputs = Array.isArray(builderData.outputs) ? builderData.outputs : [];
     pageRoot.innerHTML = `
       <section class="${cls.grid12}">
-        <article class="card-base ${cls.span8}">
+        <article class="portal-card ${cls.span8}">
           <h2 class="${cls.cardTitle}">Quick actions</h2>
           <div class="${cls.quickActions}">
             <a class="${cls.action}" href="/builders/"><strong class="${cls.actionStrong}">Open Builders</strong><span class="${cls.actionSpan}">Create a new self-service experience plan</span></a>
@@ -459,21 +459,21 @@ async function renderPage(page) {
             <a class="${cls.action}" href="/account/subscription/"><strong class="${cls.actionStrong}">Manage Membership</strong><span class="${cls.actionSpan}">Plan, billing and invoices</span></a>
           </div>
         </article>
-        <article class="card-base ${cls.span4}">
+        <article class="portal-card ${cls.span4}">
           <h2 class="${cls.cardTitle}">Membership summary</h2>
           <div class="${cls.stack}">
-            <div class="${cls.entry}"><span class="label-base">Plan</span><strong class="${cls.entryStrong}">${escapeHtml(tokenSummary.plan_name || profile.currentPlan || "No active plan detected")}</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Builder Usage Tokens</span><strong class="${cls.entryStrong}">${escapeHtml(String(tokenSummary.remaining_tokens ?? "0"))} remaining</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Saved builder outputs</span><strong class="${cls.entryStrong}">${escapeHtml(String(outputs.length))}</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Lifetime access</span><strong class="${cls.entryStrong}">${profile.lifetimeAccess ? "Enabled" : "Not enabled"}</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Stripe status</span><strong class="${cls.entryStrong}">${profile.stripeLinked ? "Linked" : "Not linked"}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Plan</span><strong class="${cls.entryStrong}">${escapeHtml(tokenSummary.plan_name || profile.currentPlan || "No active plan detected")}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Builder Usage Tokens</span><strong class="${cls.entryStrong}">${escapeHtml(String(tokenSummary.remaining_tokens ?? "0"))} remaining</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Saved builder outputs</span><strong class="${cls.entryStrong}">${escapeHtml(String(outputs.length))}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Lifetime access</span><strong class="${cls.entryStrong}">${profile.lifetimeAccess ? "Enabled" : "Not enabled"}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Stripe status</span><strong class="${cls.entryStrong}">${profile.stripeLinked ? "Linked" : "Not linked"}</strong></div>
           </div>
         </article>
-        <article class="card-base ${cls.span6}">
+        <article class="portal-card ${cls.span6}">
           <h2 class="${cls.cardTitle}">Recent activity</h2>
           ${timelineMarkup(timelineItems(profile, requests).slice(0, 5))}
         </article>
-        <article class="card-base ${cls.span6}">
+        <article class="portal-card ${cls.span6}">
           <h2 class="${cls.cardTitle}">Latest support activity</h2>
           <div class="${cls.stack}">
             ${(requests.dataProtectionRequests || []).slice(0, 2).map((request) => `
@@ -495,83 +495,83 @@ async function renderPage(page) {
     const membershipStatus = profile.customerStatus || (tokenSummary.plan_active ? "Active" : "Not active");
     pageRoot.innerHTML = `
       <section class="${cls.accountPage}">
-        <article class="card-base ${cls.accountSummary}">
+        <article class="portal-card ${cls.accountSummary}">
           <div class="${cls.accountAvatar}">${escapeHtml(initials(displayName))}</div>
-          <div class="min-w-0">
-            <h2 class="text-xl md:text-2xl font-extrabold text-foreground mb-1">${escapeHtml(displayName)}</h2>
-            <p class="text-sm text-muted-foreground mb-3 break-words">${escapeHtml(email)}</p>
+          <div class="portal-account-summary-copy">
+            <h2 class="portal-account-summary-copy h2">${escapeHtml(displayName)}</h2>
+            <p class="portal-account-summary-copy p">${escapeHtml(email)}</p>
             <div class="${cls.badgeRow}">
-              <span class="badge-primary">${escapeHtml(profile.verificationStatus || "Verified")}</span>
-              ${profile.lifetimeAccess ? '<span class="badge-primary">Lifetime access</span>' : ""}
-              <span class="badge-primary">${escapeHtml(currentPlan)}</span>
+              <span class="portal-badge">${escapeHtml(profile.verificationStatus || "Verified")}</span>
+              ${profile.lifetimeAccess ? '<span class="portal-badge">Lifetime access</span>' : ""}
+              <span class="portal-badge">${escapeHtml(currentPlan)}</span>
             </div>
           </div>
         </article>
 
-        <article class="card-base">
+        <article class="portal-card">
           <div class="${cls.cardHeading}">
             <div>
               <h2 class="${cls.cardTitle}">Account Details</h2>
               <p class="${cls.cardDesc}">Your primary customer account information.</p>
             </div>
-            <a class="btn-secondary" href="#editAccountDetails">Edit</a>
+            <a class="portal-button-secondary" href="#editAccountDetails">Edit</a>
           </div>
           <div class="${cls.stack}">
-            <div class="${cls.listRow}"><span class="label-base">Full name</span><strong class="${cls.entryStrong}">${escapeHtml(displayName)}</strong></div>
-            <div class="${cls.listRow}"><span class="label-base">Email address</span><strong class="${cls.entryStrong}">${escapeHtml(email)}</strong></div>
-            <div class="${cls.listRow}"><span class="label-base">Account type</span><strong class="${cls.entryStrong}">${escapeHtml(profile.accountType || "Customer")}</strong></div>
-            <div class="${cls.listRow}"><span class="label-base">Member since</span><strong class="${cls.entryStrong}">${escapeHtml(fmt(profile.createdAt))}</strong></div>
+            <div class="${cls.listRow}"><span class="portal-label">Full name</span><strong class="${cls.entryStrong}">${escapeHtml(displayName)}</strong></div>
+            <div class="${cls.listRow}"><span class="portal-label">Email address</span><strong class="${cls.entryStrong}">${escapeHtml(email)}</strong></div>
+            <div class="${cls.listRow}"><span class="portal-label">Account type</span><strong class="${cls.entryStrong}">${escapeHtml(profile.accountType || "Customer")}</strong></div>
+            <div class="${cls.listRow}"><span class="portal-label">Member since</span><strong class="${cls.entryStrong}">${escapeHtml(fmt(profile.createdAt))}</strong></div>
           </div>
         </article>
 
-        <article class="card-base">
+        <article class="portal-card">
           <div class="${cls.cardHeading}">
             <div>
               <h2 class="${cls.cardTitle}">Current Plan / Membership</h2>
               <p class="${cls.cardDesc}">Membership and billing status for JA Experiences &amp; Discovery.</p>
             </div>
-            <button class="btn-secondary" type="button" data-action="manage-stripe-billing">Manage</button>
+            <button class="portal-button-secondary" type="button" data-action="manage-stripe-billing">Manage</button>
           </div>
           <div class="${cls.stack}">
-            <div class="${cls.listRow}"><span class="label-base">Current plan</span><strong class="${cls.entryStrong}">${escapeHtml(currentPlan)}</strong></div>
-            <div class="${cls.listRow}"><span class="label-base">Membership status</span><strong class="${cls.entryStrong}">${escapeHtml(membershipStatus)}</strong></div>
-            <div class="${cls.listRow}"><span class="label-base">Billing status</span><strong class="${cls.entryStrong}">${profile.stripeLinked ? "Stripe linked" : "Not linked"}</strong></div>
+            <div class="${cls.listRow}"><span class="portal-label">Current plan</span><strong class="${cls.entryStrong}">${escapeHtml(currentPlan)}</strong></div>
+            <div class="${cls.listRow}"><span class="portal-label">Membership status</span><strong class="${cls.entryStrong}">${escapeHtml(membershipStatus)}</strong></div>
+            <div class="${cls.listRow}"><span class="portal-label">Billing status</span><strong class="${cls.entryStrong}">${profile.stripeLinked ? "Stripe linked" : "Not linked"}</strong></div>
           </div>
         </article>
 
-        <article class="card-base">
+        <article class="portal-card">
           <h2 class="${cls.cardTitle}">Builder Usage Tokens</h2>
           <div class="${cls.gridMini}">
-            <div class="${cls.entry}"><span class="label-base">Remaining tokens</span><strong class="${cls.entryStrong}">${escapeHtml(String(tokenSummary.remaining_tokens ?? 0))}</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Used tokens</span><strong class="${cls.entryStrong}">${escapeHtml(String(tokenSummary.used_tokens ?? 0))}</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Trial Builder Usage Tokens</span><strong class="${cls.entryStrong}">${escapeHtml(String(tokenSummary.trial_tokens ?? 0))}</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Purchased tokens</span><strong class="${cls.entryStrong}">${escapeHtml(String(tokenSummary.purchased_addon_tokens ?? 0))}</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Trial status</span><strong class="${cls.entryStrong}">${tokenSummary.trial_active ? "Active" : tokenSummary.trial ? "Used/expired" : "Not activated"}</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Saved outputs</span><strong class="${cls.entryStrong}">${escapeHtml(String(builderOutputs.length))}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Remaining tokens</span><strong class="${cls.entryStrong}">${escapeHtml(String(tokenSummary.remaining_tokens ?? 0))}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Used tokens</span><strong class="${cls.entryStrong}">${escapeHtml(String(tokenSummary.used_tokens ?? 0))}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Trial Builder Usage Tokens</span><strong class="${cls.entryStrong}">${escapeHtml(String(tokenSummary.trial_tokens ?? 0))}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Purchased tokens</span><strong class="${cls.entryStrong}">${escapeHtml(String(tokenSummary.purchased_addon_tokens ?? 0))}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Trial status</span><strong class="${cls.entryStrong}">${tokenSummary.trial_active ? "Active" : tokenSummary.trial ? "Used/expired" : "Not activated"}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Saved outputs</span><strong class="${cls.entryStrong}">${escapeHtml(String(builderOutputs.length))}</strong></div>
           </div>
           <p class="${cls.noteInline}">${escapeHtml(tokenSummary.deduction_rule || "Builder Usage Tokens are deducted only when a finished builder output is saved successfully. Opening, selecting, typing and previewing do not deduct tokens.")}</p>
           <div class="${cls.formActions}">
-            <a class="btn-secondary" href="/account/tokens/">View token ledger</a>
-            <a class="btn-primary" href="/builders/">Open Experience Builders</a>
+            <a class="portal-button-secondary" href="/account/tokens/">View token ledger</a>
+            <a class="portal-button-primary" href="/builders/">Open Experience Builders</a>
           </div>
         </article>
 
-        <article class="card-base">
+        <article class="portal-card">
           <div class="${cls.cardHeading}">
             <div>
               <h2 class="${cls.cardTitle}">Security and JA Group Services ID</h2>
               <p class="${cls.cardDesc}">Your sign-in is protected by Microsoft Entra External ID.</p>
             </div>
-            <a class="btn-secondary" href="/account/security/">Security</a>
+            <a class="portal-button-secondary" href="/account/security/">Security</a>
           </div>
           <div class="${cls.stack}">
-            <div class="${cls.listRow}"><span class="label-base">Connection</span><strong class="${cls.entryStrong}">${profile.microsoftEmail || profile.microsoftObjectId ? "Connected" : "Not confirmed"}</strong></div>
-            <div class="${cls.listRow}"><span class="label-base">Last sync</span><strong class="${cls.entryStrong}">${escapeHtml(fmt(profile.microsoftUpdatedAt || profile.updatedAt))}</strong></div>
-            <div class="${cls.listRow}"><span class="label-base">Verification status</span><strong class="${cls.entryStrong}">${escapeHtml(profile.verificationStatus || "Not provided")}</strong></div>
+            <div class="${cls.listRow}"><span class="portal-label">Connection</span><strong class="${cls.entryStrong}">${profile.microsoftEmail || profile.microsoftObjectId ? "Connected" : "Not confirmed"}</strong></div>
+            <div class="${cls.listRow}"><span class="portal-label">Last sync</span><strong class="${cls.entryStrong}">${escapeHtml(fmt(profile.microsoftUpdatedAt || profile.updatedAt))}</strong></div>
+            <div class="${cls.listRow}"><span class="portal-label">Verification status</span><strong class="${cls.entryStrong}">${escapeHtml(profile.verificationStatus || "Not provided")}</strong></div>
           </div>
         </article>
 
-        <article class="card-base">
+        <article class="portal-card">
           <div class="${cls.cardHeading}">
             <div>
               <h2 class="${cls.cardTitle}">Privacy and data</h2>
@@ -579,34 +579,34 @@ async function renderPage(page) {
             </div>
           </div>
           <div class="${cls.stack}">
-            <div class="${cls.listRow}"><span class="label-base">Data protection</span><a class="btn-secondary" href="/account/data-protection/">Open</a></div>
-            <div class="${cls.listRow}"><span class="label-base">Cookie Preferences</span><button class="btn-secondary" type="button" data-action="cookie-preferences">Manage</button></div>
-            <div class="${cls.listRow}"><span class="label-base">Support notes</span><strong class="${cls.entryStrong}">${escapeHtml(profile.supportNotes || "No support notes saved")}</strong></div>
+            <div class="${cls.listRow}"><span class="portal-label">Data protection</span><a class="portal-button-secondary" href="/account/data-protection/">Open</a></div>
+            <div class="${cls.listRow}"><span class="portal-label">Cookie Preferences</span><button class="portal-button-secondary" type="button" data-action="cookie-preferences">Manage</button></div>
+            <div class="${cls.listRow}"><span class="portal-label">Support notes</span><strong class="${cls.entryStrong}">${escapeHtml(profile.supportNotes || "No support notes saved")}</strong></div>
           </div>
         </article>
 
-        <article class="card-base" id="editAccountDetails">
+        <article class="portal-card" id="editAccountDetails">
           <details>
-            <summary class="cursor-pointer mb-4 font-bold text-foreground"><strong>Edit account details</strong></summary>
+            <summary class="portal-card-title"><strong>Edit account details</strong></summary>
             <div class="${cls.formGrid}">
-              <label class="${cls.field}"><span class="label-base">Display name</span><input class="input-base" id="profileDisplayName" value="${escapeHtml(profile.displayName || "")}"></label>
-              <label class="${cls.field}"><span class="label-base">Given name</span><input class="input-base" id="profileGivenName" value="${escapeHtml(profile.microsoftGivenName || "")}"></label>
-              <label class="${cls.field}"><span class="label-base">Surname</span><input class="input-base" id="profileFamilyName" value="${escapeHtml(profile.microsoftFamilyName || "")}"></label>
-              <label class="${cls.field}"><span class="label-base">Phone</span><input class="input-base" id="profilePhone" value="${escapeHtml(profile.phone || "")}"></label>
-              <label class="${cls.field}"><span class="label-base">Communication preference</span><select class="input-base" id="profileComms"><option>Email</option><option>Phone</option><option>Email first, phone if urgent</option></select></label>
-              <label class="${cls.field}"><span class="label-base">Preferred language</span><input class="input-base" id="profilePreferredLanguage" value="${escapeHtml(profile.microsoftPreferredLanguage || "")}"></label>
-              <label class="${cls.field}"><span class="label-base">Mobile phone</span><input class="input-base" id="profileMobilePhone" value="${escapeHtml(profile.microsoftMobilePhone || "")}"></label>
-              <label class="${cls.field}"><span class="label-base">Office location</span><input class="input-base" id="profileOfficeLocation" value="${escapeHtml(profile.microsoftOfficeLocation || "")}"></label>
-              <label class="${cls.field}"><span class="label-base">City</span><input class="input-base" id="profileCity" value="${escapeHtml(profile.microsoftCity || "")}"></label>
-              <label class="${cls.field}"><span class="label-base">State</span><input class="input-base" id="profileState" value="${escapeHtml(profile.microsoftState || "")}"></label>
-              <label class="${cls.field}"><span class="label-base">Country</span><input class="input-base" id="profileCountry" value="${escapeHtml(profile.microsoftCountry || "")}"></label>
-              <label class="${cls.field}"><span class="label-base">Postal code</span><input class="input-base" id="profilePostalCode" value="${escapeHtml(profile.microsoftPostalCode || "")}"></label>
-              <label class="${cls.field}"><span class="label-base">Street address</span><input class="input-base" id="profileStreetAddress" value="${escapeHtml(profile.microsoftStreetAddress || "")}"></label>
-              <label class="${cls.field}"><span class="label-base">Support notes</span><textarea class="input-base" id="profileSupportNotes" style="min-height:118px;resize:vertical">${escapeHtml(profile.supportNotes || "")}</textarea></label>
+              <label class="${cls.field}"><span class="portal-label">Display name</span><input class="portal-input" id="profileDisplayName" value="${escapeHtml(profile.displayName || "")}"></label>
+              <label class="${cls.field}"><span class="portal-label">Given name</span><input class="portal-input" id="profileGivenName" value="${escapeHtml(profile.microsoftGivenName || "")}"></label>
+              <label class="${cls.field}"><span class="portal-label">Surname</span><input class="portal-input" id="profileFamilyName" value="${escapeHtml(profile.microsoftFamilyName || "")}"></label>
+              <label class="${cls.field}"><span class="portal-label">Phone</span><input class="portal-input" id="profilePhone" value="${escapeHtml(profile.phone || "")}"></label>
+              <label class="${cls.field}"><span class="portal-label">Communication preference</span><select class="portal-input" id="profileComms"><option>Email</option><option>Phone</option><option>Email first, phone if urgent</option></select></label>
+              <label class="${cls.field}"><span class="portal-label">Preferred language</span><input class="portal-input" id="profilePreferredLanguage" value="${escapeHtml(profile.microsoftPreferredLanguage || "")}"></label>
+              <label class="${cls.field}"><span class="portal-label">Mobile phone</span><input class="portal-input" id="profileMobilePhone" value="${escapeHtml(profile.microsoftMobilePhone || "")}"></label>
+              <label class="${cls.field}"><span class="portal-label">Office location</span><input class="portal-input" id="profileOfficeLocation" value="${escapeHtml(profile.microsoftOfficeLocation || "")}"></label>
+              <label class="${cls.field}"><span class="portal-label">City</span><input class="portal-input" id="profileCity" value="${escapeHtml(profile.microsoftCity || "")}"></label>
+              <label class="${cls.field}"><span class="portal-label">State</span><input class="portal-input" id="profileState" value="${escapeHtml(profile.microsoftState || "")}"></label>
+              <label class="${cls.field}"><span class="portal-label">Country</span><input class="portal-input" id="profileCountry" value="${escapeHtml(profile.microsoftCountry || "")}"></label>
+              <label class="${cls.field}"><span class="portal-label">Postal code</span><input class="portal-input" id="profilePostalCode" value="${escapeHtml(profile.microsoftPostalCode || "")}"></label>
+              <label class="${cls.field}"><span class="portal-label">Street address</span><input class="portal-input" id="profileStreetAddress" value="${escapeHtml(profile.microsoftStreetAddress || "")}"></label>
+              <label class="${cls.field}"><span class="portal-label">Support notes</span><textarea class="portal-input" id="profileSupportNotes" style="min-height:118px;resize:vertical">${escapeHtml(profile.supportNotes || "")}</textarea></label>
             </div>
           </details>
           <div class="${cls.formActions}">
-            <button class="btn-primary" type="button" id="saveProfileBtn">Save changes</button>
+            <button class="portal-button-primary" type="button" id="saveProfileBtn">Save changes</button>
           </div>
         </article>
       </section>`;
@@ -652,41 +652,41 @@ async function renderPage(page) {
   if (page === "settings") {
     pageRoot.innerHTML = `
       <section class="${cls.grid12}">
-        <article class="card-base ${cls.span6}">
+        <article class="portal-card ${cls.span6}">
           <h2 class="${cls.cardTitle}">Display Name</h2>
           <div class="${cls.formGrid}">
-            <label class="${cls.field}"><span class="label-base">Display name</span><input class="input-base" value="${escapeHtml(profile.displayName || "")}" placeholder="Your name"></label>
-            <label class="${cls.field}"><span class="label-base">Email Address</span><input class="input-base" value="${escapeHtml(profile.email || profile.microsoftEmail || "")}" disabled></label>
+            <label class="${cls.field}"><span class="portal-label">Display name</span><input class="portal-input" value="${escapeHtml(profile.displayName || "")}" placeholder="Your name"></label>
+            <label class="${cls.field}"><span class="portal-label">Email Address</span><input class="portal-input" value="${escapeHtml(profile.email || profile.microsoftEmail || "")}" disabled></label>
           </div>
         </article>
-        <article class="card-base ${cls.span6}">
+        <article class="portal-card ${cls.span6}">
           <h2 class="${cls.cardTitle}">Personalisation</h2>
           <div class="${cls.stack}">
-            <label class="${cls.toggle}"><span><strong class="font-bold text-foreground">Compact dashboard widgets</strong><small class="${cls.helpText}">Show dense cards on the Overview page.</small></span><input type="checkbox" class="${cls.toggleInput}"></label>
-            <label class="${cls.toggle}"><span><strong class="font-bold text-foreground">Reduced motion</strong><small class="${cls.helpText}">Limit non-essential transitions.</small></span><input type="checkbox" class="${cls.toggleInput}"></label>
-            <label class="${cls.toggle}"><span><strong class="font-bold text-foreground">Accessibility-first layout</strong><small class="${cls.helpText}">Keep high contrast controls and clear labels.</small></span><input type="checkbox" checked class="${cls.toggleInput}"></label>
+            <label class="${cls.toggle}"><span><strong class="portal-card-title">Compact dashboard widgets</strong><small class="${cls.helpText}">Show dense cards on the Overview page.</small></span><input type="checkbox" class="${cls.toggleInput}"></label>
+            <label class="${cls.toggle}"><span><strong class="portal-card-title">Reduced motion</strong><small class="${cls.helpText}">Limit non-essential transitions.</small></span><input type="checkbox" class="${cls.toggleInput}"></label>
+            <label class="${cls.toggle}"><span><strong class="portal-card-title">Accessibility-first layout</strong><small class="${cls.helpText}">Keep high contrast controls and clear labels.</small></span><input type="checkbox" checked class="${cls.toggleInput}"></label>
           </div>
         </article>
-        <article class="card-base ${cls.span6}">
+        <article class="portal-card ${cls.span6}">
           <h2 class="${cls.cardTitle}">Notification Preferences</h2>
           <div class="${cls.stack}">
-            <label class="${cls.toggle}"><span><strong class="font-bold text-foreground">Account alerts</strong><small class="${cls.helpText}">Security, profile and sign-in updates.</small></span><input type="checkbox" checked class="${cls.toggleInput}"></label>
-            <label class="${cls.toggle}"><span><strong class="font-bold text-foreground">Support updates</strong><small class="${cls.helpText}">Replies to tickets, enquiries and complaints.</small></span><input type="checkbox" checked class="${cls.toggleInput}"></label>
-            <label class="${cls.toggle}"><span><strong class="font-bold text-foreground">Membership updates</strong><small class="${cls.helpText}">Billing, plan and token notices.</small></span><input type="checkbox" checked class="${cls.toggleInput}"></label>
+            <label class="${cls.toggle}"><span><strong class="portal-card-title">Account alerts</strong><small class="${cls.helpText}">Security, profile and sign-in updates.</small></span><input type="checkbox" checked class="${cls.toggleInput}"></label>
+            <label class="${cls.toggle}"><span><strong class="portal-card-title">Support updates</strong><small class="${cls.helpText}">Replies to tickets, enquiries and complaints.</small></span><input type="checkbox" checked class="${cls.toggleInput}"></label>
+            <label class="${cls.toggle}"><span><strong class="portal-card-title">Membership updates</strong><small class="${cls.helpText}">Billing, plan and token notices.</small></span><input type="checkbox" checked class="${cls.toggleInput}"></label>
           </div>
         </article>
-        <article class="card-base ${cls.span6}">
+        <article class="portal-card ${cls.span6}">
           <h2 class="${cls.cardTitle}">Telephone Support PIN</h2>
           <div class="${cls.stack}">
-            <div class="${cls.entry}"><span class="label-base">Verification</span><strong class="${cls.entryStrong}">Managed in Security</strong></div>
-            <a class="btn-secondary" href="/account/security/">Open Security Settings</a>
+            <div class="${cls.entry}"><span class="portal-label">Verification</span><strong class="${cls.entryStrong}">Managed in Security</strong></div>
+            <a class="portal-button-secondary" href="/account/security/">Open Security Settings</a>
           </div>
         </article>
-        <article class="card-base ${cls.span12}">
+        <article class="portal-card ${cls.span12}">
           <h2 class="${cls.cardTitle}">Danger Zone</h2>
           <div class="${cls.alertWarning}">Closing an account requires support review so membership, billing, data protection and saved plans are handled correctly.</div>
           <div class="${cls.formActions}">
-            <a class="btn-primary" style="background:linear-gradient(135deg,#dc2626,#ef4444);box-shadow:0 8px 24px rgba(220,38,38,.25),inset 0 1px 0 hsla(0,0%,100%,.15)" href="/account/support/">Close My Account</a>
+            <a class="portal-button-danger" style="background:linear-gradient(135deg,#dc2626,#ef4444);box-shadow:0 8px 24px rgba(220,38,38,.25),inset 0 1px 0 hsla(0,0%,100%,.15)" href="/account/support/">Close My Account</a>
           </div>
         </article>
       </section>`;
@@ -702,44 +702,44 @@ async function renderPage(page) {
     const activePinId = activePinList[0]?.id || activePinRecord?.id || "";
     pageRoot.innerHTML = `
       <section class="${cls.grid12}">
-        <article class="card-base ${cls.span6}">
+        <article class="portal-card ${cls.span6}">
           <h2 class="${cls.cardTitle}">Microsoft Entra connection</h2>
           <div class="${cls.stack}">
-            <div class="${cls.entry}"><span class="label-base">Connected</span><strong class="${cls.entryStrong}">${profile.microsoftEmail ? "Yes" : "Unknown"}</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Last sign-in</span><strong class="${cls.entryStrong}">${escapeHtml(fmt(profile.microsoftUpdatedAt || profile.updatedAt))}</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Account verification</span><strong class="${cls.entryStrong}">${escapeHtml(profile.verificationStatus || "Not provided")}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Connected</span><strong class="${cls.entryStrong}">${profile.microsoftEmail ? "Yes" : "Unknown"}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Last sign-in</span><strong class="${cls.entryStrong}">${escapeHtml(fmt(profile.microsoftUpdatedAt || profile.updatedAt))}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Account verification</span><strong class="${cls.entryStrong}">${escapeHtml(profile.verificationStatus || "Not provided")}</strong></div>
           </div>
         </article>
-        <article class="card-base ${cls.span6}">
+        <article class="portal-card ${cls.span6}">
           <h2 class="${cls.cardTitle}">One-time PINs</h2>
           <div class="${cls.alertInfo}">Support staff may request this PIN to verify identity before discussing the account. The backend stores only hashed PINs.</div>
-          <div class="${cls.surface} mt-4">
+          <div class="${cls.surface}">
             <div class="${cls.eyebrow}">One-time support PIN</div>
-            <div class="text-lg font-extrabold text-foreground mt-1 mb-3">${activePinValue ? escapeHtml(activePinValue) : "No active support PIN available."}</div>
+            <div class="portal-card-title">${activePinValue ? escapeHtml(activePinValue) : "No active support PIN available."}</div>
             <div class="${cls.stack}" id="pinHistory">
               ${activePinList.map((pin) => `<div class="${cls.entry}"><strong class="${cls.entryStrong}">${escapeHtml(pin.active_pin ? `PIN ending ${pin.active_pin.slice(-4)}` : pin.pin_last4 ? `PIN ending ${pin.pin_last4}` : `${pin.status || "Support"} PIN`)}</strong><small class="${cls.entrySmall}">Status: ${escapeHtml(pin.status || "Active")} · Created ${escapeHtml(fmt(pin.created_at))} · Expires ${escapeHtml(fmt(pin.expires_at))}</small></div>`).join("") || `<div class="${cls.noteInline}">Generate a support PIN when you need identity verification for a support conversation.</div>`}
             </div>
           </div>
-          <div class="${cls.quickActions} mt-4">
+          <div class="${cls.quickActions}">
             <button class="${cls.action}" type="button" data-pin-action="rotate"><strong class="${cls.actionStrong}">Rotate PIN</strong><span class="${cls.actionSpan}">Refresh the active PIN</span></button>
             <button class="${cls.action}" type="button" data-pin-action="revoke"><strong class="${cls.actionStrong}">Revoke PIN</strong><span class="${cls.actionSpan}">Disable this PIN</span></button>
             ${activePinValue ? '<button class="' + cls.action + '" type="button" data-pin-action="copy"><strong class="' + cls.actionStrong + '">Copy PIN</strong><span class="' + cls.actionSpan + '">Copy the active PIN to your clipboard</span></button>' : '<button class="' + cls.action + '" type="button" data-pin-action="generate"><strong class="' + cls.actionStrong + '">Generate PIN</strong><span class="' + cls.actionSpan + '">Create a new one-time support PIN</span></button>'}
           </div>
         </article>
-        <article class="card-base ${cls.span12}">
+        <article class="portal-card ${cls.span12}">
           <h2 class="${cls.cardTitle}">Security Questions</h2>
           <div class="${cls.alertInfo}">Configure recovery questions for support identity verification. Stored answers are hashed and are never displayed.</div>
-          <form class="${cls.stack} mt-4" id="securityQuestionsForm">
+          <form class="${cls.stack}" id="securityQuestionsForm">
             ${[0, 1, 2].map((index) => `
               <div class="${cls.entry}">
-                <label class="${cls.field} flex-1">Question ${index + 1}<input class="input-base mt-1.5" id="security_question_${index}" type="text" value="${escapeHtml(securityQuestions[index]?.question_label || "")}" autocomplete="off"></label>
-                <label class="${cls.field} flex-1">Answer ${index + 1}<input class="input-base mt-1.5" id="security_answer_${index}" type="password" autocomplete="off"></label>
+                <label class="${cls.field}">Question ${index + 1}<input class="portal-input" id="security_question_${index}" type="text" value="${escapeHtml(securityQuestions[index]?.question_label || "")}" autocomplete="off"></label>
+                <label class="${cls.field}">Answer ${index + 1}<input class="portal-input" id="security_answer_${index}" type="password" autocomplete="off"></label>
               </div>
             `).join("")}
-            <button class="btn-primary w-fit" type="submit">Save Security Questions</button>
+            <button class="portal-button-primary" type="submit">Save Security Questions</button>
           </form>
         </article>
-        <article class="card-base ${cls.span12}">
+        <article class="portal-card ${cls.span12}">
           <h2 class="${cls.cardTitle}">Security history</h2>
           ${timelineMarkup(timelineItems(profile, requests).slice(0, 6))}
         </article>
@@ -804,18 +804,18 @@ async function renderPage(page) {
     const attempts = Array.isArray(data.blocked_attempts) ? data.blocked_attempts : [];
     pageRoot.innerHTML = `
       <section class="${cls.grid12}">
-        <article class="card-base ${cls.span6}"><h2 class="${cls.cardTitle}">Token balance</h2><div class="${cls.stack}">
-          <div class="${cls.entry}"><span class="label-base">Plan</span><strong class="${cls.entryStrong}">${escapeHtml(summary.plan_name || "Not available")}</strong></div>
-          <div class="${cls.entry}"><span class="label-base">Monthly allowance</span><strong class="${cls.entryStrong}">${escapeHtml(String(summary.monthly_allowance ?? 0))}</strong></div>
-          <div class="${cls.entry}"><span class="label-base">Remaining tokens</span><strong class="${cls.entryStrong}">${escapeHtml(String(summary.remaining_tokens ?? 0))}</strong></div>
-          <div class="${cls.entry}"><span class="label-base">Used tokens</span><strong class="${cls.entryStrong}">${escapeHtml(String(summary.used_tokens ?? 0))}</strong></div>
-          <div class="${cls.entry}"><span class="label-base">Purchased add-on tokens</span><strong class="${cls.entryStrong}">${escapeHtml(String(summary.purchased_addon_tokens ?? 0))}</strong></div>
-          <div class="${cls.entry}"><span class="label-base">Trial expiry</span><strong class="${cls.entryStrong}">${escapeHtml(fmt(summary.trial?.expires_at))}</strong></div>
+        <article class="portal-card ${cls.span6}"><h2 class="${cls.cardTitle}">Token balance</h2><div class="${cls.stack}">
+          <div class="${cls.entry}"><span class="portal-label">Plan</span><strong class="${cls.entryStrong}">${escapeHtml(summary.plan_name || "Not available")}</strong></div>
+          <div class="${cls.entry}"><span class="portal-label">Monthly allowance</span><strong class="${cls.entryStrong}">${escapeHtml(String(summary.monthly_allowance ?? 0))}</strong></div>
+          <div class="${cls.entry}"><span class="portal-label">Remaining tokens</span><strong class="${cls.entryStrong}">${escapeHtml(String(summary.remaining_tokens ?? 0))}</strong></div>
+          <div class="${cls.entry}"><span class="portal-label">Used tokens</span><strong class="${cls.entryStrong}">${escapeHtml(String(summary.used_tokens ?? 0))}</strong></div>
+          <div class="${cls.entry}"><span class="portal-label">Purchased add-on tokens</span><strong class="${cls.entryStrong}">${escapeHtml(String(summary.purchased_addon_tokens ?? 0))}</strong></div>
+          <div class="${cls.entry}"><span class="portal-label">Trial expiry</span><strong class="${cls.entryStrong}">${escapeHtml(fmt(summary.trial?.expires_at))}</strong></div>
         </div></article>
-        <article class="card-base ${cls.span6}"><h2 class="${cls.cardTitle}">How tokens work</h2><p class="text-sm text-muted-foreground leading-relaxed mb-4">${escapeHtml(summary.deduction_rule || "Builder Usage Tokens are deducted only on completed saved outputs.")}</p><a class="btn-primary" href="/builders/">Open Experience Builders</a></article>
+        <article class="portal-card ${cls.span6}"><h2 class="${cls.cardTitle}">How tokens work</h2><p class="portal-card-description">${escapeHtml(summary.deduction_rule || "Builder Usage Tokens are deducted only on completed saved outputs.")}</p><a class="portal-button-primary" href="/builders/">Open Experience Builders</a></article>
       </section>
-      <section class="card-base mb-5"><h2 class="${cls.cardTitle}">Token ledger</h2>${portalTable(["Date", "Amount", "Source", "Reason", "Balance"], ledger.map((item) => [fmt(item.created_at), item.amount, item.source, item.reason, item.balance_after]))}</section>
-      <section class="card-base"><h2 class="${cls.cardTitle}">Blocked attempts</h2>${portalTable(["Date", "Builder", "Reason", "Available", "Required", "Action"], attempts.map((item) => [fmt(item.created_at), item.builder_name, item.reason, item.tokens_available, item.tokens_required, item.action_offered]))}</section>
+      <section class="portal-card"><h2 class="${cls.cardTitle}">Token ledger</h2>${portalTable(["Date", "Amount", "Source", "Reason", "Balance"], ledger.map((item) => [fmt(item.created_at), item.amount, item.source, item.reason, item.balance_after]))}</section>
+      <section class="portal-card"><h2 class="${cls.cardTitle}">Blocked attempts</h2>${portalTable(["Date", "Builder", "Reason", "Available", "Required", "Action"], attempts.map((item) => [fmt(item.created_at), item.builder_name, item.reason, item.tokens_available, item.tokens_required, item.action_offered]))}</section>
     `;
     return;
   }
@@ -824,8 +824,8 @@ async function renderPage(page) {
     const data = portalState.builders || await loadBuilders();
     const outputs = Array.isArray(data.outputs) ? data.outputs : [];
     pageRoot.innerHTML = `
-      <section class="card-base"><h2 class="${cls.cardTitle}">Saved builder outputs and plans</h2>
-        ${outputs.length ? portalTable(["Created", "Builder", "Title", "Tokens used", "Status", "Action"], outputs.map((item) => [fmt(item.created_at), item.builder_name, item.title, item.token_cost, item.status, `<button class="btn-secondary" type="button" data-action="archive-builder-output" data-id="${escapeHtml(item.id)}">Archive</button>`])) : emptyPortalState("No builder outputs yet", "Open a builder and save a finished output to see it here.", "/builders/", "Open Experience Builders")}
+      <section class="portal-card"><h2 class="${cls.cardTitle}">Saved builder outputs and plans</h2>
+        ${outputs.length ? portalTable(["Created", "Builder", "Title", "Tokens used", "Status", "Action"], outputs.map((item) => [fmt(item.created_at), item.builder_name, item.title, item.token_cost, item.status, `<button class="portal-button-secondary" type="button" data-action="archive-builder-output" data-id="${escapeHtml(item.id)}">Archive</button>`])) : emptyPortalState("No builder outputs yet", "Open a builder and save a finished output to see it here.", "/builders/", "Open Experience Builders")}
       </section>
     `;
     return;
@@ -839,48 +839,48 @@ async function renderPage(page) {
     const savedExperiences = (saved.items || []).filter((item) => item.item_type === "experience");
     pageRoot.innerHTML = `
       <section class="${cls.grid12}">
-        <article class="card-base ${cls.span12}">
+        <article class="portal-card ${cls.span12}">
           <div class="${cls.cardHeading}">
             <div><h2 class="${cls.cardTitle}">Manage Membership</h2><p class="${cls.cardDesc}">Payments, invoices, billing details and subscription controls are securely managed by Stripe.</p></div>
-            <button class="btn-primary" type="button" data-action="manage-stripe-billing" ${billing.portalAvailable ? "" : "disabled"}>Manage Billing with Stripe</button>
+            <button class="portal-button-primary" type="button" data-action="manage-stripe-billing" ${billing.portalAvailable ? "" : "disabled"}>Manage Billing with Stripe</button>
           </div>
           ${billing.portalAvailable ? "" : `<div class="${cls.alertInfo}">No Stripe billing account is linked to this customer profile.</div>`}
         </article>
-        <article class="card-base ${cls.span12}">
+        <article class="portal-card ${cls.span12}">
           <h2 class="${cls.cardTitle}">JA Experiences membership plans</h2>
           <div class="${cls.gridMini}">
-            <div class="${cls.entry}"><span class="label-base">Trial</span><strong class="${cls.entryStrong}">14 days · 30 tokens once only</strong></div>
-            <div class="${cls.entry}"><span class="label-base">JA Experience Builder Membership</span><strong class="${cls.entryStrong}">£19.99/month · 150 tokens/month</strong></div>
-            <div class="${cls.entry}"><span class="label-base">JA Experience Builder Plus</span><strong class="${cls.entryStrong}">£29.99/month · 350 tokens/month</strong></div>
-            <div class="${cls.entry}"><span class="label-base">JA Experience Builder Family</span><strong class="${cls.entryStrong}">£39.99/month · 750 tokens/month</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Trial</span><strong class="${cls.entryStrong}">14 days · 30 tokens once only</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">JA Experience Builder Membership</span><strong class="${cls.entryStrong}">£19.99/month · 150 tokens/month</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">JA Experience Builder Plus</span><strong class="${cls.entryStrong}">£29.99/month · 350 tokens/month</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">JA Experience Builder Family</span><strong class="${cls.entryStrong}">£39.99/month · 750 tokens/month</strong></div>
           </div>
         </article>
-        <article class="card-base ${cls.span6}">
+        <article class="portal-card ${cls.span6}">
           <h2 class="${cls.cardTitle}">Live membership</h2>
           <div class="${cls.stack}">
-            <div class="${cls.entry}"><span class="label-base">Current plan</span><strong class="${cls.entryStrong}">${escapeHtml(subscription?.plan || profile.currentPlan || "Standard")}</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Membership status</span><strong class="${cls.entryStrong}">${escapeHtml(subscription?.membershipStatus || profile.customerStatus || "Not active")}</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Billing status</span><strong class="${cls.entryStrong}">${escapeHtml(subscription?.billingStatus || "Not available")}</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Billing interval</span><strong class="${cls.entryStrong}">${escapeHtml(subscription?.billingInterval || "Not available")}</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Renewal date</span><strong class="${cls.entryStrong}">${escapeHtml(fmt(subscription?.renewalDate))}</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Next payment date</span><strong class="${cls.entryStrong}">${escapeHtml(fmt(subscription?.nextPaymentDate))}</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Subscription start</span><strong class="${cls.entryStrong}">${escapeHtml(fmt(subscription?.subscriptionStartDate))}</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Subscription reference</span><strong class="${cls.entryStrong}">${escapeHtml(subscription?.subscriptionReference || "Not available")}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Current plan</span><strong class="${cls.entryStrong}">${escapeHtml(subscription?.plan || profile.currentPlan || "Standard")}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Membership status</span><strong class="${cls.entryStrong}">${escapeHtml(subscription?.membershipStatus || profile.customerStatus || "Not active")}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Billing status</span><strong class="${cls.entryStrong}">${escapeHtml(subscription?.billingStatus || "Not available")}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Billing interval</span><strong class="${cls.entryStrong}">${escapeHtml(subscription?.billingInterval || "Not available")}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Renewal date</span><strong class="${cls.entryStrong}">${escapeHtml(fmt(subscription?.renewalDate))}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Next payment date</span><strong class="${cls.entryStrong}">${escapeHtml(fmt(subscription?.nextPaymentDate))}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Subscription start</span><strong class="${cls.entryStrong}">${escapeHtml(fmt(subscription?.subscriptionStartDate))}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Subscription reference</span><strong class="${cls.entryStrong}">${escapeHtml(subscription?.subscriptionReference || "Not available")}</strong></div>
           </div>
         </article>
-        <article class="card-base ${cls.span6}">
+        <article class="portal-card ${cls.span6}">
           <h2 class="${cls.cardTitle}">Billing details</h2>
           <div class="${cls.stack}">
-            <div class="${cls.entry}"><span class="label-base">Payment method</span><strong class="${cls.entryStrong}">${escapeHtml(subscription?.paymentMethod || "Not available")}</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Trial status</span><strong class="${cls.entryStrong}">${escapeHtml(subscription?.trialStatus || "No trial")}</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Trial end</span><strong class="${cls.entryStrong}">${escapeHtml(fmt(subscription?.trialEndDate))}</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Cancellation</span><strong class="${cls.entryStrong}">${escapeHtml(subscription?.cancellationStatus || "Not scheduled")}</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Scheduled cancellation</span><strong class="${cls.entryStrong}">${escapeHtml(fmt(subscription?.scheduledCancellationDate))}</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Saved destinations</span><strong class="${cls.entryStrong}">${savedDestinations.length}</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Saved experiences</span><strong class="${cls.entryStrong}">${savedExperiences.length}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Payment method</span><strong class="${cls.entryStrong}">${escapeHtml(subscription?.paymentMethod || "Not available")}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Trial status</span><strong class="${cls.entryStrong}">${escapeHtml(subscription?.trialStatus || "No trial")}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Trial end</span><strong class="${cls.entryStrong}">${escapeHtml(fmt(subscription?.trialEndDate))}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Cancellation</span><strong class="${cls.entryStrong}">${escapeHtml(subscription?.cancellationStatus || "Not scheduled")}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Scheduled cancellation</span><strong class="${cls.entryStrong}">${escapeHtml(fmt(subscription?.scheduledCancellationDate))}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Saved destinations</span><strong class="${cls.entryStrong}">${savedDestinations.length}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Saved experiences</span><strong class="${cls.entryStrong}">${savedExperiences.length}</strong></div>
           </div>
         </article>
-        <article class="card-base ${cls.span12}">
+        <article class="portal-card ${cls.span12}">
           <h2 class="${cls.cardTitle}">Billing responsibility</h2>
           <div class="${cls.alertInfo}">Stripe securely manages payment methods, invoices, billing details, subscription changes and cancellations. JA Experiences &amp; Discovery displays synchronised status only.</div>
         </article>
@@ -892,15 +892,15 @@ async function renderPage(page) {
     const supportCases = requests.supportCases || [];
     pageRoot.innerHTML = `
       <section class="${cls.grid12}">
-        <article class="card-base ${cls.span6}">
+        <article class="portal-card ${cls.span6}">
           <h2 class="${cls.cardTitle}">Search knowledge base</h2>
           <div class="${cls.alertInfo}">Search support articles, travel help, payments, memberships, refunds, accessibility and account guidance.</div>
-          <div class="${cls.quickActions} mt-4">
+          <div class="${cls.quickActions}">
             <a class="${cls.action}" href="/enquiry/"><strong class="${cls.actionStrong}">Create request</strong><span class="${cls.actionSpan}">Open a new support case</span></a>
             <a class="${cls.action}" href="/account/data-protection/"><strong class="${cls.actionStrong}">GDPR request</strong><span class="${cls.actionSpan}">Use the privacy centre</span></a>
           </div>
         </article>
-        <article class="card-base ${cls.span6}">
+        <article class="portal-card ${cls.span6}">
           <h2 class="${cls.cardTitle}">Tickets</h2>
           <div class="${cls.stack}">
             ${supportCases.slice(0, 3).map((request) => `
@@ -908,16 +908,16 @@ async function renderPage(page) {
             `).join("") || `<div class="${cls.noteInline}">No support tickets yet. Create a request and the team will respond here.</div>`}
           </div>
         </article>
-        <article class="card-base ${cls.span6}">
+        <article class="portal-card ${cls.span6}">
           <h2 class="${cls.cardTitle}">Categories</h2>
           <div class="${cls.stack}">
-            <div class="${cls.entry}"><span class="label-base">Membership</span><strong class="${cls.entryStrong}">Plan help and entitlement questions</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Billing</span><strong class="${cls.entryStrong}">Stripe payments, invoices and receipts</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Technical</span><strong class="${cls.entryStrong}">Website errors and account issues</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Data Protection</span><strong class="${cls.entryStrong}">Privacy and rights requests</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Membership</span><strong class="${cls.entryStrong}">Plan help and entitlement questions</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Billing</span><strong class="${cls.entryStrong}">Stripe payments, invoices and receipts</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Technical</span><strong class="${cls.entryStrong}">Website errors and account issues</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Data Protection</span><strong class="${cls.entryStrong}">Privacy and rights requests</strong></div>
           </div>
         </article>
-        <article class="card-base ${cls.span12}">
+        <article class="portal-card ${cls.span12}">
           <h2 class="${cls.cardTitle}">Conversation history</h2>
           <div class="${cls.stack}">${timelineMarkup((requests.timeline || []).slice(0, 6))}</div>
         </article>
@@ -929,7 +929,7 @@ async function renderPage(page) {
     const notifications = requests.notifications || [];
     pageRoot.innerHTML = `
       <section class="${cls.grid12}">
-        <article class="card-base ${cls.span6}">
+        <article class="portal-card ${cls.span6}">
           <h2 class="${cls.cardTitle}">Messages</h2>
           <div class="${cls.stack}">
             ${notifications.slice(0, 6).map((notification) => `
@@ -937,11 +937,11 @@ async function renderPage(page) {
             `).join("") || `<div class="${cls.noteInline}">No messages yet. Support replies and service notices will appear here.</div>`}
           </div>
         </article>
-        <article class="card-base ${cls.span6}">
+        <article class="portal-card ${cls.span6}">
           <h2 class="${cls.cardTitle}">Enquiries</h2>
           <div class="${cls.stack}">
             ${(requests.supportCases || []).slice(0, 4).map((request) => `
-              <div class="${cls.entry}"><div><strong class="${cls.entryStrong}">${escapeHtml(request.reference || "Support enquiry")}</strong><small class="${cls.entrySmall}">${escapeHtml(request.status || "New")} · ${escapeHtml(request.assigned_department || "Support")}</small></div><a class="btn-secondary" href="/account/support/">Open Support</a></div>
+              <div class="${cls.entry}"><div><strong class="${cls.entryStrong}">${escapeHtml(request.reference || "Support enquiry")}</strong><small class="${cls.entrySmall}">${escapeHtml(request.status || "New")} · ${escapeHtml(request.assigned_department || "Support")}</small></div><a class="portal-button-secondary" href="/account/support/">Open Support</a></div>
             `).join("") || `<div class="${cls.noteInline}">No open enquiries yet.</div>`}
           </div>
         </article>
@@ -952,20 +952,20 @@ async function renderPage(page) {
   if (page === "data") {
     pageRoot.innerHTML = `
       <section class="${cls.grid12}">
-        <article class="card-base ${cls.span6}">
+        <article class="portal-card ${cls.span6}">
           <h2 class="${cls.cardTitle}">Information</h2>
           <div class="${cls.alertInfo}">The Data Protection Act 2018 and UK GDPR give you rights over your personal information. JA Group Services Ltd and its trading names are registered with the ICO.</div>
         </article>
-        <article class="card-base ${cls.span6}">
+        <article class="portal-card ${cls.span6}">
           <h2 class="${cls.cardTitle}">Rights</h2>
           <div class="${cls.stack}">
-            <div class="${cls.entry}"><span class="label-base">Access</span><strong class="${cls.entryStrong}">Subject Access Request</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Rectification</span><strong class="${cls.entryStrong}">Request corrections to your details</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Erasure</span><strong class="${cls.entryStrong}">Request deletion where lawful</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Portability</span><strong class="${cls.entryStrong}">Request a portable copy of your data</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Access</span><strong class="${cls.entryStrong}">Subject Access Request</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Rectification</span><strong class="${cls.entryStrong}">Request corrections to your details</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Erasure</span><strong class="${cls.entryStrong}">Request deletion where lawful</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Portability</span><strong class="${cls.entryStrong}">Request a portable copy of your data</strong></div>
           </div>
         </article>
-        <article class="card-base ${cls.span12}">
+        <article class="portal-card ${cls.span12}">
           <h2 class="${cls.cardTitle}">Request history</h2>
           <div class="${cls.stack}">
             ${(requests.dataProtectionRequests || []).map((request) => `
@@ -981,15 +981,15 @@ async function renderPage(page) {
     const notifications = requests.notifications || [];
     pageRoot.innerHTML = `
       <section class="${cls.grid12}">
-        <article class="card-base ${cls.span6}">
+        <article class="portal-card ${cls.span6}">
           <h2 class="${cls.cardTitle}">Notification summary</h2>
           <div class="${cls.stack}">
-            <div class="${cls.entry}"><span class="label-base">Unread</span><strong class="${cls.entryStrong}">${notifications.filter((n) => n.status !== "Read").length}</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Read</span><strong class="${cls.entryStrong}">${notifications.filter((n) => n.status === "Read").length}</strong></div>
-            <div class="${cls.entry}"><span class="label-base">Archived</span><strong class="${cls.entryStrong}">${notifications.filter((n) => n.status === "Archived").length}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Unread</span><strong class="${cls.entryStrong}">${notifications.filter((n) => n.status !== "Read").length}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Read</span><strong class="${cls.entryStrong}">${notifications.filter((n) => n.status === "Read").length}</strong></div>
+            <div class="${cls.entry}"><span class="portal-label">Archived</span><strong class="${cls.entryStrong}">${notifications.filter((n) => n.status === "Archived").length}</strong></div>
           </div>
         </article>
-        <article class="card-base ${cls.span6}">
+        <article class="portal-card ${cls.span6}">
           <h2 class="${cls.cardTitle}">Notification inbox</h2>
           <div class="${cls.stack}">
             ${(notifications.slice(0, 5).map((notification) => `
@@ -1009,20 +1009,20 @@ async function renderPage(page) {
     const savedExperiences = (saved.items || []).filter((item) => item.item_type === "experience");
     pageRoot.innerHTML = `
       <section class="${cls.grid12}">
-        <article class="card-base ${cls.span12}">
+        <article class="portal-card ${cls.span12}">
           <h2 class="${cls.cardTitle}">Saved Plans</h2>
           <div class="${cls.stack}">
-            ${outputs.map((item) => `<div class="${cls.entry}"><div><strong class="${cls.entryStrong}">${escapeHtml(item.title || item.builder_name || "Saved plan")}</strong><small class="${cls.entrySmall}">${escapeHtml(item.builder_name || "Experience Builder")} · ${escapeHtml(fmt(item.created_at))}</small></div><a class="btn-secondary" href="/account/builders/">View</a></div>`).join("") || emptyPortalState("No saved plans yet", "When you save a finished builder output, it will appear here.", "/builders/", "Open Experience Builders")}
-            <a class="btn-secondary w-fit" href="/account/tokens/">View Builder Usage Tokens</a>
+            ${outputs.map((item) => `<div class="${cls.entry}"><div><strong class="${cls.entryStrong}">${escapeHtml(item.title || item.builder_name || "Saved plan")}</strong><small class="${cls.entrySmall}">${escapeHtml(item.builder_name || "Experience Builder")} · ${escapeHtml(fmt(item.created_at))}</small></div><a class="portal-button-secondary" href="/account/builders/">View</a></div>`).join("") || emptyPortalState("No saved plans yet", "When you save a finished builder output, it will appear here.", "/builders/", "Open Experience Builders")}
+            <a class="portal-button-secondary" href="/account/tokens/">View Builder Usage Tokens</a>
           </div>
         </article>
-        <article class="card-base ${cls.span6}">
+        <article class="portal-card ${cls.span6}">
           <h2 class="${cls.cardTitle}">Saved experiences</h2>
           <div class="${cls.stack}">
             ${savedExperiences.map((item) => `<div class="${cls.entry}"><div><strong class="${cls.entryStrong}">${escapeHtml(item.item_title)}</strong><small class="${cls.entrySmall}">${escapeHtml(item.category || item.source_page || "Experience")}</small></div><button class="${cls.miniBtn}" type="button" data-saved-remove="experience" data-item-key="${escapeHtml(item.item_key)}">Remove</button></div>`).join("") || `<div class="${cls.noteInline}">No saved experiences yet. Add experiences to keep them in one place.</div>`}
           </div>
         </article>
-        <article class="card-base ${cls.span6}">
+        <article class="portal-card ${cls.span6}">
           <h2 class="${cls.cardTitle}">Saved destinations</h2>
           <div class="${cls.stack}">
             ${savedDestinations.map((item) => `<div class="${cls.entry}"><div><strong class="${cls.entryStrong}">${escapeHtml(item.item_title)}</strong><small class="${cls.entrySmall}">${escapeHtml(item.category || item.source_page || "Destination")}</small></div><button class="${cls.miniBtn}" type="button" data-saved-remove="destination" data-item-key="${escapeHtml(item.item_key)}">Remove</button></div>`).join("") || `<div class="${cls.noteInline}">No saved destinations yet.</div>`}
@@ -1057,15 +1057,15 @@ async function renderPage(page) {
   if (page === "bookings") {
     pageRoot.innerHTML = `
       <section class="${cls.grid12}">
-        <article class="card-base ${cls.span6}">
+        <article class="portal-card ${cls.span6}">
           <h2 class="${cls.cardTitle}">My travel planner</h2>
           <div class="${cls.alertInfo}">Save trip ideas, favourite destinations, experiences and notes here while you plan your visit.</div>
         </article>
-        <article class="card-base ${cls.span6}">
+        <article class="portal-card ${cls.span6}">
           <h2 class="${cls.cardTitle}">Planning checklist</h2>
           <div class="${cls.alertInfo}">No trips are saved yet. Add destinations and experiences to create a personal shortlist.</div>
         </article>
-        <article class="card-base ${cls.span12}">
+        <article class="portal-card ${cls.span12}">
           <h2 class="${cls.cardTitle}">Recent activity</h2>
           ${timelineMarkup(timelineItems(profile, requests).slice(0, 4))}
         </article>
@@ -1078,10 +1078,10 @@ async function renderPage(page) {
     const invoices = Array.isArray(billing.invoices) ? billing.invoices : [];
     pageRoot.innerHTML = `
       <section class="${cls.grid12}">
-        <article class="card-base ${cls.span12}">
+        <article class="portal-card ${cls.span12}">
           <div class="${cls.cardHeading}">
             <div><h2 class="${cls.cardTitle}">Recent invoices</h2><p class="${cls.cardDesc}">Recent Stripe invoice references cached for your account.</p></div>
-            <button class="btn-primary" type="button" data-action="manage-stripe-billing" ${billing.portalAvailable ? "" : "disabled"}>View All Invoices in Stripe</button>
+            <button class="portal-button-primary" type="button" data-action="manage-stripe-billing" ${billing.portalAvailable ? "" : "disabled"}>View All Invoices in Stripe</button>
           </div>
           <div class="${cls.stack}">
             ${invoices.slice(0, 5).map((invoice) => `
@@ -1092,7 +1092,7 @@ async function renderPage(page) {
             `).join("") || `<div class="${cls.noteInline}">No cached Stripe invoices are available.</div>`}
           </div>
         </article>
-        <article class="card-base ${cls.span12}">
+        <article class="portal-card ${cls.span12}">
           <h2 class="${cls.cardTitle}">Other documents</h2>
           <div class="${cls.alertInfo}">Customer data exports and support documents remain available through their relevant portal sections. Stripe remains the source of truth for invoices and receipts.</div>
         </article>

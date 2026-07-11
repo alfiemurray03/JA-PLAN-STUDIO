@@ -15,14 +15,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     themeLink.href = "/assets/css/theme.css?v=20260709-airo-2";
     document.head.appendChild(themeLink);
   }
-  // public-saas.css auto-injection removed — tailwind.css is now the primary stylesheet
-  // and is injected by the tailwindLink block below.
 
-  const tailwindLink = document.querySelector('link[href^="/assets/css/tailwind.css"]') || document.createElement("link");
-  tailwindLink.rel = "stylesheet";
-  tailwindLink.href = "/assets/css/tailwind.css?v=20260711-tw-1";
-  if (!tailwindLink.parentNode) {
-    document.head.appendChild(tailwindLink);
+  const publicThemeLink = document.querySelector('link[href^="/assets/css/public-saas.css"]') || document.createElement("link");
+  publicThemeLink.rel = "stylesheet";
+  publicThemeLink.href = "/assets/css/public-saas.css?v=20260710-wordmark-unified-1";
+  if (!publicThemeLink.parentNode) {
+    document.head.appendChild(publicThemeLink);
+  }
+
+  const footerCssLink = document.querySelector('link[href^="/assets/includes/footer.css"]') || document.createElement("link");
+  footerCssLink.rel = "stylesheet";
+  footerCssLink.href = "/assets/includes/footer.css?v=20260710-footer-account-1";
+  if (!footerCssLink.parentNode) {
+    document.head.appendChild(footerCssLink);
   }
 
   function ensureFaviconLink(rel, attrs = {}) {
@@ -88,8 +93,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function setupMobileMenu() {
-    const toggle = document.querySelector("#siteMenuToggle") || document.querySelector(".menu-toggle");
-    const nav = document.querySelector("#siteMobileMenu") || document.querySelector("#siteNav");
+    const toggle = document.querySelector(".site-menu-toggle");
+    const nav = document.querySelector(".site-mobile-menu");
     if (!toggle || !nav) return;
 
     const closeMobileMenu = () => {
