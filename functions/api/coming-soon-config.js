@@ -2,7 +2,7 @@ const DEFAULT_CONFIG = {
   success: true,
   headline: "Coming Soon",
   subtext: "We are putting the finishing touches on something great.",
-  launchDate: "2026-08-29T22:01:00+01:00",
+  launchDate: "",
   platformName: "JA Experiences & Discovery",
   description: "JA Experiences & Discovery is a self-service experience planning platform that helps you build, save and manage everyday, travel and support planning outputs.",
   features: [
@@ -70,7 +70,7 @@ export async function onRequestGet({ env }) {
     ...DEFAULT_CONFIG,
     headline: headline.value || DEFAULT_CONFIG.headline,
     subtext: subtext.value || DEFAULT_CONFIG.subtext,
-    launchDate: launchDate.found ? launchDate.value : DEFAULT_CONFIG.launchDate,
+    launchDate: launchDate.found ? launchDate.value : "",
     description: description.value || DEFAULT_CONFIG.description,
     features: parseFeatures(features.value)
   });

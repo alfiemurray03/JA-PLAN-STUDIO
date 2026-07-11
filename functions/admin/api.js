@@ -3156,6 +3156,15 @@ export async function saveAuthoritativeSiteStatus(DB, siteStatus) {
   return siteStatus;
 }
 
+async function readAuthoritativeSiteStatus(DB) {
+  const row = await DB.prepare("SELECT value FROM site_settings WHERE key = 'site_status'").first();
+  const value = clean(row?.value, 80);
+  if (!["normal", "coming_soon", "maintenance"].includes(value)) {
+    throw new Error("The saved Site Status could not be confirmed.");
+  }
+  return value;
+}
+
 export async function runSystemDiagnostics(DB, env, request) {
   const checkedAt = new Date().toISOString();
   const origin = new URL(request.url).origin;
@@ -3373,18 +3382,41 @@ export async function onRequest(context) {
           return json({ error: "Forbidden.", section }, 403);
         }
         if (body.action === "update_site_status") {
-          const nextStatus = clean(body.site_status, 80) || "normal";
+          const nextStatus = clean(body.site_status, 80);
           if (!["normal", "coming_soon", "maintenance"].includes(nextStatus)) {
             return json({ error: "Invalid site status." }, 400);
           }
-          await saveAuthoritativeSiteStatus(env.DB, nextStatus);
+          const previousStatus = await getSiteStatus(env.DB);
+          const requestId = clean(request.headers.get("cf-ray") || request.headers.get("x-request-id"), 120) || crypto.randomUUID();
+          let confirmedStatus;
+          try {
+            await saveAuthoritativeSiteStatus(env.DB, nextStatus);
+            confirmedStatus = await readAuthoritativeSiteStatus(env.DB);
+          } catch (error) {
+            await writeAudit(env.DB, identity, "site_status_update", "site_settings", "site_status", "Site Status update failed.", {
+              previous_status: previousStatus,
+              requested_status: nextStatus,
+              result: "failure",
+              request_id: requestId
+            }).catch(() => {});
+            console.error(JSON.stringify({ event: "site_status_save_failed", request_id: requestId, requested_status: nextStatus }));
+            return json({ error: "Site Status could not be saved.", saved: false, request_id: requestId }, 500);
+          }
 
-          await writeAudit(env.DB, identity, "site_status_update", "site_settings", "site_status", `Site status updated to ${nextStatus}.`, {
-            site_status: nextStatus
-          });
+          let auditRecorded = true;
+          try {
+            await writeAudit(env.DB, identity, "site_status_update", "site_settings", "site_status", `Site status updated from ${previousStatus} to ${confirmedStatus}.`, {
+              previous_status: previousStatus,
+              new_status: confirmedStatus,
+              result: "success",
+              request_id: requestId
+            });
+          } catch (_) {
+            auditRecorded = false;
+            console.error(JSON.stringify({ event: "site_status_audit_failed", request_id: requestId, site_status: confirmedStatus }));
+          }
 
-          const platform = await getBuilderPlatform(env.DB);
-          return json({ platform, site_status: nextStatus, saved: true });
+          return json({ site_status: confirmedStatus, saved: true, audit_recorded: auditRecorded, request_id: requestId });
         }
 
         if (body.action === "update_general_settings") {

@@ -12,6 +12,7 @@ class MockD1 {
     this.paidSubscription = false;
     this.preparedQueries = [];
     this.batchQueries = [];
+    this.auditWrites = 0;
   }
 
   prepare(sql) {
@@ -19,7 +20,9 @@ class MockD1 {
     db.preparedQueries.push(sql);
     const stmt = {
       sql,
+      bindings: [],
       bind(...args) {
+        stmt.bindings = args;
         return stmt;
       },
       toString() {
@@ -57,6 +60,7 @@ class MockD1 {
         return null;
       },
       async run() {
+        if (sql.includes("INSERT INTO admin_audit_log")) db.auditWrites += 1;
         return { success: true };
       },
       async all() {
@@ -88,6 +92,11 @@ class MockD1 {
 
   async batch(statements) {
     this.batchQueries.push(...statements);
+    for (const statement of statements) {
+      if (statement.sql.includes("INSERT INTO site_settings") && statement.bindings[0] === "site_status") {
+        this.siteStatus = statement.bindings[1];
+      }
+    }
     return [{ success: true }];
   }
 }
@@ -270,5 +279,47 @@ test("coming-soon-config API returns standard launch date format and supports no
   assert.equal(response.headers.get("Cache-Control"), "no-store, no-cache, must-revalidate");
   const data = await response.json();
   assert.equal(data.headline, "Coming Soon");
-  assert.match(data.launchDate, /2026/);
+  assert.equal(data.launchDate, "");
+});
+
+test("site status saves are authoritative and independent of builder platform queries", async () => {
+  const DB = new MockD1();
+  const env = getMockEnv(DB);
+  for (const status of ["coming_soon", "maintenance", "normal", "normal", "coming_soon", "maintenance"]) {
+    const request = new Request("https://experiences.example.com/admin/api?section=systemsettings", {
+      method: "POST",
+      headers: {
+        "Origin": "https://experiences.example.com",
+        "Content-Type": "application/json",
+        "x-ja-auth-email": "alfieholywoodmurray@jagroupservices.co.uk",
+        "x-ja-auth-name": "Alfie"
+      },
+      body: JSON.stringify({ action: "update_site_status", site_status: status })
+    });
+    const response = await adminApiOnRequest({ request, env });
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("content-type"), /application\/json/);
+    const payload = await response.json();
+    assert.equal(payload.saved, true);
+    assert.equal(payload.site_status, status);
+    assert.equal(DB.siteStatus, status);
+    assert.equal("platform" in payload, false);
+  }
+  assert.equal(DB.auditWrites, 6);
+});
+
+test("site status save rejects invalid values before changing D1", async () => {
+  const DB = new MockD1();
+  const request = new Request("https://experiences.example.com/admin/api?section=systemsettings", {
+    method: "POST",
+    headers: {
+      "Origin": "https://experiences.example.com",
+      "Content-Type": "application/json",
+      "x-ja-auth-email": "alfieholywoodmurray@jagroupservices.co.uk"
+    },
+    body: JSON.stringify({ action: "update_site_status", site_status: "launch_gateway" })
+  });
+  const response = await adminApiOnRequest({ request, env: getMockEnv(DB) });
+  assert.equal(response.status, 400);
+  assert.equal(DB.siteStatus, "normal");
 });

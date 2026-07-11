@@ -103,9 +103,10 @@
     }
 
     .brand {
-      font-weight: 800;
-      font-size: 1.125rem;
-      letter-spacing: -0.03em;
+      font-weight: 680;
+      font-size: 1.275rem;
+      letter-spacing: -0.015em;
+      white-space: nowrap;
       text-decoration: none;
       color: hsl(var(--foreground));
     }
@@ -118,7 +119,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 3rem 1.5rem 4rem;
+      padding: 1.75rem 1.5rem 2.5rem;
     }
 
     .content {
@@ -129,59 +130,61 @@
     }
 
     .icon-card {
-      width: 5rem;
-      height: 5rem;
-      margin: 0 auto 2rem;
-      border-radius: 1.35rem;
-      border: 1px solid hsl(var(--primary) / 0.20);
+      width: 4.25rem;
+      height: 4.25rem;
+      margin: 0 auto 1.15rem;
+      border-radius: 1.1rem;
+      border: 1px solid hsl(var(--primary) / 0.16);
       background: hsl(var(--primary) / 0.10);
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: var(--shadow);
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.055);
     }
 
     .icon-card svg {
-      width: 2.5rem;
-      height: 2.5rem;
+      width: 2.1rem;
+      height: 2.1rem;
       color: hsl(var(--primary));
     }
 
     .eyebrow {
-      margin: 0 0 1rem;
+      margin: 0 0 0.65rem;
       color: hsl(var(--primary));
       font-size: 0.82rem;
-      font-weight: 800;
-      letter-spacing: 0.14em;
+      font-weight: 680;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
     }
 
     h1 {
-      margin: 0 0 1.25rem;
-      font-size: clamp(2.7rem, 7vw, 5.25rem);
-      line-height: 0.96;
-      letter-spacing: -0.06em;
+      margin: 0 0 0.9rem;
+      font-size: clamp(2.4rem, 6vw, 4.25rem);
+      font-weight: 600;
+      line-height: 1.05;
+      letter-spacing: -0.035em;
       color: #09419a;
     }
 
     .subtext {
       max-width: 36rem;
       margin: 0 auto 0.75rem;
-      font-size: clamp(1.1rem, 2vw, 1.35rem);
-      line-height: 1.65;
+      font-size: clamp(1rem, 1.7vw, 1.2rem);
+      font-weight: 500;
+      line-height: 1.55;
       color: #0f1729;
     }
 
     .description {
       max-width: 32rem;
-      margin: 0 auto 2.5rem;
+      margin: 0 auto 1.5rem;
       color: hsl(var(--muted-foreground));
       font-size: 1rem;
-      line-height: 1.7;
+      line-height: 1.6;
     }
 
     .countdown-wrap {
-      margin: 0 auto 3rem;
+      margin: 0 auto 1.75rem;
     }
 
     .countdown-label {
@@ -221,14 +224,14 @@
     .countdown-value span {
       font-variant-numeric: tabular-nums;
       font-size: 1.65rem;
-      font-weight: 850;
+      font-weight: 600;
       letter-spacing: -0.04em;
     }
 
-    .countdown-unit label {
+    .countdown-unit .countdown-unit-label {
       color: hsl(var(--muted-foreground));
       font-size: 0.72rem;
-      font-weight: 800;
+      font-weight: 600;
       letter-spacing: 0.09em;
       text-transform: uppercase;
     }
@@ -237,12 +240,12 @@
       margin-top: 1.05rem;
       color: hsl(var(--muted-foreground));
       font-size: 1.6rem;
-      font-weight: 850;
+      font-weight: 600;
     }
 
     .features {
       max-width: 34rem;
-      margin: 0 auto 2.5rem;
+      margin: 0 auto 1.5rem;
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 0.75rem;
@@ -254,11 +257,11 @@
       display: flex;
       align-items: flex-start;
       gap: 0.65rem;
-      padding: 0.85rem;
+      padding: 0.7rem 0.75rem;
       border-radius: 0.9rem;
       border: 1px solid hsl(var(--border));
       background: hsl(var(--card));
-      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.045);
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.035);
     }
 
     .feature-card svg {
@@ -271,7 +274,8 @@
 
     .feature-card span {
       color: hsl(var(--muted-foreground));
-      font-size: 0.9rem;
+      font-size: 0.875rem;
+      font-weight: 500;
       line-height: 1.45;
     }
 
@@ -369,6 +373,8 @@
         padding: 1rem;
       }
 
+      .brand { font-size: 1.125rem; }
+
       .coming-main {
         align-items: flex-start;
         padding: 2.25rem 1rem 3rem;
@@ -396,7 +402,7 @@
         font-size: 1.35rem;
       }
 
-      .countdown-unit label {
+      .countdown-unit .countdown-unit-label {
         font-size: 0.62rem;
       }
 
@@ -443,27 +449,27 @@
           <div class="countdown" aria-label="Launch countdown">
             <div class="countdown-unit">
               <div class="countdown-value"><span id="days">00</span></div>
-              <label for="days">Days</label>
+              <span class="countdown-unit-label">Days</span>
             </div>
             <div class="separator" aria-hidden="true">:</div>
             <div class="countdown-unit">
               <div class="countdown-value"><span id="hours">00</span></div>
-              <label for="hours">Hours</label>
+              <span class="countdown-unit-label">Hours</span>
             </div>
             <div class="separator" aria-hidden="true">:</div>
             <div class="countdown-unit">
               <div class="countdown-value"><span id="minutes">00</span></div>
-              <label for="minutes">Minutes</label>
+              <span class="countdown-unit-label">Minutes</span>
             </div>
             <div class="separator" aria-hidden="true">:</div>
             <div class="countdown-unit">
               <div class="countdown-value"><span id="seconds">00</span></div>
-              <label for="seconds">Seconds</label>
+              <span class="countdown-unit-label">Seconds</span>
             </div>
           </div>
           <p class="countdown-label hidden" id="countdownComplete">Our planned launch time has arrived. Please check back shortly.</p>
         </div>
-        <div id="countdownFallback" class="countdown-label hidden">Unable to load countdown. Please check back shortly.</div>
+        <div id="countdownFallback" class="countdown-label hidden" role="status">The launch countdown is currently unavailable.</div>
 
         <div class="features" id="featureList" aria-label="Platform preview features"></div>
       </section>
@@ -484,147 +490,6 @@
     </footer>
   </div>
 
-  <script>
-    (function () {
-      var DEFAULTS = {
-        platformName: 'JA Experiences & Discovery',
-        headline: 'Coming Soon',
-        subtext: 'We are putting the finishing touches on something great.',
-        description: 'JA Experiences & Discovery is a self-service experience planning platform that helps you build, save and manage everyday, travel and support planning outputs.',
-        features: [
-          'Guided Experience Builders',
-          'Builder Usage Tokens',
-          'Saved Plans and outputs',
-          'Destination discovery tools',
-          'Accessibility and support planning',
-          'Membership plans and add-ons'
-        ],
-        launchDate: '2026-08-29T22:01:00+01:00'
-      };
-
-      var timer = null;
-
-      function byId(id) {
-        return document.getElementById(id);
-      }
-
-      function setText(id, value) {
-        var element = byId(id);
-        if (element && value) element.textContent = value;
-      }
-
-      function pad(value) {
-        return String(Math.max(0, value)).padStart(2, '0');
-      }
-
-      function getCountdown(targetIso) {
-        if (!targetIso) return { days: 0, hours: 0, minutes: 0, seconds: 0, expired: true };
-        var targetTime = new Date(targetIso).getTime();
-        if (!Number.isFinite(targetTime)) {
-          return { days: 0, hours: 0, minutes: 0, seconds: 0, expired: true };
-        }
-        var diff = targetTime - Date.now();
-        if (diff <= 0) {
-          return { days: 0, hours: 0, minutes: 0, seconds: 0, expired: true };
-        }
-
-        var totalSeconds = Math.floor(diff / 1000);
-        return {
-          days: Math.floor(totalSeconds / 86400),
-          hours: Math.floor((totalSeconds % 86400) / 3600),
-          minutes: Math.floor((totalSeconds % 3600) / 60),
-          seconds: totalSeconds % 60,
-          expired: false
-        };
-      }
-
-      function renderCountdown(targetIso) {
-        var wrap = byId('countdownWrap');
-        var complete = byId('countdownComplete');
-        var countdown = wrap && wrap.querySelector('.countdown');
-        if (timer) { clearInterval(timer); timer = null; }
-        if (!wrap || !targetIso) {
-          if (wrap) wrap.classList.add('hidden');
-          return;
-        }
-        var targetTime = new Date(targetIso).getTime();
-        if (!Number.isFinite(targetTime)) {
-          wrap.classList.add('hidden');
-          return;
-        }
-
-        function tick() {
-          var parts = getCountdown(targetIso);
-          if (parts.expired) {
-            if (countdown) countdown.classList.add('hidden');
-            if (complete) complete.classList.remove('hidden');
-            wrap.classList.remove('hidden');
-            if (timer) { clearInterval(timer); timer = null; }
-            return;
-          }
-
-          if (countdown) countdown.classList.remove('hidden');
-          if (complete) complete.classList.add('hidden');
-          byId('days').textContent = pad(parts.days);
-          byId('hours').textContent = pad(parts.hours);
-          byId('minutes').textContent = pad(parts.minutes);
-          byId('seconds').textContent = pad(parts.seconds);
-          wrap.classList.remove('hidden');
-        }
-
-        tick();
-        timer = setInterval(tick, 1000);
-      }
-
-      function checkIcon() {
-        return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>';
-      }
-
-      function renderFeatures(features) {
-        var list = byId('featureList');
-        if (!list) return;
-        var safeFeatures = Array.isArray(features) && features.length ? features : DEFAULTS.features;
-        list.innerHTML = safeFeatures.map(function (feature) {
-          return '<div class="feature-card">' + checkIcon() + '<span>' + escapeHtml(feature) + '</span></div>';
-        }).join('');
-      }
-
-      function escapeHtml(value) {
-        return String(value || '').replace(/[&<>'"]/g, function (char) {
-          return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char];
-        });
-      }
-
-      function applyConfig(config) {
-        var data = Object.assign({}, DEFAULTS, config || {});
-        setText('brandEyebrow', data.platformName);
-        setText('comingSoonTitle', data.headline);
-        setText('comingSoonSubtext', data.subtext);
-        setText('comingSoonDescription', data.description);
-        document.title = (data.headline || DEFAULTS.headline) + ' — JA Experiences & Discovery';
-        renderFeatures(data.features);
-        renderCountdown(data.launchDate);
-      }
-
-      renderFeatures(DEFAULTS.features);
-      applyConfig(DEFAULTS);
-
-      var fallback = byId('countdownFallback');
-
-      fetch('/api/coming-soon-config', { cache: 'no-store', headers: { 'Accept': 'application/json', 'Cache-Control': 'no-cache' } })
-        .then(function (response) {
-          if (!response.ok) throw new Error('API Error');
-          return response.json();
-        })
-        .then(function (data) {
-          if (fallback) fallback.classList.add('hidden');
-          applyConfig(data && data.success !== false ? data : DEFAULTS);
-        })
-        .catch(function () {
-          if (fallback) fallback.classList.remove('hidden');
-          applyConfig(DEFAULTS);
-        });
-    })();
-  </script>
+  <script src="/assets/js/coming-soon.js" data-cookieconsent="ignore" defer></script>
 </body>
 </html>

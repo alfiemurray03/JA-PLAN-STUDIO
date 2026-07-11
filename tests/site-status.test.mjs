@@ -4,9 +4,10 @@ import test from "node:test";
 
 const root = new URL("../", import.meta.url);
 
-test("Coming Soon config API defaults to 29 August 2026 at 22:01 UK time", async () => {
+test("Coming Soon config API has no hard-coded launch date", async () => {
   const api = await readFile(new URL("functions/api/coming-soon-config.js", root), "utf8");
-  assert.match(api, /2026-08-29T22:01:00\+01:00/);
+  assert.doesNotMatch(api, /2026-08-29T22:01:00\+01:00/);
+  assert.match(api, /launchDate: ""/);
 });
 
 test("Coming Soon config API reads settings from D1 with parameterised queries", async () => {
@@ -95,8 +96,13 @@ test("Coming Soon page hides countdown when no date is saved", async () => {
 
 test("Coming Soon page fetches config from API and uses saved values", async () => {
   const html = await readFile(new URL("public/coming-soon/index.html", root), "utf8");
-  assert.match(html, /\/api\/coming-soon-config/);
-  assert.match(html, /headline|subtext/i);
+  const script = await readFile(new URL("public/assets/js/coming-soon.js", root), "utf8");
+  assert.match(html, /src="\/assets\/js\/coming-soon\.js"[^>]*data-cookieconsent="ignore"[^>]*defer/);
+  assert.match(script, /\/api\/coming-soon-config/);
+  assert.match(script, /cache: "no-store"/);
+  assert.match(script, /tick\(\);[\s\S]*setInterval\(tick, 1000\)/);
+  assert.match(script, /renderFeatures/);
+  assert.doesNotMatch(html + script, /2026-08-29T22:01:00\+01:00/);
 });
 
 test("Maintenance page has JA Experiences branding, 503 wording, noindex, and legal links", async () => {
@@ -158,7 +164,7 @@ test("Admin site status form shows saving, success, and error messages", async (
   const client = await readFile(new URL("public/assets/js/admin-control.js", root), "utf8");
   assert.match(client, /Saving|saving/i);
   assert.match(client, /saved successfully|Saved successfully/i);
-  assert.match(client, /Failed to/i);
+  assert.match(client, /could not be saved/i);
 });
 
 test("System Settings tabs reuse real renderers inside one stable shell", async () => {

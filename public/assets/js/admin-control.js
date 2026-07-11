@@ -501,18 +501,33 @@ function bindAdminActions() {
 async function api(section, options = {}) {
   const { query = {}, ...fetchOptions } = options;
   const params = new URLSearchParams({ section, ...query });
-  const response = await fetch(`/admin/api?${params.toString()}`, {
-    credentials: "include",
-    cache: "no-store",
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json"
-    },
-    ...fetchOptions
-  });
+  let response;
+  try {
+    response = await fetch(`/admin/api?${params.toString()}`, {
+      credentials: "include",
+      cache: "no-store",
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+      },
+      ...fetchOptions
+    });
+  } catch (_) {
+    throw new Error("The admin service could not be reached. Check your connection and try again.");
+  }
 
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "Admin API problem.");
+  const contentType = response.headers.get("content-type") || "";
+  const isJson = contentType.toLowerCase().includes("application/json");
+  const data = isJson ? await response.json().catch(() => null) : null;
+  if (!response.ok) {
+    const safeError = data && typeof data.error === "string" && data.error.length <= 300 ? data.error : "";
+    if (safeError) throw new Error(safeError);
+    if (response.redirected || (!isJson && response.url && response.url.includes("/admin/login"))) {
+      throw new Error("Your administrator session has expired. Sign in again and retry.");
+    }
+    throw new Error(`The server returned HTTP ${response.status}.`);
+  }
+  if (!isJson || !data) throw new Error("The admin service returned an invalid response.");
   return data;
 }
 
@@ -4590,8 +4605,8 @@ function renderSiteStatusTab(container, data) {
   };
   const statusDescriptions = {
     normal: "Public website is fully accessible to all visitors.",
-    coming_soon: "Public visitors see a branded Coming Soon page. Login, dashboard and admin remain accessible.",
-    maintenance: "Public visitors see a Maintenance in Progress page. Login, dashboard and admin remain accessible."
+    coming_soon: "Public visitors see the Coming Soon page. Customer sign-in, dashboards, builders and authenticated APIs are unavailable; authorised administrators retain access.",
+    maintenance: "Public visitors see the Maintenance page. Customer sign-in, dashboards, builders and authenticated APIs are unavailable; authorised administrators retain access."
   };
 
   const currentLabel = statusLabels[siteStatus] || "Normal";
@@ -4647,8 +4662,9 @@ function renderSiteStatusTab(container, data) {
       <h2>Important notes</h2>
       <ul class="status-notes-list">
         <li>The admin portal at <code>/admin</code> is always accessible regardless of site status.</li>
-        <li>Authentication routes are never blocked — you cannot lock yourself out.</li>
-        <li>Customer dashboards remain accessible to logged-in customers.</li>
+        <li>Customer authentication, dashboards, builders and authenticated customer APIs are blocked in Coming Soon and Maintenance modes.</li>
+        <li>Administrator authentication and the administrator portal remain available in all modes.</li>
+        <li>Authorised administrators may bypass the closed public page to view the website.</li>
         <li>The setting is stored in the database and persists across restarts.</li>
       </ul>
     </article>
@@ -4712,7 +4728,11 @@ function initSiteStatusTab(container, savedStatus) {
           site_status: selectedMode
         })
       });
+      if (!result.saved || !["normal", "coming_soon", "maintenance"].includes(result.site_status)) {
+        throw new Error("Site Status could not be confirmed after saving.");
+      }
       const newStatus = result.site_status || selectedMode;
+      selectedMode = newStatus;
       const displayEl = container.querySelector("#currentStatusDisplay");
       const descEl = container.querySelector("#currentStatusDesc");
       if (displayEl) displayEl.textContent = newStatus === "coming_soon" ? "Coming Soon" : newStatus === "maintenance" ? "Maintenance" : "Normal";
@@ -4723,12 +4743,17 @@ function initSiteStatusTab(container, savedStatus) {
           ? "Public visitors see the Maintenance page. Admin portal remains accessible."
           : "Public website is fully accessible to all visitors.";
       }
-      modeCards.forEach((c) => c.classList.toggle("selected", c.dataset.mode === newStatus));
+      modeCards.forEach((c) => {
+        const isSelected = c.dataset.mode === newStatus;
+        c.classList.toggle("selected", isSelected);
+        const radio = c.querySelector("input[type=radio]");
+        if (radio) radio.checked = isSelected;
+      });
       statusSavedEl.className = "admin-success";
       statusSavedEl.textContent = "Site status saved successfully.";
     } catch (error) {
       statusSavedEl.className = "admin-alert";
-      statusSavedEl.textContent = error.message || "Failed to update site status.";
+      statusSavedEl.textContent = error.message ? `Site Status could not be saved. ${error.message}` : "Site Status could not be saved.";
     } finally {
       saveBtn.disabled = false;
       saveBtn.textContent = "Save Site Status";
