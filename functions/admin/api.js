@@ -3162,15 +3162,26 @@ export async function runSystemDiagnostics(DB, env, request) {
   const safeCheck = async (check) => {
     try { return await check(); } catch { return "Check failed"; }
   };
-  const [database, siteStatusApi, comingSoonApi, stripe, email, siteStatus] = await Promise.all([
+  const [database, siteStatusApi, comingSoonApi, stripe, email, siteStatus, cols] = await Promise.all([
     safeCheck(async () => { await DB.prepare("SELECT 1 AS ok").first(); return "Operational"; }),
     safeCheck(async () => { const response = await fetch(`${origin}/api/site-status`, { headers: { Accept: "application/json" }, cf: { cacheTtl: 0 } }); return response.ok || response.status === 503 ? "Operational" : "Unavailable"; }),
     safeCheck(async () => { const response = await fetch(`${origin}/api/coming-soon-config`, { headers: { Accept: "application/json" }, cf: { cacheTtl: 0 } }); return response.ok ? "Operational" : "Unavailable"; }),
     safeCheck(async () => { const settings = await getStripeSettings(DB, env); return settings.secretKey ? "Operational" : "Configuration required"; }),
     safeCheck(async () => { const settings = await getEmailSettings(DB, env); return settings.configured ? "Operational" : "Configuration required"; }),
-    safeCheck(async () => getSiteStatus(DB))
+    safeCheck(async () => getSiteStatus(DB)),
+    safeCheck(async () => await getProfilesColumns(DB))
   ]);
   const authConfigured = Boolean(env.ADMIN_OIDC_ISSUER && env.ADMIN_OIDC_CLIENT_ID && env.CUSTOMER_OIDC_ISSUER && env.CUSTOMER_OIDC_CLIENT_ID);
+
+  const requiredCols = ["suspended_at", "suspended_by", "suspension_reason", "reactivated_at", "reactivated_by", "reactivation_reason"];
+  let suspensionColumnsDiagnostic = "Unavailable";
+  if (cols instanceof Set) {
+    const missing = requiredCols.filter(col => !cols.has(col));
+    suspensionColumnsDiagnostic = missing.length === 0 ? "All 6 Columns Exist" : `${6 - missing.length} / 6 Exist (Missing: ${missing.join(", ")})`;
+  } else {
+    suspensionColumnsDiagnostic = "Failed to query database columns";
+  }
+
   return {
     checked_at: checkedAt,
     checks: {
@@ -3185,7 +3196,8 @@ export async function runSystemDiagnostics(DB, env, request) {
       environment: clean(env.ENVIRONMENT || env.ENVIRONMENT_NAME, 80) || "Unavailable",
       version: clean(env.APP_VERSION || env.CF_PAGES_COMMIT_SHA, 100) || "Unavailable",
       d1_binding_detected: DB ? "Yes" : "No",
-      site_status: ["normal", "coming_soon", "maintenance"].includes(siteStatus) ? siteStatus : "Unavailable"
+      site_status: ["normal", "coming_soon", "maintenance"].includes(siteStatus) ? siteStatus : "Unavailable",
+      suspension_columns: suspensionColumnsDiagnostic
     }
   };
 }

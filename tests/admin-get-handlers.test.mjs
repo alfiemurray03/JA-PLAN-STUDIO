@@ -14,6 +14,19 @@ class MockD1 {
       },
       async run() { return { success: true }; },
       async all() {
+        if (sql.includes("table_info(profiles)")) {
+          return {
+            results: [
+              { name: "email" },
+              { name: "suspended_at" },
+              { name: "suspended_by" },
+              { name: "suspension_reason" },
+              { name: "reactivated_at" },
+              { name: "reactivated_by" },
+              { name: "reactivation_reason" }
+            ]
+          };
+        }
         return { results: [] };
       }
     };
@@ -44,4 +57,22 @@ test("admin API GET section handlers return real platform D1 data", async () => 
     assert.ok(Array.isArray(data.platform.addons), `section ${section} platform should include addons`);
     assert.ok(Array.isArray(data.platform.trials), `section ${section} platform should include trials`);
   }
+});
+
+test("admin API diagnostics endpoint returns suspension columns check", async () => {
+  const DB = new MockD1();
+  const env = { DB, ADMIN_EMAIL: "alfieholywoodmurray@jagroupservices.co.uk" };
+
+  const request = new Request("https://experiences.example.com/admin/api?section=systemsettings&action=diagnostics", {
+    headers: {
+      "x-ja-auth-email": "alfieholywoodmurray@jagroupservices.co.uk",
+      "x-ja-auth-name": "Alfie"
+    }
+  });
+
+  const response = await onRequest({ request, env });
+  assert.equal(response.status, 200);
+  const data = await response.json();
+  assert.ok(data.diagnostics);
+  assert.equal(data.diagnostics.technical.suspension_columns, "All 6 Columns Exist");
 });
