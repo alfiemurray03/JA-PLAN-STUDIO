@@ -10,6 +10,18 @@
   <link rel="shortcut icon" href="/assets/favicons/favicon.ico?v=20260704-1" type="image/x-icon">
   <script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="762d90c4-b030-45b0-9e70-c21806c665e3" data-blockingmode="auto" type="text/javascript"></script>
   <style>
+    :root {
+      --background: 214 100% 99%;
+      --foreground: 222 47% 11%;
+      --card: 0 0% 100%;
+      --muted-foreground: 217 20% 38%;
+      --border: 214 32% 88%;
+      --primary: 217 89% 42%;
+      --primary-soft: 217 91% 94%;
+      --ring: 217 89% 42%;
+      --shadow: 0 24px 80px rgba(15, 23, 42, 0.08);
+      color-scheme: light;
+    }
     * { box-sizing: border-box; }
     body {
       margin: 0;
@@ -17,35 +29,35 @@
       display: grid;
       place-items: center;
       padding: clamp(1.25rem, 5vw, 4rem);
-      background: #0b1220;
-      color: #f8fafc;
+      background: hsl(var(--background));
+      color: hsl(var(--foreground));
       font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
     }
     main {
       width: min(600px, 100%);
-      border: 1px solid rgba(148, 163, 184, 0.24);
+      border: 1px solid hsl(var(--border));
       border-radius: 14px;
-      background: #101827;
+      background: hsl(var(--card));
       padding: clamp(1.5rem, 5vw, 3.5rem);
-      box-shadow: 0 18px 50px rgba(16, 24, 40, .12);
+      box-shadow: var(--shadow);
       text-align: center;
     }
     h1 {
       font-size: 1.8rem;
       margin-top: 0;
-      color: #3b82f6;
+      color: hsl(var(--primary));
     }
     p {
-      color: #bdd0ea;
+      color: hsl(var(--muted-foreground));
       font-size: 1.1rem;
       line-height: 1.6;
     }
     .footer {
       margin-top: 2rem;
       padding-top: 1rem;
-      border-top: 1px solid rgba(148, 163, 184, 0.24);
+      border-top: 1px solid hsl(var(--border));
       font-size: 0.85rem;
-      color: #94a3b8;
+      color: hsl(var(--muted-foreground));
     }
     .footer-links {
       display: flex;
@@ -56,14 +68,14 @@
       margin-top: 0.75rem;
     }
     .footer-links a {
-      color: #94a3b8;
+      color: hsl(var(--muted-foreground));
       text-decoration: none;
     }
-    .footer-links a:hover { color: #cbd5e1; }
+    .footer-links a:hover { color: hsl(var(--foreground)); }
     .footer-links button {
       background: none;
       border: none;
-      color: #3b82f6;
+      color: hsl(var(--primary));
       cursor: pointer;
       font: inherit;
       text-decoration: underline;
