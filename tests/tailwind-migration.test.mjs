@@ -54,6 +54,15 @@ test("Cookiebot reset records only genuine accept or decline choices", async () 
   assert.doesNotMatch(shell, /requestRenewal[\s\S]{0,200}localStorage\.setItem/);
 });
 
+test("shared header and footer use refined typography and a visible full footer wordmark", async () => {
+  const styles = await readFile(new URL("../src/styles/tailwind.css", import.meta.url), "utf8");
+  assert.match(styles, /\.site-nav a,[\s\S]*?font-weight:\s*500/);
+  assert.match(styles, /\.site-create-link\s*{[\s\S]*?font-weight:\s*600/);
+  assert.match(styles, /\.site-footer a\.site-footer-brand\s*{[\s\S]*?font-weight:\s*600/);
+  assert.match(styles, /\.site-footer h4\s*{[\s\S]*?font-weight:\s*600/);
+  assert.match(styles, /\.site-footer \.site-footer-brand \.brand-name\s*{\s*color:\s*#dbeafe/);
+});
+
 test("Cookiebot cannot block the shared public header and footer shell", async () => {
   const htmlFiles = (await walk(new URL("../public/", import.meta.url))).filter((url) => url.pathname.endsWith(".html"));
   const violations = [];
