@@ -621,7 +621,10 @@ async function loadSection(section) {
     }
 
     const reference = section === "enquiries" ? new URLSearchParams(window.location.search).get("reference") : "";
-    const data = await api(section, { query: reference ? { reference } : {} });
+    const data = section === "overview"
+      ? await Promise.all([api(section, { query: reference ? { reference } : {} }), fetchSiteStatus().catch(() => "normal")])
+          .then(([overviewData, status]) => ({ ...overviewData, site_status: status }))
+      : await api(section, { query: reference ? { reference } : {} });
     state.data[section] = data;
     if (section === "plans") {
       state.planDraft = null;
@@ -819,7 +822,6 @@ function dashboardQuickCards() {
     ["health", "pulse", "Production Health", "Review verified platform and integration signals"],
     ["status", "pulse", "Status Centre", "Review live service health and incidents"],
     ["maintenance", "shield", "Maintenance mode", "Manage public maintenance controls"],
-    ["launchgateway", "clock", "Publish website", "Review Launch Gateway visibility"],
     ["stripe", "card", "Stripe dashboard", "Review connection and API controls"],
     ["audit", "clock", "Audit logs", "Review sensitive administrative activity"],
     ["datarequests", "file", "Data requests", "Process UK GDPR rights requests"],
@@ -859,7 +861,7 @@ function renderFavourites() {
   const nav = document.getElementById("favouritesNav");
   if (!group || !nav) return;
    const allowed = new Set(state.allowedSections || ["overview"]);
-   const favourites = state.favourites.filter((section) => sectionTitles[section] && allowed.has(section));
+   const favourites = state.favourites.filter((section) => section !== "overview" && sectionTitles[section] && allowed.has(section));
   group.hidden = favourites.length === 0;
   nav.innerHTML = favourites.map((section, index) => `
     <button data-section="${escapeAttr(section)}" data-icon="dashboard" class="${state.currentSection === section ? "active" : ""}">
@@ -1329,55 +1331,58 @@ function renderOverview(overview) {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   const name = state.adminName || "Administrator";
-  const roleName = state.adminRole || "Administrator";
-  const widgets = Array.isArray(state.data.overview?.admin?.workspace?.widgets) ? state.data.overview.admin.workspace.widgets : [];
+  const siteStatus = String(state.data.overview?.site_status || "normal").toLowerCase();
   const recentAudit = Array.isArray(overview.recentAudit) ? overview.recentAudit : [];
   const latestCustomers = Array.isArray(overview.latestCustomers) ? overview.latestCustomers : [];
   const latestSupport = Array.isArray(overview.latestSupport) ? overview.latestSupport : [];
   const latestReports = Array.isArray(overview.latestReports) ? overview.latestReports : [];
   const sessions = Array.isArray(overview.sessions) ? overview.sessions : [];
   const activeAdmins = Array.isArray(overview.activeAdmins) ? overview.activeAdmins : [];
-  const maintenanceOn = String(overview.maintenanceStatus).toLowerCase() === "on";
-  const launchGatewayOn = String(overview.launchGatewayStatus).toLowerCase() === "on";
-      const websiteLabel = maintenanceOn ? "Maintenance" : launchGatewayOn ? "Launch Gateway" : "Online";
-  const websiteTone = maintenanceOn ? "critical" : launchGatewayOn ? "warning" : "online";
-  const widgetCards = widgets.map((widget) => `
-    <article class="admin-card widget-card">
-      <div class="section-head"><div><h3>${escapeHtml(widget.label)}</h3><p>${escapeHtml(widget.section)}</p></div></div>
-      <div class="widget-body">
-        <strong>${escapeHtml(widget.section === "stripe" ? "Open section" : widget.section === "sessions" ? "Session management" : widget.section === "audit" ? "Audit review" : "Workspace card")}</strong>
-      </div>
+  const websiteLabel = siteStatus === "maintenance" ? "Maintenance Mode" : siteStatus === "coming_soon" ? "Coming Soon" : "Normal";
+  const websiteTone = siteStatus === "maintenance" ? "critical" : siteStatus === "coming_soon" ? "warning" : "online";
+  const allowed = new Set(state.allowedSections || ["overview"]);
+  const workspaceShortcuts = [
+    ["health", "pulse", "Production Health", "Review verified platform, database and integration signals."],
+    ["status", "pulse", "Status Centre", "Review live service health, incidents and operational notices."],
+    ["systemsettings", "settings", "Live Website Status", `Current public mode: ${websiteLabel}.`],
+    ["stripe", "card", "Stripe Health", "Review the real Stripe connection and configuration state."],
+    ["audit", "clock", "Audit Log", "Review privileged administration activity and security events."],
+    ["customers", "users", "Customer Operations", "Open the customer management workspace." ]
+  ].filter(([section]) => allowed.has(section));
+  const widgetCards = workspaceShortcuts.map(([section, icon, title, description]) => `
+    <article class="workspace-shortcut">
+      <span class="workspace-shortcut-icon" aria-hidden="true">${iconSvg(icon)}</span>
+      <div><h3>${escapeHtml(title)}</h3><p>${escapeHtml(description)}</p></div>
+      <button class="text-button" type="button" data-action="load-section" data-section="${escapeAttr(section)}">Open ${escapeHtml(title)}</button>
     </article>
   `).join("");
 
   document.getElementById("adminPanel").innerHTML = `
-    <header class="dashboard-welcome">
+    <header class="dashboard-intro">
       <div>
-        <p class="eyebrow">Operations dashboard</p>
         <h1>${escapeHtml(greeting)}, ${escapeHtml(name)}</h1>
-        <p class="eyebrow">${escapeHtml(roleName)}</p>
-        <p>Here is the latest operational view of JA Plan Studio.</p>
+        <p>Here is the latest operational view of JA Plan Studio and its customer services.</p>
       </div>
       <div class="website-state">
         <span class="status-dot is-${escapeAttr(websiteTone)}"></span>
-        <div><strong>Website ${escapeHtml(websiteLabel)}</strong><span>Public experience status</span></div>
+        <div><span>Website status</span><strong>${escapeHtml(websiteLabel)}</strong></div>
       </div>
     </header>
 
     <section class="kpi-grid" aria-label="Key performance indicators">
-      ${kpi("Total customers", overview.customers, "All customer profiles")}
-      ${kpi("Lifetime members", overview.lifetimeUsers, "Lifetime access enabled")}
-      ${kpi("Active plans", overview.activePlans, `${overview.plans || 0} plans configured`)}
-      ${kpi("Revenue", "Not available", "No revenue API is connected")}
-      ${kpi("Pending data requests", overview.dataProtectionRequests, "Active rights requests")}
-      ${kpi("Support tickets", overview.supportTickets, "All recorded tickets")}
-      ${kpi("Website status", websiteLabel, maintenanceOn ? "Maintenance mode enabled" : launchGatewayOn ? "Launch Gateway enabled" : "Public site available")}
-      ${kpi("Worker status", "Online", "Admin API responded successfully")}
+      ${kpi("Total customers", overview.customers, "All customer profiles", "users")}
+      ${kpi("Lifetime members", overview.lifetimeUsers, "Lifetime access enabled", "shield")}
+      ${kpi("Active plans", overview.activePlans, `${overview.plans || 0} plans configured`, "plans")}
+      ${kpi("Revenue", "Not connected", "No revenue API is connected", "chart")}
+      ${kpi("Pending data requests", overview.dataProtectionRequests, overview.dataProtectionRequests ? "Requires review" : "No active requests", "file")}
+      ${kpi("Support tickets", overview.supportTickets, overview.supportTickets ? "Recorded support activity" : "No active tickets", "mail")}
+      ${kpi("Website status", websiteLabel, "Saved Site Status setting", "pulse")}
+      ${kpi("Worker status", "Online", "Admin API responded successfully", "settings")}
     </section>
 
     <section class="admin-card">
       <div class="section-head">
-        <div><h2>Workspace</h2><p>Your personalised dashboard layout is driven by your role and preferences.</p></div>
+        <div><h2>Workspace</h2><p>Open the administration areas available to your role.</p></div>
       </div>
       <div class="workspace-grid">
         ${widgetCards}
@@ -1411,8 +1416,8 @@ function renderOverview(overview) {
           <div class="section-head"><div><h2>Platform health</h2><p>Verified controls available in the overview response.</p></div></div>
           <div class="health-list">
             ${health("Website", websiteLabel, websiteTone)}
-            ${health("Maintenance mode", maintenanceOn ? "Enabled" : "Disabled", maintenanceOn ? "warning" : "online")}
-            ${health("Launch Gateway", launchGatewayOn ? "Enabled" : "Disabled", launchGatewayOn ? "warning" : "online")}
+            ${health("Public website", websiteLabel, websiteTone)}
+            ${health("Admin API", "Online", "online")}
           </div>
           <div class="section-actions"><button class="admin-button secondary" type="button" data-action="load-section" data-section="health">Open Production Health</button></div>
         </section>
@@ -1477,8 +1482,8 @@ function renderOperations(operations) {
   renderOverview(operations);
 }
 
-function kpi(label, value, meta) {
-  return `<article class="admin-card"><span class="kpi-label">${escapeHtml(label)}</span><strong class="kpi-value">${escapeHtml(value)}</strong><span class="kpi-meta">${escapeHtml(meta)}</span></article>`;
+function kpi(label, value, meta, icon = "dashboard") {
+  return `<article class="admin-card kpi-card"><span class="kpi-icon" aria-hidden="true">${iconSvg(icon)}</span><span class="kpi-label">${escapeHtml(label)}</span><strong class="kpi-value">${escapeHtml(value)}</strong><span class="kpi-meta">${escapeHtml(meta)}</span></article>`;
 }
 
 function health(label, status, tone = "online") {
@@ -4773,6 +4778,18 @@ function renderSiteStatusTab(container, data) {
 
   initSiteStatusTab(container, siteStatus);
   loadSiteStatusFromDedicatedEndpoint(container);
+}
+
+async function fetchSiteStatus() {
+  const response = await fetch("/api/site-status", {
+    cache: "no-store",
+    headers: { "Accept": "application/json" }
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || !["normal", "coming_soon", "maintenance"].includes(data.status)) {
+    throw new Error("Site Status could not be loaded.");
+  }
+  return data.status;
 }
 
 async function siteStatusRequest(options = {}) {
