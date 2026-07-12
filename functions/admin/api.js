@@ -225,6 +225,13 @@ function cleanEmail(value) {
   return clean(value, 254).toLowerCase();
 }
 
+function sanitiseSiteStatusDiagnosticMessage(error) {
+  return clean(error?.message || "Site Status operation failed.", 240)
+    .replace(/\b(?:authorization|cookie|csrf|password|secret|session|token)\s*[:=]\s*\S+/gi, "$1=[redacted]")
+    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/gi, "[redacted-id]")
+    .replace(/\b(?:ALTER|CREATE|DELETE|DROP|INSERT|PRAGMA|SELECT|UPDATE)\b[\s\S]*/i, "[SQL detail removed]");
+}
+
 function parseAuditHistory(value) {
   try {
     const parsed = JSON.parse(value || "[]");
@@ -3268,11 +3275,13 @@ async function getCustomerCrmList(DB) {
   }
 }
 
-export async function saveAuthoritativeSiteStatus(DB, siteStatus) {
+export async function saveAuthoritativeSiteStatus(DB, siteStatus, reportStage = () => {}) {
   if (!["normal", "coming_soon", "maintenance"].includes(siteStatus)) throw new Error("Invalid site status.");
+  reportStage("schema_initialisation");
   await ensureSiteSettingsSchema(DB);
   const values = { site_status: siteStatus, maintenance_enabled: "false", launchgateway_enabled: "false" };
   for (const [key, value] of Object.entries(values)) {
+    reportStage(`write_${key}`);
     await DB.prepare(`
       INSERT INTO site_settings (key, value, updated_at)
       VALUES (?, ?, CURRENT_TIMESTAMP)
@@ -3532,27 +3541,40 @@ export async function onRequest(context) {
           if (!["normal", "coming_soon", "maintenance"].includes(nextStatus)) {
             return json({ error: "Invalid site status." }, 400);
           }
+          const correlationId = clean(request.headers.get("cf-ray") || request.headers.get("x-request-id"), 120) || crypto.randomUUID();
+          let failingStage = "previous_status_read";
           const previousStatus = await getSiteStatus(env.DB);
-          const requestId = clean(request.headers.get("cf-ray") || request.headers.get("x-request-id"), 120) || crypto.randomUUID();
           let confirmedStatus;
           try {
-            await saveAuthoritativeSiteStatus(env.DB, nextStatus);
+            await saveAuthoritativeSiteStatus(env.DB, nextStatus, (stage) => { failingStage = stage; });
+            failingStage = "status_confirmation";
             confirmedStatus = await readAuthoritativeSiteStatus(env.DB);
           } catch (error) {
             await writeAudit(env.DB, identity, "site_status_update", "site_settings", "site_status", "Site Status update failed.", {
               previous_status: previousStatus,
               requested_status: nextStatus,
               result: "failure",
-              request_id: requestId
+              correlation_id: correlationId,
+              failing_stage: failingStage
             }).catch(() => {});
             console.error(JSON.stringify({
               event: "site_status_save_failed",
-              request_id: requestId,
+              correlation_id: correlationId,
+              failing_stage: failingStage,
               requested_status: nextStatus,
-              error: error.message || String(error),
-              stack: error.stack
+              error_name: clean(error?.name || "Error", 80),
+              error_code: clean(error?.code || error?.cause?.code, 80) || "unavailable",
+              error_message: sanitiseSiteStatusDiagnosticMessage(error)
             }));
-            return json({ error: `Site Status could not be saved. ${error.message || String(error)}`, saved: false, request_id: requestId }, 500);
+            return json({
+              success: false,
+              message: "Site Status could not be saved.",
+              correlation_id: correlationId,
+              stage: failingStage,
+              error_name: clean(error?.name || "Error", 80),
+              error_code: clean(error?.code || error?.cause?.code, 80) || "unavailable",
+              error_message: sanitiseSiteStatusDiagnosticMessage(error)
+            }, 500);
           }
 
           let auditRecorded = true;
@@ -3561,14 +3583,14 @@ export async function onRequest(context) {
               previous_status: previousStatus,
               new_status: confirmedStatus,
               result: "success",
-              request_id: requestId
+              correlation_id: correlationId
             });
           } catch (_) {
             auditRecorded = false;
-            console.error(JSON.stringify({ event: "site_status_audit_failed", request_id: requestId, site_status: confirmedStatus }));
+            console.error(JSON.stringify({ event: "site_status_audit_failed", correlation_id: correlationId, site_status: confirmedStatus }));
           }
 
-          return json({ site_status: confirmedStatus, saved: true, audit_recorded: auditRecorded, request_id: requestId });
+          return json({ site_status: confirmedStatus, saved: true, audit_recorded: auditRecorded, correlation_id: correlationId });
         }
 
         if (body.action === "update_general_settings") {

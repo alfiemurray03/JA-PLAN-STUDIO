@@ -331,6 +331,58 @@ test("site status save rejects invalid values before changing D1", async () => {
   assert.equal(DB.siteStatus, "normal");
 });
 
+test("site status save reports the exact failing D1 stage without exposing exception details", async () => {
+  const DB = new MockD1();
+  const originalPrepare = DB.prepare.bind(DB);
+  DB.prepare = (sql) => {
+    const statement = originalPrepare(sql);
+    if (sql.includes("key = 'admin_schema_version'")) {
+      statement.first = async () => ({ value: "2026-07-04-rc4.7-complete" });
+    }
+    if (sql.includes("CREATE TABLE IF NOT EXISTS site_settings")) {
+      statement.run = async () => {
+        const error = new Error("D1_ERROR: diagnostic database failure in CREATE TABLE site_settings");
+        error.code = "D1_DIAGNOSTIC_FAILURE";
+        throw error;
+      };
+    }
+    return statement;
+  };
+  const request = new Request("https://experiences.example.com/admin/api?section=systemsettings", {
+    method: "POST",
+    headers: {
+      "Origin": "https://experiences.example.com",
+      "Content-Type": "application/json",
+      "x-ja-auth-email": "alfieholywoodmurray@jagroupservices.co.uk",
+      "cf-ray": "diagnostic-correlation-id"
+    },
+    body: JSON.stringify({ action: "update_site_status", site_status: "normal" })
+  });
+  const originalConsoleError = console.error;
+  const logged = [];
+  console.error = (message) => logged.push(JSON.parse(message));
+  try {
+    const response = await adminApiOnRequest({ request, env: getMockEnv(DB) });
+    assert.equal(response.status, 500);
+    const payload = await response.json();
+    assert.deepEqual(payload, {
+      success: false,
+      message: "Site Status could not be saved.",
+      correlation_id: "diagnostic-correlation-id",
+      stage: "schema_initialisation",
+      error_name: "Error",
+      error_code: "D1_DIAGNOSTIC_FAILURE",
+      error_message: "D1_ERROR: diagnostic database failure in [SQL detail removed]"
+    });
+    assert.equal(logged[0].failing_stage, "schema_initialisation");
+    assert.equal(logged[0].error_code, "D1_DIAGNOSTIC_FAILURE");
+    assert.doesNotMatch(JSON.stringify(payload), /CREATE TABLE|cookie|session|token|secret/i);
+    assert.equal(DB.siteStatus, "normal");
+  } finally {
+    console.error = originalConsoleError;
+  }
+});
+
 test("admin shell includes reference mobile navigation without replacing protected routes", async () => {
   const html = await readFile(new URL("../public/admin/dashboard/index.html", import.meta.url), "utf8");
   assert.match(html, /class="admin-mobile-nav[^"]*"/);
