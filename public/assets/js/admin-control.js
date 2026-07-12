@@ -522,17 +522,11 @@ async function api(section, options = {}) {
   const data = isJson ? await response.json().catch(() => null) : null;
   if (!response.ok) {
     const safeError = data && typeof data.error === "string" && data.error.length <= 300 ? data.error : "";
-    if (safeError) {
-      const error = new Error(safeError);
-      error.diagnostic = data;
-      throw error;
-    }
+    if (safeError) throw new Error(safeError);
     if (response.redirected || (!isJson && response.url && response.url.includes("/admin/login"))) {
       throw new Error("Your administrator session has expired. Sign in again and retry.");
     }
-    const error = new Error(`The server returned HTTP ${response.status}.`);
-    if (data && typeof data === "object") error.diagnostic = data;
-    throw error;
+    throw new Error(`The server returned HTTP ${response.status}.`);
   }
   if (!isJson || !data) throw new Error("The admin service returned an invalid response.");
   return data;
@@ -4778,6 +4772,49 @@ function renderSiteStatusTab(container, data) {
   `;
 
   initSiteStatusTab(container, siteStatus);
+  loadSiteStatusFromDedicatedEndpoint(container);
+}
+
+async function siteStatusRequest(options = {}) {
+  let response;
+  try {
+    response = await fetch("/admin/site-status-api", {
+      credentials: "include",
+      cache: "no-store",
+      headers: { "Accept": "application/json", "Content-Type": "application/json" },
+      ...options
+    });
+  } catch {
+    throw new Error("The Site Status service could not be reached.");
+  }
+  const data = await response.json().catch(() => null);
+  if (!response.ok || !data) {
+    const message = typeof data?.message === "string" ? data.message : `The server returned HTTP ${response.status}.`;
+    const correlation = typeof data?.correlation_id === "string" ? ` Correlation ID: ${data.correlation_id}` : "";
+    throw new Error(`${message}${correlation}`);
+  }
+  return data;
+}
+
+async function loadSiteStatusFromDedicatedEndpoint(container) {
+  try {
+    const result = await siteStatusRequest();
+    const status = result.site_status;
+    if (!["normal", "coming_soon", "maintenance"].includes(status)) return;
+    container.querySelectorAll(".status-mode-card").forEach((card) => {
+      const selected = card.dataset.mode === status;
+      card.classList.toggle("selected", selected);
+      const radio = card.querySelector("input[type=radio]");
+      if (radio) radio.checked = selected;
+    });
+  } catch (error) {
+    const message = container.querySelector("#siteStatusSaved");
+    if (message) {
+      message.hidden = false;
+      message.className = "admin-alert";
+      message.textContent = error.message || "Site Status could not be loaded.";
+    }
+  }
 }
 
 function initSiteStatusTab(container, savedStatus) {
@@ -4805,12 +4842,9 @@ function initSiteStatusTab(container, savedStatus) {
     statusSavedEl.textContent = "Saving site status...";
 
     try {
-      const result = await api("systemsettings", {
+      const result = await siteStatusRequest({
         method: "POST",
-        body: JSON.stringify({
-          action: "update_site_status",
-          site_status: selectedMode
-        })
+        body: JSON.stringify({ site_status: selectedMode })
       });
       if (!result.saved || !["normal", "coming_soon", "maintenance"].includes(result.site_status)) {
         throw new Error("Site Status could not be confirmed after saving.");
@@ -4837,19 +4871,7 @@ function initSiteStatusTab(container, savedStatus) {
       statusSavedEl.textContent = "Site status saved successfully.";
     } catch (error) {
       statusSavedEl.className = "admin-alert";
-      const diagnostic = error?.diagnostic;
-      if (diagnostic && diagnostic.success === false) {
-        const fields = [
-          ["Correlation ID", diagnostic.correlation_id],
-          ["Stage", diagnostic.stage],
-          ["Error name", diagnostic.error_name],
-          ["Error code", diagnostic.error_code],
-          ["Error message", diagnostic.error_message]
-        ].filter(([, value]) => typeof value === "string" && value);
-        statusSavedEl.textContent = `${diagnostic.message || "Site Status could not be saved."} ${fields.map(([label, value]) => `${label}: ${value}`).join(" | ")}`;
-      } else {
-        statusSavedEl.textContent = error.message ? `Site Status could not be saved. ${error.message}` : "Site Status could not be saved.";
-      }
+      statusSavedEl.textContent = error.message ? `Site Status could not be saved. ${error.message}` : "Site Status could not be saved.";
     } finally {
       saveBtn.disabled = false;
       saveBtn.textContent = "Save Site Status";

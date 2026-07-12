@@ -234,6 +234,30 @@ test("signed-out users can view portal landing pages before authentication", asy
   }
 });
 
+test("authenticated admin POST preserves its JSON body for the protected handler", async () => {
+  const DB = new MiddlewareD1();
+  let downstreamBody;
+  const response = await onRequest({
+    request: new Request("https://experiences.example.test/admin/site-status-api", {
+      method: "POST",
+      headers: {
+        Cookie: "ja_admin_session=opaque-session",
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Origin: "https://experiences.example.test"
+      },
+      body: JSON.stringify({ site_status: "normal" })
+    }),
+    env: environment(DB),
+    next: async (request) => {
+      downstreamBody = await request.json();
+      return Response.json({ saved: true });
+    }
+  });
+  assert.equal(response.status, 200);
+  assert.deepEqual(downstreamBody, { site_status: "normal" });
+});
+
 test("protected builder hub redirects signed-out visitors and preserves its return URL", async () => {
   const response = await onRequest({
     request: new Request("https://experiences.example.test/account/builders/?builder=holiday-planner", {

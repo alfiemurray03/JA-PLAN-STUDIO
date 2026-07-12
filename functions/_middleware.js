@@ -366,7 +366,7 @@ async function getAuthenticatedAdminIdentity(request, env) {
   try {
     const identity = await getNativeSession(request, env, "admin");
     if (!identity) return null;
-    const authenticatedRequest = withIdentity(request, identity);
+    const authenticatedRequest = withIdentity(request.clone(), identity);
     if (!(await isAdminRequest(authenticatedRequest, env))) return null;
     let role = "";
     let permissions = [];
@@ -455,10 +455,6 @@ export async function onRequest(context) {
     : !rootLanding && (path.startsWith("/account/") || path === "/account/dashboard" || shouldGateCustomerDocument(request, path, publicAuthPath))
       ? "customer"
       : "";
-
-  if (realm === "admin" && !publicAuthPath) {
-    request = withIdentity(request, null);
-  }
 
   if (rootLanding && landingRealm) {
     try {

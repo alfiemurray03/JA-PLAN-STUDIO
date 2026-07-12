@@ -27,11 +27,12 @@ test("Site status API reads from D1 with parameterised query and falls back to n
   assert.match(api, /Cache-Control.*no-store/);
 });
 
-test("Admin API supports update_site_status action with audit logging", async () => {
+test("Admin Site Status uses the dedicated endpoint and removes the monolithic action", async () => {
   const api = await readFile(new URL("functions/admin/api.js", root), "utf8");
-  assert.match(api, /update_site_status/);
-  assert.match(api, /\["normal", "coming_soon", "maintenance"\]\.includes\(nextStatus\)/);
-  assert.match(api, /writeAudit.*site_status_update/);
+  const client = await readFile(new URL("public/assets/js/admin-control.js", root), "utf8");
+  assert.doesNotMatch(api, /update_site_status/);
+  assert.match(client, /\/admin\/site-status-api/);
+  assert.doesNotMatch(client, /action:\s*"update_site_status"/);
 });
 
 test("Admin API supports update_coming_soon_settings action with audit logging", async () => {
@@ -166,8 +167,7 @@ test("Admin site status form shows saving, success, and error messages", async (
   assert.match(client, /saved successfully|Saved successfully/i);
   assert.match(client, /could not be saved/i);
   assert.match(client, /Correlation ID/);
-  assert.match(client, /diagnostic\.stage/);
-  assert.doesNotMatch(client, /diagnostic\.(?:stack|sql|headers|cookies|tokens|secrets)/i);
+  assert.doesNotMatch(client, /diagnostic\.(?:stage|stack|sql|headers|cookies|tokens|secrets)/i);
 });
 
 test("Admin API retains the saved launch date when countdown is disabled without a replacement date", async () => {

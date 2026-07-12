@@ -225,13 +225,6 @@ function cleanEmail(value) {
   return clean(value, 254).toLowerCase();
 }
 
-function sanitiseSiteStatusDiagnosticMessage(error) {
-  return clean(error?.message || "Site Status operation failed.", 240)
-    .replace(/\b(?:authorization|cookie|csrf|password|secret|session|token)\s*[:=]\s*\S+/gi, "$1=[redacted]")
-    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/gi, "[redacted-id]")
-    .replace(/\b(?:ALTER|CREATE|DELETE|DROP|INSERT|PRAGMA|SELECT|UPDATE)\b[\s\S]*/i, "[SQL detail removed]");
-}
-
 function parseAuditHistory(value) {
   try {
     const parsed = JSON.parse(value || "[]");
@@ -3275,30 +3268,6 @@ async function getCustomerCrmList(DB) {
   }
 }
 
-export async function saveAuthoritativeSiteStatus(DB, siteStatus, reportStage = () => {}) {
-  if (!["normal", "coming_soon", "maintenance"].includes(siteStatus)) throw new Error("Invalid site status.");
-  reportStage("schema_verification");
-  await verifySiteSettingsSchema(DB);
-  const values = { site_status: siteStatus, maintenance_enabled: "false", launchgateway_enabled: "false" };
-  for (const [key, value] of Object.entries(values)) {
-    reportStage(`write_${key}`);
-    await DB.prepare(`
-      INSERT INTO site_settings (key, value, updated_at)
-      VALUES (?, ?, CURRENT_TIMESTAMP)
-      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
-    `).bind(key, value).run();
-  }
-  return siteStatus;
-}
-
-export async function verifySiteSettingsSchema(DB) {
-  const result = await DB.prepare("PRAGMA table_info(site_settings)").all();
-  const columns = new Set((result.results || []).map((column) => column.name));
-  for (const requiredColumn of ["key", "value", "updated_at"]) {
-    if (!columns.has(requiredColumn)) throw new Error(`site_settings is missing the required ${requiredColumn} column.`);
-  }
-}
-
 export async function ensureSiteSettingsSchema(DB) {
   await DB.prepare(`
     CREATE TABLE IF NOT EXISTS site_settings (
@@ -3316,15 +3285,6 @@ export async function ensureSiteSettingsSchema(DB) {
   if (!columns.has("updated_at")) {
     await DB.prepare("ALTER TABLE site_settings ADD COLUMN updated_at TEXT").run();
   }
-}
-
-async function readAuthoritativeSiteStatus(DB) {
-  const row = await DB.prepare("SELECT value FROM site_settings WHERE key = 'site_status'").first();
-  const value = clean(row?.value, 80);
-  if (!["normal", "coming_soon", "maintenance"].includes(value)) {
-    throw new Error("The saved Site Status could not be confirmed.");
-  }
-  return value;
 }
 
 export async function runSystemDiagnostics(DB, env, request) {
@@ -3379,14 +3339,9 @@ export async function onRequest(context) {
   if (!env.DB) return json({ error: "Database binding DB is missing." }, 500);
 
   try {
+    await initialiseAdminSchema(env.DB, env);
     const url = new URL(request.url);
     const section = url.searchParams.get("section") || "overview";
-    let parsedPostBody = null;
-    if (request.method === "POST" && section === "systemsettings") {
-      parsedPostBody = await request.clone().json().catch(() => ({}));
-    }
-    const isolatedSiteStatusAction = parsedPostBody?.action === "update_site_status";
-    if (!isolatedSiteStatusAction) await initialiseAdminSchema(env.DB, env);
 
     const identity = getAccessIdentity(request);
     if (!identity.email) return json({ error: "Not signed in." }, 401);
@@ -3533,7 +3488,7 @@ export async function onRequest(context) {
 
     if (request.method === "POST") {
       if (!isSameOriginRequest(request)) return json({ error: "This request could not be verified." }, 403);
-      const body = parsedPostBody || await request.json().catch(() => ({}));
+      const body = await request.json().catch(() => ({}));
       if (section === "prefs") return json({ preferences: await saveAdminPreferences(env.DB, body, identity), saved: true });
       if (section === "builders") {
         if (!ownerAccess && !hasAnyPermission(adminContext.permissions, ["manage_plans", "manage_pricing", "manage_crm"])) return json({ error: "Forbidden.", section }, 403);
@@ -3549,63 +3504,6 @@ export async function onRequest(context) {
         if (!ownerAccess && !hasAnyPermission(adminContext.permissions, requiredSettingsPermissions)) {
           return json({ error: "Forbidden.", section }, 403);
         }
-        if (body.action === "update_site_status") {
-          const nextStatus = clean(body.site_status, 80);
-          if (!["normal", "coming_soon", "maintenance"].includes(nextStatus)) {
-            return json({ error: "Invalid site status." }, 400);
-          }
-          const correlationId = clean(request.headers.get("cf-ray") || request.headers.get("x-request-id"), 120) || crypto.randomUUID();
-          let failingStage = "previous_status_read";
-          const previousStatus = await getSiteStatus(env.DB);
-          let confirmedStatus;
-          try {
-            await saveAuthoritativeSiteStatus(env.DB, nextStatus, (stage) => { failingStage = stage; });
-            failingStage = "status_confirmation";
-            confirmedStatus = await readAuthoritativeSiteStatus(env.DB);
-          } catch (error) {
-            await writeAudit(env.DB, identity, "site_status_update", "site_settings", "site_status", "Site Status update failed.", {
-              previous_status: previousStatus,
-              requested_status: nextStatus,
-              result: "failure",
-              correlation_id: correlationId,
-              failing_stage: failingStage
-            }).catch(() => {});
-            console.error(JSON.stringify({
-              event: "site_status_save_failed",
-              correlation_id: correlationId,
-              failing_stage: failingStage,
-              requested_status: nextStatus,
-              error_name: clean(error?.name || "Error", 80),
-              error_code: clean(error?.code || error?.cause?.code, 80) || "unavailable",
-              error_message: sanitiseSiteStatusDiagnosticMessage(error)
-            }));
-            return json({
-              success: false,
-              message: "Site Status could not be saved.",
-              correlation_id: correlationId,
-              stage: failingStage,
-              error_name: clean(error?.name || "Error", 80),
-              error_code: clean(error?.code || error?.cause?.code, 80) || "unavailable",
-              error_message: sanitiseSiteStatusDiagnosticMessage(error)
-            }, 500);
-          }
-
-          let auditRecorded = true;
-          try {
-            await writeAudit(env.DB, identity, "site_status_update", "site_settings", "site_status", `Site status updated from ${previousStatus} to ${confirmedStatus}.`, {
-              previous_status: previousStatus,
-              new_status: confirmedStatus,
-              result: "success",
-              correlation_id: correlationId
-            });
-          } catch (_) {
-            auditRecorded = false;
-            console.error(JSON.stringify({ event: "site_status_audit_failed", correlation_id: correlationId, site_status: confirmedStatus }));
-          }
-
-          return json({ site_status: confirmedStatus, saved: true, audit_recorded: auditRecorded, correlation_id: correlationId });
-        }
-
         if (body.action === "update_general_settings") {
           const platformName = clean(body.platform_name, 120) || "JA Plan Studio";
           const defaultBuilder = clean(body.default_builder, 80) || "experience";
