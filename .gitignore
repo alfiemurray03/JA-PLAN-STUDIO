@@ -3,4 +3,5 @@ public/admin/index.backup.html
 .wrangler/
 .env
 node_modules/
+dist/
 .wrangler/
