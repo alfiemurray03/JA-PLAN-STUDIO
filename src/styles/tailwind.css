@@ -1709,6 +1709,7 @@ main {
   background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
   backdrop-filter: blur(18px);
+  font-family: "Manrope Local", Manrope, ui-sans-serif, system-ui, sans-serif;
 }
 
 .site-header-inner {
@@ -1728,10 +1729,10 @@ main {
   flex-shrink: 0;
   align-items: center;
   color: var(--ja-ink);
-  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
-  font-size: clamp(1.05rem, calc(0.9rem + 0.35vw), 1.22rem);
-  font-weight: 600;
-  letter-spacing: 0;
+  font-family: "Manrope Local", Manrope, ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(1.2rem, calc(1.08rem + 0.3vw), 1.35rem);
+  font-weight: 675;
+  letter-spacing: -0.015em;
   text-decoration: none;
   white-space: nowrap;
 }
@@ -1739,17 +1740,21 @@ main {
 .brand-wordmark {
   display: inline-flex !important;
   align-items: baseline;
-  gap: .28em;
+  gap: .24em;
   color: #000;
-  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  font-family: "Manrope Local", Manrope, ui-sans-serif, system-ui, sans-serif;
   font-size: inherit;
-  font-weight: 600;
+  font-weight: 675;
   line-height: 1.2;
   white-space: nowrap;
 }
 
-.brand-wordmark .brand-ja { color: #000; }
-.brand-wordmark .brand-name { color: var(--ja-navy, #102449); }
+.brand-wordmark .brand-ja { color: #0b0f19; }
+.brand-wordmark .brand-name { color: var(--ja-blue-700, #1d4ed8); }
+
+.site-brand.brand-wordmark {
+  font-size: clamp(1.2rem, calc(1.08rem + 0.3vw), 1.35rem);
+}
 
 .airo-home-hero {
   background: #102449;
@@ -1816,7 +1821,7 @@ main {
   align-items: center;
   justify-content: center;
   border-radius: 0.65rem;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 500;
   line-height: 1.2;
   padding: 0.6rem 0.85rem;
@@ -1902,6 +1907,7 @@ main {
   margin-top: 0;
   border-top: 1px solid var(--ja-line);
   background: rgba(255, 255, 255, 0.92);
+  font-family: "Manrope Local", Manrope, ui-sans-serif, system-ui, sans-serif;
 }
 
 .site-footer-inner {
@@ -1921,9 +1927,9 @@ main {
   gap: 0.25rem;
   margin-bottom: 1rem;
   color: var(--ja-ink);
-  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
-  font-size: clamp(1.25rem, 1.5vw, 1.45rem);
-  font-weight: 600;
+  font-family: "Manrope Local", Manrope, ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(1.35rem, 1.6vw, 1.5rem);
+  font-weight: 675;
   line-height: 1.2;
   text-decoration: none;
 }
@@ -1935,12 +1941,13 @@ main {
 
 .site-footer-grid > div:first-child > p {
   max-width: 22rem;
+  font-size: 0.95rem;
 }
 
 .site-footer h4 {
   margin: 0 0 1rem;
   color: var(--ja-muted);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1963,7 +1970,7 @@ main {
   color: var(--ja-muted);
   cursor: pointer;
   font: inherit;
-  font-size: 0.875rem;
+  font-size: 0.95rem;
   font-weight: 400;
   padding: 0;
   text-align: left;
@@ -2070,7 +2077,7 @@ main {
   color: var(--ja-muted);
   cursor: pointer;
   font: inherit;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 500;
   line-height: 1.25;
   padding: 0.5rem 0.72rem;
@@ -5547,6 +5554,24 @@ tr:hover td { background: #f8fafc; }
   #adminMobileMoreNav { grid-template-columns: 1fr 1fr; }
 }
 
+@font-face {
+  font-family: "Manrope Local";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url("/assets/fonts/manrope/manrope-latin-variable.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Manrope Local";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url("/assets/fonts/manrope/manrope-latin-ext-variable.woff2") format("woff2-variations");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap");
 
 @layer base {
@@ -5598,9 +5623,9 @@ tr:hover td { background: #f8fafc; }
 .site-footer a:hover,
 .site-footer button:hover { color: #fff !important; }
 .site-footer-grid { grid-template-columns: 1.35fr repeat(4, 1fr) !important; }
-.site-footer a.site-footer-brand { color: #fff !important; font-size: 1.1rem !important; }
-.site-footer .site-footer-brand .brand-ja { color: #fff; }
-.site-footer .site-footer-brand .brand-name { color: #dbeafe; }
+.site-footer a.site-footer-brand { color: #fff !important; }
+.site-footer .site-footer-brand .brand-ja { color: #f8fafc; }
+.site-footer .site-footer-brand .brand-name { color: #60a5fa; }
 .site-footer-bottom { border-top-color: #2b4368 !important; }
 .site-footer-bottom p { color: #93c5fd !important; }
 @media (max-width: 800px) { .site-footer-grid { grid-template-columns: repeat(2, 1fr) !important; } }

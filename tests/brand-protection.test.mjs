@@ -30,7 +30,7 @@ test("customer-facing and administration sources contain no former brand referen
   assert.deepEqual(violations, [], `Former brand references found in:\n${violations.join("\n")}`);
 });
 
-test("shared wordmarks use the approved accessible black-and-navy treatment", async () => {
+test("shared wordmarks use the approved accessible near-black-and-blue treatment", async () => {
   const [header, footer, styles] = await Promise.all([
     readFile(path.join(root, "public/assets/includes/header.html"), "utf8"),
     readFile(path.join(root, "public/assets/includes/footer.html"), "utf8"),
@@ -38,6 +38,6 @@ test("shared wordmarks use the approved accessible black-and-navy treatment", as
   ]);
   assert.match(header, /aria-label="JA Plan Studio home"/);
   assert.match(footer, /aria-label="JA Plan Studio"/);
-  assert.match(styles, /\.brand-wordmark \.brand-ja \{ color: #000; \}/);
-  assert.match(styles, /\.brand-wordmark \.brand-name \{ color: var\(--ja-navy, #102449\); \}/);
+  assert.match(styles, /\.brand-wordmark \.brand-ja \{ color: #0b0f19; \}/);
+  assert.match(styles, /\.brand-wordmark \.brand-name \{ color: var\(--ja-blue-700, #1d4ed8\); \}/);
 });
