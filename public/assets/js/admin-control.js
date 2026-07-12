@@ -522,11 +522,17 @@ async function api(section, options = {}) {
   const data = isJson ? await response.json().catch(() => null) : null;
   if (!response.ok) {
     const safeError = data && typeof data.error === "string" && data.error.length <= 300 ? data.error : "";
-    if (safeError) throw new Error(safeError);
+    if (safeError) {
+      const error = new Error(safeError);
+      error.diagnostic = data;
+      throw error;
+    }
     if (response.redirected || (!isJson && response.url && response.url.includes("/admin/login"))) {
       throw new Error("Your administrator session has expired. Sign in again and retry.");
     }
-    throw new Error(`The server returned HTTP ${response.status}.`);
+    const error = new Error(`The server returned HTTP ${response.status}.`);
+    if (data && typeof data === "object") error.diagnostic = data;
+    throw error;
   }
   if (!isJson || !data) throw new Error("The admin service returned an invalid response.");
   return data;
@@ -4831,7 +4837,19 @@ function initSiteStatusTab(container, savedStatus) {
       statusSavedEl.textContent = "Site status saved successfully.";
     } catch (error) {
       statusSavedEl.className = "admin-alert";
-      statusSavedEl.textContent = error.message ? `Site Status could not be saved. ${error.message}` : "Site Status could not be saved.";
+      const diagnostic = error?.diagnostic;
+      if (diagnostic && diagnostic.success === false) {
+        const fields = [
+          ["Correlation ID", diagnostic.correlation_id],
+          ["Stage", diagnostic.stage],
+          ["Error name", diagnostic.error_name],
+          ["Error code", diagnostic.error_code],
+          ["Error message", diagnostic.error_message]
+        ].filter(([, value]) => typeof value === "string" && value);
+        statusSavedEl.textContent = `${diagnostic.message || "Site Status could not be saved."} ${fields.map(([label, value]) => `${label}: ${value}`).join(" | ")}`;
+      } else {
+        statusSavedEl.textContent = error.message ? `Site Status could not be saved. ${error.message}` : "Site Status could not be saved.";
+      }
     } finally {
       saveBtn.disabled = false;
       saveBtn.textContent = "Save Site Status";

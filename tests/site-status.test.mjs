@@ -165,6 +165,9 @@ test("Admin site status form shows saving, success, and error messages", async (
   assert.match(client, /Saving|saving/i);
   assert.match(client, /saved successfully|Saved successfully/i);
   assert.match(client, /could not be saved/i);
+  assert.match(client, /Correlation ID/);
+  assert.match(client, /diagnostic\.stage/);
+  assert.doesNotMatch(client, /diagnostic\.(?:stack|sql|headers|cookies|tokens|secrets)/i);
 });
 
 test("Admin API retains the saved launch date when countdown is disabled without a replacement date", async () => {
