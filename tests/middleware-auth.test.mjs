@@ -282,7 +282,7 @@ test("authenticated customers can access the protected builder hub", async () =>
   assert.equal(await response.text(), "protected builder hub");
 });
 
-test("customer authentication endpoints are gated during closed modes but bypass during normal mode", async () => {
+test("customer authentication endpoints remain available during normal and closed modes", async () => {
   const DB = new MiddlewareD1({ session: false });
   // Normal mode: should load successfully
   let response = await onRequest({
@@ -293,7 +293,7 @@ test("customer authentication endpoints are gated during closed modes but bypass
   assert.equal(response.status, 200);
   assert.equal(await response.text(), "customer authentication route");
 
-  // Closed mode (maintenance): should be blocked
+  // Closed modes must not intercept sign-in and callback routes.
   const prepare = DB.prepare.bind(DB);
   DB.prepare = (sql) => {
     if (sql.includes("FROM site_settings") || sql.includes("site_settings")) {
@@ -315,7 +315,8 @@ test("customer authentication endpoints are gated during closed modes but bypass
     env: environment(DB),
     next: async () => new Response("customer authentication route")
   });
-  assert.equal(response.status, 503);
+  assert.equal(response.status, 200);
+  assert.equal(await response.text(), "customer authentication route");
 });
 
 test("signed-out JSON profile checks do not start a login transaction", async () => {

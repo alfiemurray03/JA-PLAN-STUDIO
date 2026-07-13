@@ -24,9 +24,9 @@ class StatusDatabase {
   }
 }
 
-async function publicRequest(database, path) {
+async function publicRequest(database, path, { headers = { Accept: "text/html" }, method = "GET", next } = {}) {
   const env = { DB: database, NATIVE_OIDC_ENABLED: "true", ADMIN_OIDC_ISSUER: "https://login.example.test/tenant/v2.0", ADMIN_OIDC_CLIENT_ID: "admin", ADMIN_OIDC_CLIENT_SECRET: "secret", CUSTOMER_OIDC_ISSUER: "https://customer.example.test/tenant/v2.0", CUSTOMER_OIDC_CLIENT_ID: "customer", CUSTOMER_OIDC_CLIENT_SECRET: "secret", OIDC_TOKEN_ENCRYPTION_KEY: "test-key-longer-than-thirty-two-characters" };
-  return middleware({ request: new Request(`https://experiences.example.test${path}`, { headers: { Accept: "text/html" } }), env, next: async () => new Response("public website", { headers: { "Content-Type": "text/html" } }) });
+  return middleware({ request: new Request(`https://experiences.example.test${path}`, { headers, method }), env, next: next || (async () => new Response("public website", { headers: { "Content-Type": "text/html" } })) });
 }
 
 test("one D1 site status immediately controls normal, coming soon, maintenance, then normal", async () => {
@@ -56,6 +56,48 @@ test("admin, authentication, account and status APIs remain excluded from public
     assert.notEqual(response.headers.get("location"), "/coming-soon/", path);
     assert.notEqual(response.status, 503, path);
   }
+});
+
+test("Coming Soon redirects browser navigation without looping or blocking required resources", async () => {
+  const database = new StatusDatabase("coming_soon");
+  for (const path of ["/", "/builders/", "/destinations/london/"]) {
+    const response = await publicRequest(database, path, { headers: { Accept: "*/*" } });
+    assert.equal(response.status, 302, path);
+    assert.equal(response.headers.get("location"), "/coming-soon/", path);
+  }
+
+  const comingSoon = await publicRequest(database, "/coming-soon/", {
+    headers: { Accept: "text/html", "Sec-Fetch-Dest": "document" },
+    next: async () => new Response("<!doctype html><title>Coming Soon — JA Plan Studio</title>", { headers: { "Content-Type": "text/html; charset=utf-8" } })
+  });
+  assert.equal(comingSoon.status, 200);
+  assert.equal(comingSoon.headers.get("location"), null);
+  assert.match(comingSoon.headers.get("content-type"), /text\/html/);
+  assert.match(await comingSoon.text(), /Coming Soon — JA Plan Studio/);
+
+  for (const path of ["/assets/js/coming-soon.js", "/android-chrome-192x192.png", "/robots.txt", "/sitemap.xml", "/api/site-status", "/api/example", "/health/"]) {
+    const response = await publicRequest(database, path, { headers: { Accept: "*/*" } });
+    assert.equal(response.status, 200, path);
+    assert.equal(response.headers.get("location"), null, path);
+  }
+});
+
+test("Coming Soon keeps non-navigation public requests as structured JSON", async () => {
+  const response = await publicRequest(new StatusDatabase("coming_soon"), "/pricing/", {
+    method: "POST",
+    headers: { Accept: "application/json", "Content-Type": "application/json" }
+  });
+  assert.equal(response.status, 503);
+  assert.match(response.headers.get("content-type"), /application\/json/);
+  assert.deepEqual(await response.json(), { error: "Site is in coming soon mode." });
+});
+
+test("Maintenance returns HTML 503 with Retry-After for wildcard browser navigation", async () => {
+  const response = await publicRequest(new StatusDatabase("maintenance"), "/about/", { headers: { Accept: "*/*" } });
+  assert.equal(response.status, 503);
+  assert.match(response.headers.get("content-type"), /text\/html/);
+  assert.equal(response.headers.get("retry-after"), "3600");
+  assert.match(await response.text(), /Maintenance/i);
 });
 
 test("site status API reads current D1 value without caching", async () => {

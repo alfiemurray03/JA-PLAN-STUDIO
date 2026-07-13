@@ -337,6 +337,13 @@ function hasFileExtension(path) {
   return /\/[^/]+\.[a-z0-9]+$/i.test(path);
 }
 
+function isHtmlNavigationRequest(request) {
+  if (request.method !== "GET" && request.method !== "HEAD") return false;
+  const accept = (request.headers.get("Accept") || "").toLowerCase();
+  const destination = (request.headers.get("Sec-Fetch-Dest") || "").toLowerCase();
+  return destination === "document" || accept.includes("text/html") || accept.includes("*/*");
+}
+
 function isPublicDocumentPath(path) {
   if (path === "/" || path === "/index.html") return true;
   if (path === "/ja-group-services-id" || path === "/ja-group-services-id/") return true;
@@ -404,44 +411,6 @@ export async function onRequest(context) {
         "Cache-Control": "no-store"
       }
     });
-  }
-
-  if (env.DB) {
-    const settings = await getSiteSettings(env.DB);
-    const isClosedMode = settings.site_status === "coming_soon" || settings.site_status === "maintenance";
-    const isCustomerPath = path.startsWith("/account") || path.startsWith("/login") || path === "/login" || path === "/account";
-
-    if (isClosedMode && isCustomerPath && !adminIdentity) {
-      if (settings.site_status === "maintenance") {
-        return new Response(pageHtml(settings, "maintenance"), {
-          status: 503,
-          headers: {
-            "Content-Type": "text/html; charset=utf-8",
-            "Cache-Control": "no-store",
-            "Retry-After": "3600"
-          }
-        });
-      }
-      if (settings.site_status === "coming_soon") {
-        const acceptsHtml = (request.headers.get("Accept") || "").toLowerCase().includes("text/html");
-        if (acceptsHtml) {
-          return new Response(null, {
-            status: 302,
-            headers: {
-              Location: "/coming-soon/",
-              "Cache-Control": "no-store"
-            }
-          });
-        }
-        return new Response(JSON.stringify({ error: "Site is in coming soon mode." }), {
-          status: 503,
-          headers: {
-            "Content-Type": "application/json; charset=utf-8",
-            "Cache-Control": "no-store"
-          }
-        });
-      }
-    }
   }
 
   const rootLanding = path === "/admin" || path === "/admin/" || path === "/account" || path === "/account/";
@@ -592,10 +561,16 @@ export async function onRequest(context) {
     path.startsWith("/api/status/") ||
     path === "/api/enquiries" ||
     path.startsWith("/api/enquiries/") ||
+    path === "/api" ||
+    path.startsWith("/api/") ||
+    path === "/health" ||
+    path === "/health/" ||
+    path.startsWith("/health/") ||
     path === "/stripe-webhook" ||
     path === "/stripe-webhook/" ||
     path.startsWith("/cdn-cgi") ||
     path.startsWith("/assets") ||
+    hasFileExtension(path) ||
     path === "/signed-out" ||
     path.startsWith("/signed-out/") ||
     path === "/favicon.ico" ||
@@ -648,8 +623,7 @@ export async function onRequest(context) {
   }
 
   if (settings.site_status === "coming_soon") {
-    const acceptsHtml = (request.headers.get("Accept") || "").toLowerCase().includes("text/html");
-    if (acceptsHtml) {
+    if (isHtmlNavigationRequest(request)) {
       return new Response(null, {
         status: 302,
         headers: {

@@ -170,7 +170,7 @@ test("admin API diagnostics endpoint returns suspension columns check", async ()
   assert.equal(data.diagnostics.technical.suspension_columns, "All 6 Columns Exist");
 });
 
-test("middleware gating blocks customer dashboard and login during closed modes but allows admin panel", async () => {
+test("closed public modes preserve authenticated customer and administrator routes", async () => {
   const DB = new MockD1();
   const env = getMockEnv(DB);
 
@@ -182,7 +182,7 @@ test("middleware gating blocks customer dashboard and login during closed modes 
   let response = await middlewareOnRequest({ request, env, next: nextMock });
   assert.ok(response.status === 302 || response.status === 401);
 
-  // 2. Coming Soon Mode: blocks customer dashboard and redirects them to coming-soon
+  // 2. Coming Soon Mode: keeps the authenticated customer dashboard available
   DB.siteStatus = "coming_soon";
   request = new Request("https://experiences.example.com/account/dashboard", {
     headers: {
@@ -191,18 +191,17 @@ test("middleware gating blocks customer dashboard and login during closed modes 
     }
   });
   response = await middlewareOnRequest({ request, env, next: nextMock });
-  assert.equal(response.status, 302);
-  assert.equal(response.headers.get("Location"), "/coming-soon/");
+  assert.equal(response.status, 200);
+  assert.equal(await response.text(), "Success");
 
-  // 3. Maintenance Mode: blocks customer login and returns 503 Maintenance page
+  // 3. Maintenance Mode: keeps customer sign-in available
   DB.siteStatus = "maintenance";
   request = new Request("https://experiences.example.com/account/login", {
     headers: { "Accept": "text/html" }
   });
   response = await middlewareOnRequest({ request, env, next: nextMock });
-  assert.equal(response.status, 503);
-  const body = await response.text();
-  assert.match(body, /Maintenance/i);
+  assert.equal(response.status, 200);
+  assert.equal(await response.text(), "Success");
 
   // 4. Closed Mode: keeps administrator portal and admin logins completely accessible
   DB.siteStatus = "maintenance";
