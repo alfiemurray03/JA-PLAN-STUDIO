@@ -36,7 +36,7 @@ for (const destination of destinations) {
 </head>
 <body data-page="destinations">
   <div id="siteShellHeader"></div>
-  <main id="destinationGuide" data-slug="${destination.slug}" data-name="${destination.name.replaceAll('"', "&quot;")}"></main>
+  <main id="destinationGuide" class="destination-guide-page" data-slug="${destination.slug}" data-name="${destination.name.replaceAll('"', "&quot;")}"></main>
   <div id="siteShellFooter"></div>
   <script data-cookieconsent="ignore" src="/assets/js/site-shell.js?v=20260710-wordmark-unified-1"></script>
   <script src="/assets/js/destination-page.js?v=20260620-3"></script>

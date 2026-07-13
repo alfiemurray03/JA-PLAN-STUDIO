@@ -217,13 +217,18 @@ function renderDestination() {
   document.querySelector('meta[name="description"]')?.setAttribute("content", `Practical ${name} destination guidance, suggested trip structure and personalised research support from JA Plan Studio.`);
 
   root.innerHTML = `
+    <div class="destination-breadcrumb-wrap">
+      <nav class="container destination-breadcrumb" aria-label="Breadcrumb">
+        <a href="/">Home</a><span aria-hidden="true">/</span><a href="/destinations/">Destinations</a><span aria-hidden="true">/</span><span aria-current="page">${name}</span>
+      </nav>
+    </div>
     <section class="destination-hero" style="--destination-image:url('${image}')">
       <div class="container destination-hero-content">
         <span class="eyebrow">${profile.type} planning guide</span>
         <h1>${name}</h1>
         <p>${profile.summary}</p>
         <div class="destination-hero-tags">${tags}</div>
-        <div class="actions"><a class="button light" href="/headout/">Browse Headout experiences</a><a class="button destination-outline" href="/getyourguide/">Browse GetYourGuide activities</a><button class="button destination-outline" type="button" id="saveDestinationBtn">Save destination</button></div>
+        <div class="actions"><a class="button light" href="/account/builders/?builder=holiday-planner&destination=${encodeURIComponent(slug)}">Build this plan</a><a class="button destination-outline" href="/headout/">Browse Headout</a><a class="button destination-outline" href="/getyourguide/">Browse GetYourGuide</a><button class="button destination-outline" type="button" id="saveDestinationBtn">Save destination</button></div>
       </div>
     </section>
     <nav class="guide-nav" aria-label="On this page"><div class="container guide-nav-inner"><a href="#overview">Overview</a><a href="#highlights">What to include</a><a href="#sample-plan">Suggested plan</a><a href="#practical">Practical checks</a><a href="#support">Planning support</a></div></nav>

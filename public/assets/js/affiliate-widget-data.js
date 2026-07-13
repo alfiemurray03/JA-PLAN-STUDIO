@@ -32,4 +32,16 @@
   }
 
   window.JA_AFFILIATE_WIDGET_DATA = Object.freeze({ providers, normalise, searchableText, matches, register });
+
+  if (typeof document !== "undefined") {
+    document.addEventListener("click", function (event) {
+      const clearButton = event.target.closest("[data-clear-search]");
+      if (!clearButton) return;
+      const input = document.getElementById(clearButton.dataset.clearSearch || "");
+      if (!input) return;
+      input.value = "";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.focus();
+    });
+  }
 })();

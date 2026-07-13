@@ -14,6 +14,7 @@ test("provider pages are separate JA Plan Studio pages with shared shell, search
     assert.match(html, /affiliate-widget-data\.js/);
     assert.match(html, /Affiliate disclosure:/);
     assert.match(html, /type="search"/);
+    assert.match(html, /data-clear-search=/);
     assert.doesNotMatch(html, /JA Experiences\s*(?:&amp;|&)\s*Discovery/i);
   }
   assert.doesNotMatch(gyg, /headout-widgets\.js/);
@@ -63,6 +64,20 @@ test("destination gallery exposes public guides and protected validated builder 
   assert.match(builders, /selected destination is not supported/i);
   assert.doesNotMatch(builders, /^(?:<{7}|={7}|>{7})/m);
   assert.equal((destinations.match(/"slug":/g) || []).length, 252);
+});
+
+test("generated destination guides use the shared layout, breadcrumb and protected builder action", async () => {
+  const [generator, renderer, generatedPage] = await Promise.all([
+    read("scripts/generate-destination-pages.mjs"),
+    read("public/assets/js/destination-page.js"),
+    read("public/destinations/united-arab-emirates/index.html")
+  ]);
+  assert.match(generator, /class="destination-guide-page"/);
+  assert.match(generatedPage, /class="destination-guide-page"/);
+  assert.match(renderer, /aria-label="Breadcrumb"/);
+  assert.match(renderer, /aria-current="page"/);
+  assert.match(renderer, /Build this plan/);
+  assert.match(renderer, /builder=holiday-planner&destination=/);
 });
 
 test("shared navigation reaches both affiliate galleries", async () => {
