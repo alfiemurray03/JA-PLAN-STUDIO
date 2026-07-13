@@ -4,7 +4,7 @@
 **Project owner:** JA Group Services Ltd  
 **Website/service:** JA Plan Studio
 **Repository folder:** `C:\Users\alfie\Documents\ja-tours-activities`  
-**Production domain:** `https://experiences.jagroupservices.co.uk`  
+**Production domain:** `https://japlanstudio.jagroupservices.co.uk`
 **Cloudflare Pages project:** `ja-experiences-discovery`  
 **GitHub repository:** `https://github.com/alfiemurray03/JA-EXPERIENCES-DISCOVERY`  
 **Production branch:** `main`  
@@ -24,7 +24,7 @@ Use the following as the opening context for any new ChatGPT or Codex session:
 > The service must follow the Board-approved report:
 > `Z:\10 IT, Systems and Security\Website\Get Your Guide (tours.jagroupservices.co.uk)\READ ME - JA Plan Studio Board Approved v.3.1.2.pdf`
 >
-> The current production domain is `https://experiences.jagroupservices.co.uk`. GitHub `main` automatically deploys the static `public` directory to the Cloudflare Pages project `ja-experiences-discovery`.
+> The current production domain is `https://japlanstudio.jagroupservices.co.uk`. GitHub `main` automatically deploys the static `public` directory to the Cloudflare Pages project `ja-experiences-discovery`.
 >
 > Important restrictions:
 >
@@ -827,7 +827,7 @@ Pages subdomain:
 
 Custom domain:
 
-- `experiences.jagroupservices.co.uk`
+- `japlanstudio.jagroupservices.co.uk`
 - Status: active.
 - Certificate authority: Google.
 
@@ -933,7 +933,7 @@ Recently edited CSS/JS may appear stale on the custom domain. Use `Ctrl+F5` or a
 
 `robots.txt` currently allows all crawling and references:
 
-`https://experiences.jagroupservices.co.uk/sitemap.xml`
+`https://japlanstudio.jagroupservices.co.uk/sitemap.xml`
 
 The sitemap currently contains 284 URLs.
 

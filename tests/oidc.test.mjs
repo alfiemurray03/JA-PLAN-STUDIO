@@ -282,11 +282,12 @@ test("administrator OIDC flow uses state, nonce, PKCE and a validated signed tok
 
   try {
     const start = await beginLogin({
-      request: new Request("https://experiences.example.test/admin/login?return_to=%2Fadmin%2F%3Fsection%3Dcustomers"),
+      request: new Request("https://japlanstudio.jagroupservices.co.uk/admin/login?return_to=%2Fadmin%2F%3Fsection%3Dcustomers"),
       env: { ...env, DB }
     }, "admin");
     assert.equal(start.status, 302);
     const authorization = new URL(start.headers.get("location"));
+    assert.equal(authorization.searchParams.get("redirect_uri"), "https://japlanstudio.jagroupservices.co.uk/auth/callback");
     assert.equal(authorization.searchParams.get("response_type"), "code");
     assert.equal(authorization.searchParams.get("code_challenge_method"), "S256");
     assert.ok(authorization.searchParams.get("code_challenge"));
@@ -296,14 +297,14 @@ test("administrator OIDC flow uses state, nonce, PKCE and a validated signed tok
     const transactionCookie = start.headers.get("set-cookie").split(";")[0];
 
     await assert.rejects(() => completeLogin({
-      request: new Request(`https://experiences.example.test/admin/auth/callback?code=test-code&state=${encodeURIComponent(state)}`, {
+      request: new Request(`https://japlanstudio.jagroupservices.co.uk/auth/callback?code=test-code&state=${encodeURIComponent(state)}`, {
         headers: { Cookie: "ja_admin_oidc_tx=wrong-state" }
       }),
       env: { ...env, DB }
     }, "admin"), /state validation failed/);
 
     const callback = await completeLogin({
-      request: new Request(`https://experiences.example.test/admin/auth/callback?code=test-code&state=${encodeURIComponent(state)}`, {
+      request: new Request(`https://japlanstudio.jagroupservices.co.uk/auth/callback?code=test-code&state=${encodeURIComponent(state)}`, {
         headers: { Cookie: transactionCookie }
       }),
       env: { ...env, DB }

@@ -417,6 +417,7 @@ export async function onRequest(context) {
   const landingRealm = path.startsWith("/admin") ? "admin" : path.startsWith("/account") ? "customer" : "";
   const publicAuthPath = new Set([
     "/admin/login", "/admin/login/", "/admin/auth/callback", "/admin/auth/callback/", "/admin/logout", "/admin/logout/",
+    "/auth/callback", "/auth/callback/",
     "/account/login", "/account/login/", "/account/auth/callback", "/account/auth/callback/", "/account/logout", "/account/logout/"
   ]).has(path);
   const realm = !rootLanding && (path.startsWith("/admin/") || path === "/admin/dashboard")

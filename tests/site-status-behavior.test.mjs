@@ -51,7 +51,7 @@ test("one D1 site status immediately controls normal, coming soon, maintenance, 
 
 test("admin, authentication, account and status APIs remain excluded from public modes", async () => {
   const database = new StatusDatabase("coming_soon");
-  for (const path of ["/admin/", "/api/site-status", "/api/coming-soon-config"]) {
+  for (const path of ["/admin/", "/auth/callback", "/api/site-status", "/api/coming-soon-config"]) {
     const response = await publicRequest(database, path);
     assert.notEqual(response.headers.get("location"), "/coming-soon/", path);
     assert.notEqual(response.status, 503, path);

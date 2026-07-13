@@ -2,7 +2,7 @@
 
 Public website for **JA Plan Studio**, a trading division and service line of JA Group Services Ltd.
 
-Production domain: `experiences.jagroupservices.co.uk`
+Production domain: `japlanstudio.jagroupservices.co.uk`
 
 Administrator authentication now uses native Microsoft Entra ID directly through the application.
 
@@ -29,7 +29,7 @@ The enquiry system reuses the email provider configured in the Administrator Con
 `ENQUIRY_FROM_EMAIL` should use the verified domain, for example:
 
 ```text
-JA Plan Studio <enquiries@experiences.jagroupservices.co.uk>
+JA Plan Studio <hello@jagroupservices.co.uk>
 ```
 
 The Administrator Control Centre email settings take precedence over environment-variable fallbacks.

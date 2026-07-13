@@ -1,4 +1,4 @@
-export const SITE_URL = "https://experiences.jagroupservices.co.uk";
+export const SITE_URL = "https://japlanstudio.jagroupservices.co.uk";
 export const WEBSITE_ID = `${SITE_URL}/#website`;
 export const ORGANIZATION_ID = `${SITE_URL}/#organization`;
 

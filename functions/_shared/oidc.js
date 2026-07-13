@@ -6,7 +6,7 @@ const REALMS = {
     sessionTable: "admin_oidc_sessions",
     path: "/",
     loginPath: "/admin/login",
-    callbackPath: "/admin/auth/callback"
+    callbackPath: "/auth/callback"
   },
   customer: {
     prefix: "CUSTOMER_OIDC",

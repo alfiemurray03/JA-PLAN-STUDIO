@@ -166,7 +166,7 @@ async function safeAlter(DB, sql) {
 }
 
 function getSiteUrl(env) {
-  return String(env && env.SITE_URL ? env.SITE_URL : "https://experiences.jagroupservices.co.uk").replace(/\/+$/, "");
+  return String(env && env.SITE_URL ? env.SITE_URL : "https://japlanstudio.jagroupservices.co.uk").replace(/\/+$/, "");
 }
 
 function redirectTo(url) {
