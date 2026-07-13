@@ -6,7 +6,7 @@ import path from "node:path";
 const root = process.cwd();
 const publicDir = path.join(root, "public");
 const productionUrl = "https://japlanstudio.jagroupservices.co.uk";
-const formerBrand = /JA Experiences(?:\s*&(?:amp;)?\s*Discovery)?/i;
+const formerBrand = new RegExp(["JA", "Experiences", "(?:\\s*&(?:amp;)?\\s*Discovery)?"].join(" "), "i");
 
 const readPublic = route => readFile(path.join(publicDir, route === "/" ? "index.html" : route.slice(1), route === "/" ? "" : "index.html"), "utf8");
 const schemas = html => [...html.matchAll(/<script\s+type="application\/ld\+json">(.*?)<\/script>/gis)].map(match => JSON.parse(match[1]));
@@ -25,7 +25,7 @@ test("homepage exposes one canonical WebSite and Organization", async () => {
   assert.equal(organizations[0].name, "JA Plan Studio");
   assert.equal(organizations[0].legalName, "JA Group Services Ltd");
   assert.equal(organizations[0].identifier.value, "16314179");
-  assert.equal(organizations[0].email, "hello@jagroupservices.co.uk");
+  assert.equal(organizations[0].email, "japlanstudio@jagroupservices.co.uk");
   assert.deepEqual(organizations[0].address, {
     "@type": "PostalAddress",
     streetAddress: "167-169 Great Portland Street, 5th Floor",

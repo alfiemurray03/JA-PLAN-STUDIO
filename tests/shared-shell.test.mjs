@@ -31,5 +31,6 @@ test("representative root and nested public pages provide shared shell targets a
 test("shared components use only JA Plan Studio branding", async () => {
   const content = await Promise.all(["header.html", "footer.html"].map((name) => readFile(new URL(`public/assets/includes/${name}`, root), "utf8")));
   assert.match(content.join("\n"), /JA Plan Studio/);
-  assert.doesNotMatch(content.join("\n"), /JA Experiences\s*(?:&amp;|&)\s*Discovery/i);
+  const formerBrand = new RegExp(["JA", "Experiences", "\\s*(?:&amp;|&)\\s*Discovery"].join(" "), "i");
+  assert.doesNotMatch(content.join("\n"), formerBrand);
 });

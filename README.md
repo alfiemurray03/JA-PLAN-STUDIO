@@ -29,7 +29,7 @@ The enquiry system reuses the email provider configured in the Administrator Con
 `ENQUIRY_FROM_EMAIL` should use the verified domain, for example:
 
 ```text
-JA Plan Studio <hello@jagroupservices.co.uk>
+JA Plan Studio <japlanstudio@jagroupservices.co.uk>
 ```
 
 The Administrator Control Centre email settings take precedence over environment-variable fallbacks.

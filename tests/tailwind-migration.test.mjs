@@ -43,7 +43,7 @@ test("shared footer uses one compact wordmark and one contact email", async () =
   assert.match(footer, /aria-label="JA Plan Studio"/);
   assert.match(footer, /class="brand-ja"[^>]*>JA<\/span><span class="brand-name"[^>]*>Plan Studio<\/span>/);
   assert.doesNotMatch(footer, /site-footer-email/);
-  assert.equal((footer.match(/mailto:hello@jagroupservices\.co\.uk/g) || []).length, 1);
+  assert.equal((footer.match(/mailto:japlanstudio@jagroupservices\.co\.uk/g) || []).length, 1);
 });
 
 test("Cookiebot reset records only genuine accept or decline choices", async () => {

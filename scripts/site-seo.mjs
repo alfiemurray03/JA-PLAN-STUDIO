@@ -10,7 +10,7 @@ export const organization = {
   legalName: "JA Group Services Ltd",
   url: `${SITE_URL}/`,
   description: "JA Plan Studio is the experience planning platform operated by JA Group Services Ltd.",
-  email: "hello@jagroupservices.co.uk",
+  email: "japlanstudio@jagroupservices.co.uk",
   identifier: {
     "@type": "PropertyValue",
     propertyID: "Companies House company number",

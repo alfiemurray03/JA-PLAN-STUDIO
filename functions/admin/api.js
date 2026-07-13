@@ -1245,7 +1245,7 @@ async function seedDefaults(DB) {
       "JA Plan Studio",
       "JA Plan Studio",
       "support@jagroupservices.co.uk",
-      "hello@jagroupservices.co.uk",
+      "japlanstudio@jagroupservices.co.uk",
       "",
       "https://japlanstudio.jagroupservices.co.uk",
       "JA Plan Studio is a service line of JA Group Services Ltd.",

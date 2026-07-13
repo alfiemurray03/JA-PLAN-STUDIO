@@ -445,7 +445,7 @@ The footer contains:
 
 - Official JA Group Services logo with transparent background.
 - Brand statement.
-- Email: `hello@jagroupservices.co.uk`
+- Email: `japlanstudio@jagroupservices.co.uk`
 - Telephone: `020 3834 2790`
 - Discover links.
 - Planning links.
@@ -703,7 +703,7 @@ Required variables/secrets:
 - Main module: `src/worker.js`
 - Static asset directory: `./public`
 - Asset binding: `ASSETS`
-- Recipient: `hello@jagroupservices.co.uk`
+- Recipient: `japlanstudio@jagroupservices.co.uk`
 
 ### 8.3 Critical deployment mismatch
 
