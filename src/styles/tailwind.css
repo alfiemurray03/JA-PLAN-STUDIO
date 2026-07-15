@@ -3,6 +3,26 @@
 @tailwind base;
 @tailwind components;
 
+/* JA Plan Studio builder gallery — transferred from the retired Document Hub design system. */
+.plan-builders-hero {
+  background: linear-gradient(180deg, hsl(var(--primary) / .08), transparent);
+  border-bottom: 1px solid hsl(var(--border));
+}
+.plan-builders-hero h1 { max-width: 780px; margin-inline: auto; letter-spacing: -.035em; }
+.plan-builders-hero p { max-width: 650px; margin-inline: auto; }
+.plan-builder-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .9rem; }
+.plan-builder-card { display: flex; min-height: 260px; flex-direction: column; gap: .8rem; padding: 1.1rem; border: 1px solid hsl(var(--border)); border-radius: .55rem; background: hsl(var(--card)); box-shadow: 0 1px 3px hsl(0 0% 0% / .04); transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease; }
+.plan-builder-card:hover { transform: translateY(-2px); border-color: hsl(var(--primary) / .32); box-shadow: var(--shadow-md); }
+.plan-builder-icon { display: grid; width: 2.4rem; height: 2.4rem; place-items: center; border-radius: .5rem; background: hsl(var(--primary) / .09); font-size: 1.25rem; }
+.plan-builder-category { color: hsl(var(--primary)); font-size: .67rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+.plan-builder-card h3 { margin: .25rem 0 .4rem; font-size: 1rem; }
+.plan-builder-card p { margin: 0; font-size: .78rem; line-height: 1.55; }
+.plan-builder-card > a { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding: .6rem .7rem; border-radius: .4rem; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font-size: .76rem; font-weight: 800; text-decoration: none; }
+.plan-builder-card > a:hover { filter: brightness(.92); }
+@media (max-width: 1000px) { .plan-builder-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .plan-builder-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .plan-builder-grid { grid-template-columns: 1fr; } }
+
 /* Ported component contracts from public\assets\css\theme.css */
 
 :root {
