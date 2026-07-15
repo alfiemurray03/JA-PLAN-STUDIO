@@ -228,6 +228,7 @@ test("customer OIDC flow creates a session and redirects into the portal", async
     assert.equal(callback.status, 302);
     assert.equal(callback.headers.get("location"), "/account/dashboard/");
     assert.match(callback.headers.get("set-cookie"), /ja_customer_oidc_session=/);
+    assert.match(callback.headers.get("set-cookie"), /ja_customer_oidc_session=; Path=\/account; Max-Age=0/);
     assert.equal(DB.customerSession.email, "customer@example.test");
     assert.ok(DB.alterStatements.some((sql) => sql.includes("customer_oidc_sessions ADD COLUMN access_token_encrypted TEXT")));
     assert.ok(DB.alterStatements.some((sql) => sql.includes("customer_oidc_sessions ADD COLUMN access_token_expires_at TEXT")));
