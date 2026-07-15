@@ -13,7 +13,7 @@ const REALMS = {
     cookie: "ja_customer_oidc_session",
     transactionCookie: "ja_customer_oidc_tx",
     sessionTable: "customer_oidc_sessions",
-    path: "/account",
+    path: "/",
     loginPath: "/account/login",
     callbackPath: "/account/auth/callback"
   }
@@ -161,13 +161,18 @@ export async function hashToken(value) {
   return [...await sha256Bytes(value)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-function readCookie(request, name) {
+function readCookies(request, name) {
   const prefix = `${name}=`;
-  const entry = (request.headers.get("Cookie") || "")
+  return (request.headers.get("Cookie") || "")
     .split(";")
     .map((part) => part.trim())
-    .find((part) => part.startsWith(prefix));
-  return entry ? decodeURIComponent(entry.slice(prefix.length)) : "";
+    .filter((part) => part.startsWith(prefix))
+    .map((entry) => decodeURIComponent(entry.slice(prefix.length)))
+    .filter(Boolean);
+}
+
+function readCookie(request, name) {
+  return readCookies(request, name)[0] || "";
 }
 
 function secureCookie(name, value, { path, maxAge }) {
@@ -177,6 +182,10 @@ function secureCookie(name, value, { path, maxAge }) {
 export function expireOidcCookie(realm) {
   const config = REALMS[realm];
   return secureCookie(config.cookie, "", { path: config.path, maxAge: 0 });
+}
+
+function expireLegacyCustomerCookie() {
+  return secureCookie(REALMS.customer.cookie, "", { path: "/account", maxAge: 0 });
 }
 
 function expireTransactionCookie(realm) {
@@ -783,6 +792,7 @@ export async function completeLogin(context, realm) {
       "Referrer-Policy": "no-referrer"
     });
     responseHeaders.append("Set-Cookie", secureCookie(config.cookie, sessionToken, { path: config.path, maxAge: config.absoluteMinutes * 60 }));
+    if (realm === "customer") responseHeaders.append("Set-Cookie", expireLegacyCustomerCookie());
     responseHeaders.append("Set-Cookie", expireTransactionCookie(realm));
     return responseHeaders;
   }, {
@@ -795,9 +805,8 @@ export async function completeLogin(context, realm) {
 export async function getNativeSession(request, env, realm) {
   const config = realmConfig(realm, env);
   if (!env.DB) return null;
-  const token = readCookie(request, config.cookie);
-  if (!token) return null;
-  const tokenHash = await hashToken(token);
+  const tokens = readCookies(request, config.cookie);
+  if (!tokens.length) return null;
   // Session validation must work across schema versions. Optional Microsoft
   // claim columns are read from the row when present, without making them a
   // prerequisite for recognising an otherwise valid session.
@@ -808,7 +817,13 @@ export async function getNativeSession(request, env, realm) {
       AND datetime(idle_expires_at) > datetime('now')
       AND datetime(absolute_expires_at) > datetime('now')
   `;
-  const row = await env.DB.prepare(selectSql).bind(tokenHash).first();
+  let row = null;
+  let tokenHash = "";
+  for (const token of tokens) {
+    tokenHash = await hashToken(token);
+    row = await env.DB.prepare(selectSql).bind(tokenHash).first();
+    if (row) break;
+  }
   if (!row) return null;
   return {
     realm,
