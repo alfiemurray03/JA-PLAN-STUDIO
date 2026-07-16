@@ -107,7 +107,7 @@ export default function SiteNavHeader() {
                     </Link>
                     <Link to="/documents" onClick={() => setDropdownOpen(false)}
                       className="flex items-center gap-2.5 px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors">
-                      <User className="w-4 h-4 text-primary" /> All Documents
+                      <User className="w-4 h-4 text-primary" /> My Plans
                     </Link>
                     <div className="border-t border-border mt-1 pt-1">
                       <button
@@ -192,7 +192,7 @@ export default function SiteNavHeader() {
                   </Link>
                   <Link to="/documents" onClick={() => setOpen(false)}>
                     <Button variant="outline" className="w-full justify-start gap-2 min-h-[48px] text-sm font-medium">
-                      <User className="w-4 h-4" /> All Documents
+                      <User className="w-4 h-4" /> My Plans
                     </Button>
                   </Link>
                   <Button variant="ghost"

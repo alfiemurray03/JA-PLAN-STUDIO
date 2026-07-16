@@ -225,57 +225,65 @@ const HOMEPAGE_DEFAULTS: HomepageContent = {
 
 /* ─── Plan types ─────────────────────────────────────────────────────────── */
 interface ApiPlan {
-  id: number; name: string; slug: string;
-  price_monthly: number; price_yearly: number;
-  is_lifetime: boolean;
-  max_plans: number;
-  max_org_workspaces: number;
-  max_seats: number;
-  core_features: string[];
-  included_features: string[];
-  coming_soon_features: string[];
+  id: string;
+  plan_name: string;
+  plan_type: string;
+  price_label: string;
+  price_pence: number;
+  delivery_time: string;
+  revisions: string;
+  description: string;
+  button_label: string;
+  is_featured: number;
+  payment_available?: boolean;
 }
 
-const PLAN_META: Record<string, { badge: string | null; highlight: boolean; cta: string; note: string; contactUs?: boolean }> = {
-  free:             { badge: null,               highlight: false, cta: 'Create Free Account',  note: 'Free forever. No credit card required.' },
-  personal:         { badge: '14-day free trial', highlight: false, cta: 'Start Free Trial',    note: 'For personal planning.' },
-  standard:         { badge: '14-day free trial', highlight: false, cta: 'Start Free Trial',    note: 'More builders and saved plans.' },
-  professional:     { badge: 'Most popular',      highlight: true,  cta: 'Start Free Trial',    note: 'Every planning builder and advanced tools.' },
-  org_starter:      { badge: 'For teams',         highlight: false, cta: 'Choose Plan',         note: 'Organisation workspace with 3 seats.' },
-  org_growth:       { badge: 'Growing teams',     highlight: false, cta: 'Choose Plan',         note: 'Organisation workspace with 10 seats.' },
-  org_professional: { badge: 'Advanced',          highlight: false, cta: 'Choose Plan',         note: 'Organisation workspace with 25 seats.' },
-  // lifetime is intentionally omitted — it is not publicly listed
-};
+const SERVICE_PLANS: ApiPlan[] = [
+  { id: 'free_discovery_enquiry', plan_name: 'Free Discovery Enquiry', plan_type: 'Free', price_label: '£0', price_pence: 0, delivery_time: '1 to 3 working days', revisions: 'Initial review and recommendation', description: 'A no-cost starting point for questions and support-route guidance.', button_label: 'Start a free enquiry', is_featured: 0 },
+  { id: 'destination_discovery_standard', plan_name: 'Destination Discovery Plan', plan_type: 'Standard', price_label: '£49', price_pence: 4900, delivery_time: '3–5 working days', revisions: '1 minor revision', description: 'A focused destination discovery plan for early-stage trip ideas.', button_label: 'Buy now securely', is_featured: 1 },
+  { id: 'itinerary_experience_standard', plan_name: 'Itinerary and Experience Planning Plan', plan_type: 'Standard', price_label: '£89', price_pence: 8900, delivery_time: '5–7 working days', revisions: '1 minor revision', description: 'A structured itinerary and experience planning service.', button_label: 'Buy now securely', is_featured: 1 },
+  { id: 'complete_planning_standard', plan_name: 'Complete Discovery and Planning Guidance Plan', plan_type: 'Standard', price_label: '£149', price_pence: 14900, delivery_time: '7–10 working days', revisions: '2 minor revisions', description: 'A complete discovery and planning guidance package.', button_label: 'Buy now securely', is_featured: 1 },
+  { id: 'destination_discovery_social', plan_name: 'Destination Discovery Social Tariff', plan_type: 'Social tariff', price_label: '£29', price_pence: 2900, delivery_time: '3–5 working days', revisions: '1 minor revision', description: 'Reduced-rate destination discovery planning.', button_label: 'Buy now securely', is_featured: 0 },
+  { id: 'itinerary_experience_social', plan_name: 'Itinerary Planning Social Tariff', plan_type: 'Social tariff', price_label: '£55', price_pence: 5500, delivery_time: '5–7 working days', revisions: '1 minor revision', description: 'Reduced-rate itinerary and experience planning.', button_label: 'Buy now securely', is_featured: 0 },
+  { id: 'complete_planning_social', plan_name: 'Complete Planning Social Tariff', plan_type: 'Social tariff', price_label: '£95', price_pence: 9500, delivery_time: '7–10 working days', revisions: '2 minor revisions', description: 'Reduced-rate complete planning guidance.', button_label: 'Buy now securely', is_featured: 0 },
+];
 
 /* ═══════════════════════════════════════════════════════════════════════════
    PAGE
 ═══════════════════════════════════════════════════════════════════════════ */
 export default function HomePage() {
   usePwaRedirect();
-  const navigate = useNavigate();
-  const [plans] = useState<ApiPlan[]>([
-    { id: 1, name: 'Free', slug: 'free', price_monthly: 0, price_yearly: 0, is_lifetime: false, max_plans: 1, max_org_workspaces: 0, max_seats: 1, core_features: ['Try one guided planning builder', 'Preview your personalised plan', 'Browse all available builders'], included_features: [], coming_soon_features: [] },
-    { id: 2, name: 'Personal', slug: 'personal', price_monthly: 5.99, price_yearly: 59.90, is_lifetime: false, max_plans: 3, max_org_workspaces: 0, max_seats: 1, core_features: ['Core planning builders', 'Save up to 3 active plans', '14-day plan retention'], included_features: [], coming_soon_features: [] },
-    { id: 3, name: 'Standard', slug: 'standard', price_monthly: 7.99, price_yearly: 79.90, is_lifetime: false, max_plans: 5, max_org_workspaces: 0, max_seats: 1, core_features: ['Expanded planning builder library', 'Save up to 5 active plans', '14-day free trial'], included_features: [], coming_soon_features: [] },
-    { id: 4, name: 'Professional', slug: 'professional', price_monthly: 14.99, price_yearly: 149.90, is_lifetime: false, max_plans: 10, max_org_workspaces: 0, max_seats: 1, core_features: ['Every planning builder', 'Advanced planning tools', '30-day plan retention'], included_features: [], coming_soon_features: [] },
-    { id: 5, name: 'Organisation Starter', slug: 'org_starter', price_monthly: 29.99, price_yearly: 299.90, is_lifetime: false, max_plans: 10, max_org_workspaces: 1, max_seats: 3, core_features: ['All planning builders', '3 included seats', 'Shared organisation planning'], included_features: [], coming_soon_features: [] },
-    { id: 6, name: 'Organisation Growth', slug: 'org_growth', price_monthly: 59.99, price_yearly: 599.90, is_lifetime: false, max_plans: 25, max_org_workspaces: 1, max_seats: 10, core_features: ['All planning builders', '10 included seats', 'Team planning controls'], included_features: [], coming_soon_features: [] },
-    { id: 7, name: 'Organisation Professional', slug: 'org_professional', price_monthly: 99.99, price_yearly: 999.90, is_lifetime: false, max_plans: 50, max_org_workspaces: 1, max_seats: 25, core_features: ['All planning builders', '25 included seats', 'Advanced organisation controls'], included_features: [], coming_soon_features: [] },
-  ]);
-  const plansLoading = false;
+  const [plans, setPlans] = useState<ApiPlan[]>(SERVICE_PLANS);
+  const [plansLoading, setPlansLoading] = useState(true);
   const [hpContent, setHpContent] = useState<HomepageContent>(HOMEPAGE_DEFAULTS);
 
   useEffect(() => {
     fetch('/api/homepage-content')
       .then(r => r.json())
-      .then(d => { if (d.success && d.data) setHpContent(d.data); })
+      .then(d => {
+        if (!d.success || !d.data) return;
+        const announcement = String(d.data.announcement_text || '');
+        if (/document hub|profile studio/i.test(announcement)) return;
+        setHpContent(current => ({
+          ...current,
+          announcement_enabled: Boolean(d.data.announcement_enabled),
+          announcement_text: announcement,
+          announcement_link: String(d.data.announcement_link || ''),
+          announcement_link_label: String(d.data.announcement_link_label || 'Learn more'),
+        }));
+      })
       .catch(() => {});
+    fetch('/plans-data', { cache: 'no-store' })
+      .then(r => r.ok ? r.json() : Promise.reject(new Error('Plans unavailable')))
+      .then(data => {
+        if (!Array.isArray(data.plans)) return;
+        const recognised = new Set(SERVICE_PLANS.map(plan => plan.id));
+        const currentPlans = data.plans.filter((plan: ApiPlan) => recognised.has(plan.id));
+        if (currentPlans.length) setPlans(currentPlans);
+      })
+      .catch(() => {})
+      .finally(() => setPlansLoading(false));
   }, []);
-
-  const handleTrialCta = (planSlug: string) => {
-    // Pass trial intent as URL params — no sessionStorage needed
-    navigate(`/sign-in?trial=1&plan=${encodeURIComponent(planSlug)}`);
-  };
 
   const site = 'https://japlanstudio.jagroupservices.co.uk';
   const jsonLd = {
@@ -374,15 +382,15 @@ export default function HomePage() {
               transition={{ duration: 0.6, ease: 'easeOut' as const }}
               style={{ isolation: 'isolate' }}
             >
-              <SectionBadge>{hpContent.hero_badge}</SectionBadge>
+              <SectionBadge>JA Plan Studio · Guided planning builders</SectionBadge>
               <h1 className="text-4xl sm:text-5xl lg:text-[3.25rem] font-extrabold text-foreground leading-[1.1] tracking-tight mb-6">
-                {hpContent.hero_title_line1}{' '}
+                Build personalised plans,{' '}
                 <span className="bg-gradient-to-r from-blue-500 to-blue-700 bg-clip-text text-transparent">
-                  {hpContent.hero_title_highlight}
+                  step by step
                 </span>
               </h1>
               <p className="text-lg text-foreground/80 leading-relaxed mb-8 max-w-lg font-normal">
-                {hpContent.hero_subtitle}
+                Use guided builders for day trips, destinations, itineraries, experiences, budgets, accessibility and travel preparation—or choose a supported planning package from our team.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link to="/sign-in">
@@ -390,12 +398,12 @@ export default function HomePage() {
                     size="lg"
                     className="bg-blue-600 hover:bg-blue-500 text-white font-semibold shadow-xl shadow-blue-600/25 px-7 rounded-xl transition-all duration-200 hover:-translate-y-px"
                   >
-                    {hpContent.hero_cta_primary} <ArrowRight className="w-4 h-4 ml-2" />
+                    Start Building a Plan <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </Link>
                 <a href="#how-it-works">
                   <Button size="lg" variant="outline" className="border-border text-foreground hover:bg-muted px-7 rounded-xl font-medium">
-                    {hpContent.hero_cta_secondary}
+                    How Plan Building Works
                   </Button>
                 </a>
               </div>
@@ -628,20 +636,20 @@ export default function HomePage() {
           >
             <SectionBadge>Who it's for</SectionBadge>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight">
-              Built for professionals, organisations and businesses of all sizes
+              Built for everyday experiences, travel and accessible planning
             </h2>
           </motion.div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
-              { icon: <Briefcase className="w-5 h-5" />,  label: 'Organisations & Businesses' },
-              { icon: <UserCheck className="w-5 h-5" />,  label: 'Freelancers' },
-              { icon: <Scissors className="w-5 h-5" />,   label: 'Barbers & Beauty' },
-              { icon: <Wrench className="w-5 h-5" />,     label: 'Tradespeople' },
-              { icon: <Star className="w-5 h-5" />,       label: 'Consultants' },
-              { icon: <Users className="w-5 h-5" />,      label: 'Sales Professionals' },
-              { icon: <Zap className="w-5 h-5" />,        label: 'Creators' },
-              { icon: <Globe className="w-5 h-5" />,      label: 'Event Staff' },
+              { icon: <Globe className="w-5 h-5" />,      label: 'Travellers' },
+              { icon: <Users className="w-5 h-5" />,      label: 'Families' },
+              { icon: <Star className="w-5 h-5" />,       label: 'Couples' },
+              { icon: <UserCheck className="w-5 h-5" />,  label: 'Solo Planners' },
+              { icon: <Shield className="w-5 h-5" />,     label: 'Accessible Travel' },
+              { icon: <Briefcase className="w-5 h-5" />,  label: 'Group Organisers' },
+              { icon: <Zap className="w-5 h-5" />,        label: 'Day Trips' },
+              { icon: <QrCode className="w-5 h-5" />,     label: 'Special Occasions' },
             ].map((w, i) => (
               <motion.div
                 key={w.label}
@@ -681,7 +689,7 @@ export default function HomePage() {
               Simple, transparent pricing
             </h2>
             <p className="text-muted-foreground text-base">
-              Start free. Upgrade when you need more.
+              Choose free discovery support or a one-off planning package from JA Plan Studio's own catalogue.
             </p>
           </motion.div>
 
@@ -691,15 +699,12 @@ export default function HomePage() {
             </div>
           ) : (
             <>
-              {/* Plan cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch mb-4">
-                {plans.filter(p => !p.is_lifetime).map((plan, i) => {
-                  const display = PLAN_META[plan.slug] ?? { badge: null, highlight: false, cta: 'Get Started', note: '' };
-                  const isEnterprise = false;
-                  const priceLabel = plan.price_monthly === 0 ? 'Free' : `£${plan.price_monthly}`;
-                  const period = (isEnterprise || plan.price_monthly === 0) ? '' : '/mo';
-                  const isPaid = plan.price_monthly > 0 && !isEnterprise;
-
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch mb-4">
+                {plans.filter(plan => plan.plan_type !== 'Social tariff').map((plan, i) => {
+                  const highlighted = Boolean(plan.is_featured);
+                  const href = plan.price_pence === 0
+                    ? `/contact?plan=${encodeURIComponent(plan.id)}`
+                    : `/create-checkout-session?plan=${encodeURIComponent(plan.id)}`;
                   return (
                     <motion.div
                       key={plan.id}
@@ -707,103 +712,38 @@ export default function HomePage() {
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
                       transition={{ duration: 0.35, delay: i * 0.07 }}
-                      className={`relative flex flex-col rounded-2xl overflow-hidden ${
-                        isEnterprise
-                          ? 'bg-gradient-to-br from-amber-500/8 to-orange-500/5 border-2 border-amber-500/40 shadow-md shadow-amber-500/10'
-                          : display.highlight
-                            ? 'bg-blue-600 shadow-2xl shadow-blue-600/30 ring-2 ring-blue-500'
-                            : 'bg-card border border-border shadow-md'
-                      }`}
+                      className={`relative flex flex-col rounded-2xl overflow-hidden ${highlighted ? 'bg-blue-600 shadow-2xl shadow-blue-600/30 ring-2 ring-blue-500' : 'bg-card border border-border shadow-md'}`}
                     >
-                      {display.badge && (
+                      {highlighted && (
                         <div className="px-5 pt-4 pb-0">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                            isEnterprise
-                              ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
-                              : display.highlight
-                                ? 'bg-white/20 text-white'
-                                : 'bg-primary/10 text-primary border border-primary/20'
-                          }`}>
-                            {display.badge}
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-white">
+                            Featured planning package
                           </span>
                         </div>
                       )}
 
                       <div className="p-5 flex flex-col flex-1 gap-4">
-                        {/* Name + price */}
                         <div>
-                          <h3 className={`font-bold text-base mb-0.5 ${display.highlight ? 'text-white' : 'text-foreground'}`}>
-                            {plan.name}
+                          <p className={`text-[10px] font-bold uppercase tracking-wider mb-2 ${highlighted ? 'text-blue-100' : 'text-primary'}`}>{plan.plan_type}</p>
+                          <h3 className={`font-bold text-base mb-2 ${highlighted ? 'text-white' : 'text-foreground'}`}>
+                            {plan.plan_name}
                           </h3>
-                          <div className="flex items-baseline gap-0.5">
-                            <span className={`text-3xl font-extrabold ${isEnterprise ? 'text-amber-600' : display.highlight ? 'text-white' : 'text-foreground'}`}>
-                              {priceLabel}
-                            </span>
-                            {period && (
-                              <span className={`text-sm ml-0.5 ${display.highlight ? 'text-blue-100' : 'text-muted-foreground'}`}>
-                                {period}
-                              </span>
-                            )}
-                          </div>
-                          <p className={`text-xs mt-1 leading-snug ${display.highlight ? 'text-blue-100' : 'text-muted-foreground'}`}>
-                            {display.note}
-                          </p>
+                          <span className={`text-3xl font-extrabold ${highlighted ? 'text-white' : 'text-foreground'}`}>{plan.price_label}</span>
                         </div>
 
-                        {/* Saved-plan allowance — the key differentiator */}
-                        <div className={`rounded-lg px-3 py-2 text-xs font-semibold ${
-                          isEnterprise
-                            ? 'bg-amber-500/10 text-amber-700 border border-amber-500/20'
-                            : display.highlight
-                              ? 'bg-white/15 text-white'
-                              : 'bg-primary/8 text-primary border border-primary/20'
-                        }`}>
-                          {(() => {
-                            const seats = plan.max_seats ?? 1;
-                            if (plan.slug.startsWith('org_')) return `Organisation workspace · ${seats} seats`;
-                            if (plan.slug === 'free') return 'Try 1 guided planning builder';
-                            return `Save up to ${plan.max_plans} active plans`;
-                          })()}
+                        <p className={`text-xs leading-relaxed ${highlighted ? 'text-blue-100' : 'text-muted-foreground'}`}>{plan.description}</p>
+                        <div className={`rounded-lg px-3 py-2 text-xs font-semibold ${highlighted ? 'bg-white/15 text-white' : 'bg-primary/8 text-primary border border-primary/20'}`}>
+                          Built in {plan.delivery_time}
                         </div>
-
-                        {/* Feature list */}
-                        {plan.core_features && plan.core_features.length > 0 && (
-                          <ul className="space-y-1.5">
-                            {plan.core_features.map((f: string, fi: number) => (
-                              <li key={fi} className={`flex items-start gap-1.5 text-xs ${display.highlight ? 'text-blue-100' : 'text-muted-foreground'}`}>
-                                <svg className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${isEnterprise ? 'text-amber-500' : display.highlight ? 'text-white' : 'text-primary'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                                {f}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-
-                        {/* CTA */}
+                        <div className={`flex items-start gap-1.5 text-xs ${highlighted ? 'text-blue-100' : 'text-muted-foreground'}`}>
+                          <Check className="w-3.5 h-3.5 mt-0.5 shrink-0" /> {plan.revisions}
+                        </div>
                         <div className="mt-auto pt-1">
-                          {isEnterprise ? (
-                            <a href="mailto:japlanstudio@jagroupservices.co.uk?subject=Organisation%20Plan%20Enquiry" className="block w-full">
-                              <Button className="w-full text-sm font-semibold rounded-xl py-2 bg-amber-500 hover:bg-amber-400 text-white shadow-sm shadow-amber-500/20">
-                                Get in touch
-                              </Button>
-                            </a>
-                          ) : !isPaid ? (
-                            <Link to="/sign-in">
-                              <Button className="w-full text-sm font-semibold rounded-xl py-2 bg-muted text-foreground hover:bg-muted/80 border border-border">
-                                {display.cta}
-                              </Button>
-                            </Link>
-                          ) : (
-                            <Button
-                              onClick={() => handleTrialCta(plan.slug)}
-                              className={`w-full text-sm font-semibold rounded-xl py-2 ${
-                                display.highlight
-                                  ? 'bg-white text-blue-600 hover:bg-blue-50 shadow-md'
-                                  : 'bg-blue-600 hover:bg-blue-500 text-white shadow-sm shadow-blue-600/20'
-                              }`}
-                            >
-                              {display.cta}
+                          <a href={href} className="block">
+                            <Button className={`w-full text-sm font-semibold rounded-xl py-2 ${highlighted ? 'bg-white text-blue-600 hover:bg-blue-50 shadow-md' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-sm shadow-blue-600/20'}`}>
+                              {plan.button_label || (plan.price_pence === 0 ? 'Start free enquiry' : 'Choose plan')}
                             </Button>
-                          )}
+                          </a>
                         </div>
                       </div>
                     </motion.div>
@@ -812,7 +752,7 @@ export default function HomePage() {
               </div>
 
               <p className="text-center text-xs text-muted-foreground mt-5">
-                No credit card required to start. Sign in to see the full feature breakdown for each plan.
+                Social-tariff options are also available. <Link to="/pricing" className="text-primary font-semibold hover:underline">View every JA Plan Studio plan and full details.</Link>
               </p>
             </>
           )}
