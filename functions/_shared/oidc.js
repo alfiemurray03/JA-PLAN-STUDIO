@@ -308,6 +308,10 @@ async function decryptSecret(value, env) {
 
 async function ensureTables(DB) {
   if (readyDatabases.has(DB)) return;
+  // Keep request-time authentication bootstrap deliberately small. Schema
+  // evolution belongs in the D1 migrations; attempting every historical
+  // ALTER TABLE on each cold login request can exhaust the Workers request
+  // budget before the Microsoft redirect is generated.
   await DB.prepare(`CREATE TABLE IF NOT EXISTS oidc_login_transactions (
     state_hash TEXT PRIMARY KEY, realm TEXT NOT NULL, nonce TEXT NOT NULL, code_verifier TEXT NOT NULL,
     return_to TEXT NOT NULL, created_at TEXT DEFAULT CURRENT_TIMESTAMP, expires_at TEXT NOT NULL, used_at TEXT
@@ -325,29 +329,6 @@ async function ensureTables(DB) {
       microsoft_business_phone TEXT, microsoft_country TEXT, microsoft_preferred_language TEXT,
       microsoft_photo_url TEXT
     )`).run();
-    for (const column of [
-      "access_token_encrypted TEXT",
-      "access_token_expires_at TEXT",
-      "microsoft_object_id TEXT",
-      "microsoft_given_name TEXT",
-      "microsoft_family_name TEXT",
-      "microsoft_preferred_username TEXT",
-      "microsoft_locale TEXT",
-      "microsoft_job_title TEXT",
-      "microsoft_department TEXT",
-      "microsoft_company_name TEXT",
-      "microsoft_mobile_phone TEXT",
-      "microsoft_business_phone TEXT",
-      "microsoft_country TEXT",
-      "microsoft_preferred_language TEXT",
-      "microsoft_photo_url TEXT"
-    ]) {
-      try {
-        await DB.prepare(`ALTER TABLE ${table} ADD COLUMN ${column}`).run();
-      } catch {
-        // Existing sessions tables may already include the column.
-      }
-    }
   }
   readyDatabases.add(DB);
 }
