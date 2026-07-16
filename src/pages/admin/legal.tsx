@@ -94,7 +94,7 @@ const DEFAULT_CONTENT: Record<string, string> = {
   'privacy-policy': `This Privacy Policy explains how JA Group Services ("we", "us", "our") operates JA Plan Studio. This Privacy Policy explains how we collect, use, store, and protect your personal data when you use our platform. We are committed to handling your data in accordance with the UK General Data Protection Regulation (UK GDPR) and the Data Protection Act 2018.
 
 1. Data Controller
-JA Group Services is the data controller for personal data collected through JA Plan Studio. If you have questions about how we handle your data, contact us at privacy@jagroupservices.co.uk.
+JA Group Services is the data controller for personal data collected through JA Plan Studio. If you have questions about how we handle your data, contact our Data Protection Officer at dpo@jagroupservices.co.uk.
 
 2. Data We Collect
 Account data: When you register, we collect your name, email address, and authentication credentials.
@@ -121,10 +121,10 @@ Legal obligation: Where we are required to process data to comply with applicabl
 We retain your account data and documents for as long as your account is active. If you delete your account, we will delete your personal data within 30 days, except where we are required to retain it for legal or regulatory purposes.
 
 6. Your Rights
-Under UK GDPR, you have the right to access, rectify, erase, restrict, port, and object to processing of your personal data. To exercise any of these rights, contact us at privacy@jagroupservices.co.uk.
+Under UK GDPR, you have the right to access, rectify, erase, restrict, port, and object to processing of your personal data. To exercise any of these rights, contact dpo@jagroupservices.co.uk.
 
 7. Contact
-For any privacy-related queries, contact us at privacy@jagroupservices.co.uk.`,
+For any privacy-related queries, contact dpo@jagroupservices.co.uk.`,
 
   'terms-of-service': `These Terms of Service ("Terms") govern your access to and use of JA Plan Studio, operated by JA Group Services ("we", "us", "our"). By registering an account or using the platform, you agree to be bound by these Terms.
 
@@ -150,7 +150,7 @@ You retain ownership of all content you create using JA Plan Studio.
 These Terms are governed by the laws of England and Wales.
 
 8. Contact
-If you have questions about these Terms, contact us at legal@jagroupservices.co.uk.`,
+If you have questions about these Terms, contact japlanstudio@jagroupservices.co.uk.`,
 
   'cookie-policy': `This Cookie Policy explains how JA Plan Studio uses cookies and similar tracking technologies on our website.
 
@@ -166,7 +166,7 @@ We do not use advertising cookies, third-party tracking cookies, or analytics co
 You can control cookies through your browser settings. Disabling the session cookie will prevent you from logging in to the platform.
 
 4. Contact
-For questions about our cookie use, contact us at privacy@jagroupservices.co.uk.`,
+For questions about our cookie use, contact dpo@jagroupservices.co.uk.`,
 
   'acceptable-use': `This Acceptable Use Policy governs what users may and may not do on JA Plan Studio.
 
@@ -185,7 +185,7 @@ You must not use JA Plan Studio to:
 We reserve the right to suspend or terminate accounts that violate this policy.
 
 4. Contact
-To report a violation, contact us at support@jagroupservices.co.uk.`,
+To report a violation, contact japlanstudio@jagroupservices.co.uk.`,
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

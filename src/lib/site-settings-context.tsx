@@ -29,7 +29,7 @@ const DEFAULTS: SiteSettings = {
   brandName:   'JA Group Services',
   companyName: 'JA Group Services Ltd',
   tagline:     'Personalised Plans, Generated in Minutes',
-  supportEmail: 'support@jagroupservices.co.uk',
+  supportEmail: 'japlanstudio@jagroupservices.co.uk',
   logoUrl:     '',
 };
 
@@ -49,7 +49,7 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
           brandName:   s['brand_name']   || DEFAULTS.brandName,
           companyName: s['company_name'] || DEFAULTS.companyName,
           tagline:     s['tagline']      || DEFAULTS.tagline,
-          supportEmail: s['support_email'] || DEFAULTS.supportEmail,
+          supportEmail: DEFAULTS.supportEmail,
           logoUrl:     s['logo_url']     || DEFAULTS.logoUrl,
         });
       })

@@ -3,6 +3,7 @@ import { Helmet } from '@dr.pogodin/react-helmet';
 import { Link } from 'react-router-dom';
 import { Cookie, Shield, Settings, BarChart2, ExternalLink, RefreshCw } from 'lucide-react';
 import { useSiteSettings } from '@/lib/site-settings-context';
+import { DATA_PROTECTION_EMAIL, normaliseContactDetails } from '@/lib/contact-details';
 
 interface LegalContent { body: string; effectiveDate: string; version: number; }
 
@@ -65,7 +66,7 @@ export default function CookiePolicyPage() {
         {liveContent ? (
           <div
             className="legal-html-body text-sm text-foreground leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: liveContent.body }}
+            dangerouslySetInnerHTML={{ __html: normaliseContactDetails(liveContent.body, true) }}
           />
         ) : loadingLive ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
@@ -315,8 +316,8 @@ export default function CookiePolicyPage() {
               <p>Operating {siteName}</p>
               <p>
                 Email:{' '}
-                <a href="mailto:privacy@jagroupservices.co.uk" className="text-primary hover:underline">
-                  privacy@jagroupservices.co.uk
+                <a href={`mailto:${DATA_PROTECTION_EMAIL}`} className="text-primary hover:underline">
+                  {DATA_PROTECTION_EMAIL}
                 </a>
               </p>
               <p>

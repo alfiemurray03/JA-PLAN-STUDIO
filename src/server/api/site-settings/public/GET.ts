@@ -11,7 +11,7 @@ const DEFAULTS: Record<string, string> = {
   site_name:    'JA Plan Studio',
   brand_name:   'JA Group Services',
   tagline:      'Personalised Plans, Generated in Minutes',
-  support_email: 'support@jagroupservices.co.uk',
+  support_email: 'japlanstudio@jagroupservices.co.uk',
   company_name: 'JA Group Services Ltd',
   primary_color: '#1B4F8A',
   accent_color:  '#8a561b',
@@ -44,6 +44,7 @@ export default async function handler(_req: Request, res: Response) {
     ];
     const settings: Record<string, string> = {};
     for (const k of PUBLIC_KEYS) settings[k] = all[k] ?? '';
+    settings.support_email = DEFAULTS.support_email;
 
     return res.json({ success: true, settings });
   } catch (err) {

@@ -38,7 +38,7 @@ const DEFAULT_TOGGLES: FeatureToggle[] = [
 const DEFAULT_GENERAL: Record<string, string> = {
   platform_name:  'JA Plan Studio',
   platform_url:   'https://japlanstudio.com',
-  support_email:  'support@japlanstudio.com',
+  support_email:  'japlanstudio@jagroupservices.co.uk',
   company_name:   'JA Group Services',
   timezone:       'Europe/London',
   currency:       'GBP (£)',
