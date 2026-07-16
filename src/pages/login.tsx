@@ -187,7 +187,7 @@ export default function LoginPage() {
               type="button"
               size="lg"
               className="w-full h-12 gap-2 font-semibold text-sm"
-              onClick={() => { window.location.href = '/auth/oidc/start'; }}
+              onClick={() => { window.location.href = '/account/login?return_to=%2Fdashboard'; }}
             >
               Sign in
               <ArrowRight className="w-4 h-4" />
@@ -209,7 +209,7 @@ export default function LoginPage() {
               variant="outline"
               size="lg"
               className="w-full h-11 text-sm font-medium gap-2"
-              onClick={() => { window.location.href = '/auth/oidc/start'; }}
+              onClick={() => { window.location.href = '/account/login?return_to=%2Fdashboard'; }}
             >
               Sign up — it's free
             </Button>

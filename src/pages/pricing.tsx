@@ -287,7 +287,7 @@ function PlanCard({ plan, onCheckout, checkoutLoading, isLoggedIn, paymentsEnabl
       return;
     }
     if (!isLoggedIn) {
-      window.location.href = '/auth/oidc/start';
+      window.location.href = '/account/login?return_to=%2Fdashboard';
       return;
     }
     onCheckout(plan.id);
@@ -560,7 +560,7 @@ export default function PricingPage() {
             </Button>
           ) : (
             <Button asChild variant="outline" className="shrink-0 gap-2">
-              <a href="/auth/oidc/start">
+              <a href="/account/login?return_to=%2Fdashboard">
                 Get Started <ArrowRight className="w-4 h-4" />
               </a>
             </Button>

@@ -33,7 +33,7 @@ export default function AuthOidcStartPage() {
     // is visible for a moment — avoids a jarring flash.
     const timer = setTimeout(() => {
       try {
-        window.location.href = '/auth/oidc/start';
+        window.location.href = '/account/login?return_to=%2Fdashboard';
       } catch {
         setStatus('error');
       }
@@ -56,7 +56,7 @@ export default function AuthOidcStartPage() {
   function handleRetry() {
     setStatus('redirecting');
     setCountdown(3);
-    window.location.href = '/auth/oidc/start';
+    window.location.href = '/account/login?return_to=%2Fdashboard';
   }
 
   return (
