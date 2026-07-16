@@ -124,7 +124,7 @@ export default function Footer() {
               )}
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed mb-3">
-              {branding.platform_description || 'Create letters, contracts, invoices, policies, forms, reports and more from one secure JA Plan Studio account.'}
+              {branding.platform_description || 'Build destination, itinerary, experience, accessibility and practical travel plans with JA Plan Studio.'}
             </p>
             {branding.support_email && (
               <a
@@ -161,10 +161,10 @@ export default function Footer() {
             {branding.footer_tagline ? ` ${branding.footer_tagline}.` : ''}
           </p>
           <p className="text-xs text-muted-foreground leading-relaxed max-w-3xl">
-            JA Plan Studio is a service brand operated by JA Group Services Ltd, a company registered in England and Wales. The service provides professional document-building tools for individuals and organisations.
+            JA Plan Studio is a service brand operated by JA Group Services Ltd, a company registered in England and Wales. The service provides guided discovery, experience and practical planning tools and support.
           </p>
           <p className="text-xs text-muted-foreground">
-            Separate terms may apply to electronic-signing, payment or other connected services where used.
+            Third-party bookings, availability, prices, refunds and provider terms remain the responsibility of the relevant provider.
           </p>
         </div>
       </div>
