@@ -29,9 +29,8 @@ export const DEFAULT_FOOTER_COLUMNS: FooterColumn[] = [
     heading: 'Product',
     links: [
       { label: 'Experience Builders', href: '/builders' },
-      { label: 'Pricing',     href: '/pricing' },
-      { label: 'FAQ',         href: '/#faq' },
-      { label: 'Help Centre', href: '/support' },
+      { label: 'How It Works', href: '/#features' },
+      { label: 'Pricing', href: '/pricing' },
       { label: 'Install App', href: '__install__' },
     ],
   },
@@ -39,9 +38,8 @@ export const DEFAULT_FOOTER_COLUMNS: FooterColumn[] = [
     heading: 'Support',
     links: [
       { label: 'Contact Support',  href: '/support' },
-      { label: 'Report an Issue',  href: '/support' },
       { label: 'Service Status',   href: '/status' },
-      { label: 'Help Centre',      href: '/support' },
+      { label: 'Accessibility', href: '/accessibility-support' },
       { label: 'JA Group Services Ltd', href: 'https://jagroupservices.co.uk', external: true },
     ],
   },
@@ -52,14 +50,6 @@ export const DEFAULT_FOOTER_COLUMNS: FooterColumn[] = [
       { label: 'Privacy Policy',      href: '/privacy' },
       { label: 'Cookie Policy',       href: '/cookies' },
       { label: 'Acceptable Use',      href: '/acceptable-use' },
-      { label: 'Refund Information',  href: '/pricing' },
-      { label: 'Complaints',          href: '/contact' },
-      { label: 'Report an Issue',     href: '/support' },
-      { label: 'Security & Privacy',  href: '/privacy-settings' },
-      { label: 'Accessibility',       href: '/accessibility-support' },
-      { label: 'Eligibility',         href: '/terms' },
-      { label: 'Data Retention',      href: '/privacy' },
-      { label: 'Data Subject Rights', href: '/privacy' },
     ],
   },
 ];
@@ -102,29 +92,16 @@ export default function Footer() {
   const branding = useBranding();
   const year = new Date().getFullYear();
 
-  // Parse footer_links from branding; fall back to defaults
-  let columns: FooterColumn[] = DEFAULT_FOOTER_COLUMNS;
-  if (branding.footer_links) {
-    try {
-      const parsed = JSON.parse(branding.footer_links);
-      if (Array.isArray(parsed) && parsed.length > 0) columns = parsed;
-    } catch { /* use defaults */ }
-  }
-  // Discovery remains part of the public navigation even when an older
-  // database-managed footer configuration is present.
-  if (!columns.some(column => column.links?.some(link => link.href === '/activities'))) {
-    columns = [DEFAULT_FOOTER_COLUMNS[0], ...columns];
-  }
+  // Keep the public footer concise and consistent. Older database-managed
+  // footer menus contained duplicated links and an oversized legal column.
+  const columns: FooterColumn[] = DEFAULT_FOOTER_COLUMNS;
 
   return (
     <footer className="border-t border-border bg-card" role="contentinfo">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
-        <div
-          className="grid grid-cols-1 sm:grid-cols-2 gap-10"
-          style={{ gridTemplateColumns: `1fr repeat(${columns.length}, minmax(0, 1fr))` }}
-        >
+      <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 py-12 lg:py-14">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(300px,0.9fr)_minmax(0,2.1fr)] gap-12 lg:gap-16 xl:gap-20">
           {/* Brand column */}
-          <div className="sm:col-span-1">
+          <div className="max-w-sm">
             <Link to="/" className="inline-block mb-4">
               {branding.platform_logo_url ? (
                 <img
@@ -144,8 +121,7 @@ export default function Footer() {
             {branding.support_email && (
               <a
                 href={`mailto:${PLAN_STUDIO_EMAIL}`}
-                className="text-sm text-primary hover:underline transition-colors font-medium break-all leading-relaxed inline-block max-w-full"
-                style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}
+                className="text-sm text-primary hover:underline transition-colors font-medium leading-relaxed inline-block max-w-full break-words"
               >
                 {PLAN_STUDIO_EMAIL}
               </a>
@@ -156,25 +132,26 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Dynamic columns */}
-          {columns.map((col) => (
-            <div key={col.heading}>
-              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">
-                {col.heading}
-              </h4>
-              <ul className="space-y-2.5">
-                {col.links.map((link) => (
-                  <li key={link.href + link.label}>
-                    <FooterLinkItem link={link} />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          <div className="grid grid-cols-2 xl:grid-cols-4 gap-x-8 gap-y-10 xl:gap-x-10">
+            {columns.map((col) => (
+              <div key={col.heading} className="min-w-0">
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">
+                  {col.heading}
+                </h4>
+                <ul className="space-y-3">
+                  {col.links.map((link) => (
+                    <li key={link.href + link.label}>
+                      <FooterLinkItem link={link} />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Bottom bar */}
-        <div className="border-t border-border mt-12 pt-6 space-y-2">
+        <div className="border-t border-border mt-10 pt-6 space-y-2">
           <p className="text-sm text-muted-foreground">
             © {year} {branding.platform_name || 'JA Plan Studio'}. All rights reserved.
             {branding.footer_tagline ? ` ${branding.footer_tagline}.` : ''}
