@@ -131,6 +131,27 @@ test("native authentication remains feature-gated", () => {
   assert.equal(nativeOidcEnabled({ NATIVE_OIDC_ENABLED: "true" }), true);
 });
 
+test("login bootstrap does not run request-time schema alterations", async () => {
+  const originalFetch = globalThis.fetch;
+  const DB = new MockD1();
+  globalThis.fetch = async () => Response.json({
+    issuer: env.ADMIN_OIDC_ISSUER,
+    authorization_endpoint: "https://login.example.test/authorize",
+    token_endpoint: "https://login.example.test/token",
+    jwks_uri: "https://login.example.test/keys"
+  });
+  try {
+    const response = await beginLogin({
+      request: new Request("https://experiences.example.test/admin/login?return_to=%2Fadmin%2Fdashboard%2F"),
+      env: { ...env, DB }
+    }, "admin");
+    assert.equal(response.status, 302);
+    assert.equal(DB.alterStatements.length, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("customer and administrator realms use independent authorities and cookies", async () => {
   const originalFetch = globalThis.fetch;
   const DB = new MockD1();
@@ -229,7 +250,7 @@ test("customer OIDC flow creates a session and redirects into the portal", async
     assert.equal(callback.headers.get("location"), "/account/dashboard/");
     assert.match(callback.headers.get("set-cookie"), /ja_customer_oidc_session=/);
     assert.equal(DB.customerSession.email, "customer@example.test");
-    assert.ok(DB.alterStatements.some((sql) => sql.includes("customer_oidc_sessions ADD COLUMN access_token_encrypted TEXT")));
+    assert.equal(DB.alterStatements.length, 0);
     assert.ok(DB.alterStatements.some((sql) => sql.includes("customer_oidc_sessions ADD COLUMN access_token_expires_at TEXT")));
   } finally {
     globalThis.fetch = originalFetch;
