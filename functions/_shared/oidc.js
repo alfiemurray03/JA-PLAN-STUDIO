@@ -21,7 +21,6 @@ const REALMS = {
 
 const discoveryCache = new Map();
 const jwksCache = new Map();
-const readyDatabases = new WeakSet();
 const tableColumnsCache = new WeakMap();
 const sessionTableColumns = new Map([
   ["admin_oidc_sessions", new Set([
@@ -306,33 +305,6 @@ async function decryptSecret(value, env) {
   return new TextDecoder().decode(decrypted);
 }
 
-async function ensureTables(DB) {
-  if (readyDatabases.has(DB)) return;
-  // Keep request-time authentication bootstrap deliberately small. Schema
-  // evolution belongs in the D1 migrations; attempting every historical
-  // ALTER TABLE on each cold login request can exhaust the Workers request
-  // budget before the Microsoft redirect is generated.
-  await DB.prepare(`CREATE TABLE IF NOT EXISTS oidc_login_transactions (
-    state_hash TEXT PRIMARY KEY, realm TEXT NOT NULL, nonce TEXT NOT NULL, code_verifier TEXT NOT NULL,
-    return_to TEXT NOT NULL, created_at TEXT DEFAULT CURRENT_TIMESTAMP, expires_at TEXT NOT NULL, used_at TEXT
-  )`).run();
-  for (const table of ["admin_oidc_sessions", "customer_oidc_sessions"]) {
-    await DB.prepare(`CREATE TABLE IF NOT EXISTS ${table} (
-      token_hash TEXT PRIMARY KEY, subject TEXT NOT NULL, tenant_id TEXT, email TEXT NOT NULL, name TEXT,
-      refresh_token_encrypted TEXT, access_token_encrypted TEXT, access_token_expires_at TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP, last_seen_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      idle_expires_at TEXT NOT NULL, absolute_expires_at TEXT NOT NULL, refresh_after TEXT NOT NULL,
-      revoked_at TEXT, ip_hash TEXT, user_agent TEXT,
-      microsoft_object_id TEXT, microsoft_given_name TEXT, microsoft_family_name TEXT,
-      microsoft_preferred_username TEXT, microsoft_locale TEXT, microsoft_job_title TEXT,
-      microsoft_department TEXT, microsoft_company_name TEXT, microsoft_mobile_phone TEXT,
-      microsoft_business_phone TEXT, microsoft_country TEXT, microsoft_preferred_language TEXT,
-      microsoft_photo_url TEXT
-    )`).run();
-  }
-  readyDatabases.add(DB);
-}
-
 async function getTableColumns(DB, table) {
   let cache = tableColumnsCache.get(DB);
   if (!cache) {
@@ -530,9 +502,15 @@ export function nativeOidcEnabled(env) {
 export async function beginLogin(context, realm) {
   const config = realmConfig(realm, context.env);
   if (!context.env.DB) throw new Error("D1 is required for native authentication.");
-  await ensureTables(context.env.DB);
-  await context.env.DB.prepare(`DELETE FROM oidc_login_transactions WHERE datetime(expires_at) <= datetime('now') OR datetime(created_at) < datetime('now', '-1 day')`).run();
-  const metadata = await discover(config);
+  // Authentication tables are provisioned by migrations/0001_native_oidc.sql.
+  // DDL must not run in the interactive login request because it can exhaust
+  // the Cloudflare request budget before the Microsoft redirect is returned.
+  try {
+    await context.env.DB.prepare(`DELETE FROM oidc_login_transactions WHERE datetime(expires_at) <= datetime('now') OR datetime(created_at) < datetime('now', '-1 day')`).run();
+  } catch (error) {
+    console.error(JSON.stringify({ event: "oidc_transaction_cleanup_failed", realm, message: error instanceof Error ? error.message : "Unknown error" }));
+  }
+  const metadata = await stage(context, realm, "login_discovery", () => discover(config), { function: "beginLogin" });
   const requestUrl = new URL(context.request.url);
   const returnTo = safeReturnPath(requestUrl.searchParams.get("return_to"), realm);
   const state = randomValue(32);
@@ -540,10 +518,10 @@ export async function beginLogin(context, realm) {
   const verifier = randomValue(64);
   const challenge = base64Url(await sha256Bytes(verifier));
   const stateHash = await hashToken(state);
-  await context.env.DB.prepare(`
-    INSERT INTO oidc_login_transactions (state_hash, realm, nonce, code_verifier, return_to, expires_at)
-    VALUES (?, ?, ?, ?, ?, datetime('now', '+10 minutes'))
-  `).bind(stateHash, realm, nonce, verifier, returnTo).run();
+  await stage(context, realm, "login_transaction", () => context.env.DB.prepare(`
+      INSERT INTO oidc_login_transactions (state_hash, realm, nonce, code_verifier, return_to, expires_at)
+      VALUES (?, ?, ?, ?, ?, datetime('now', '+10 minutes'))
+    `).bind(stateHash, realm, nonce, verifier, returnTo).run(), { function: "beginLogin" });
 
   const redirectUri = `${requestUrl.origin}${config.callbackPath}`;
   const authorization = new URL(metadata.authorization_endpoint);
@@ -579,10 +557,6 @@ export async function completeLogin(context, realm) {
   if (url.searchParams.get("error")) throw new Error(`${realm === "customer" ? "JA Group Services ID" : "Microsoft"} authentication failed: ${url.searchParams.get("error")}.`);
   const code = url.searchParams.get("code") || "";
   if (!code) throw new Error(`${realm === "customer" ? "JA Group Services ID" : "Microsoft"} did not return an authorisation code.`);
-  await stage(context, realm, "table_initialisation", async () => {
-    await ensureTables(context.env.DB);
-  }, { requestId });
-
   const stateHash = await stage(context, realm, "state_hash", () => hashToken(state), { requestId });
   const transaction = await stage(context, realm, "transaction_lookup", async () => {
     const row = await context.env.DB.prepare(`
@@ -822,7 +796,6 @@ export async function getNativeSession(request, env, realm) {
 export async function revokeNativeSession(request, env, realm) {
   const config = realmConfig(realm, env);
   if (!env.DB) return;
-  await ensureTables(env.DB);
   const token = readCookie(request, config.cookie);
   if (!token) return;
   await env.DB.prepare(`UPDATE ${config.sessionTable} SET revoked_at = CURRENT_TIMESTAMP WHERE token_hash = ? AND revoked_at IS NULL`)
