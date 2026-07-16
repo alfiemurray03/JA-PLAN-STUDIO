@@ -3,6 +3,27 @@ import test from "node:test";
 import { onRequest as accountOnRequest } from "../functions/account/builders.js";
 import { onRequest as adminOnRequest } from "../functions/admin/api.js";
 
+test("protected builder document continues to the static asset without an ASSETS self-fetch", async () => {
+  let nextCalls = 0;
+  let assetCalls = 0;
+  const response = await accountOnRequest({
+    request: new Request("https://japlanstudio.jagroupservices.co.uk/account/builders/", {
+      headers: { Accept: "text/html" }
+    }),
+    env: {
+      ASSETS: { fetch: async () => { assetCalls += 1; return new Response("wrong"); } }
+    },
+    next: async () => {
+      nextCalls += 1;
+      return new Response("builder page", { headers: { "Content-Type": "text/html" } });
+    }
+  });
+
+  assert.equal(await response.text(), "builder page");
+  assert.equal(nextCalls, 1);
+  assert.equal(assetCalls, 0);
+});
+
 // Helper to create mock database context
 function createMockDB(options = {}) {
   const builders = options.builders || [
@@ -325,6 +346,25 @@ test("insufficient tokens blocks creation and logs block attempt", async () => {
   assert.equal(response.status, 402, "Insufficent tokens should trigger 402");
   const data = await response.json();
   assert.match(data.error, /Not enough Builder Usage Tokens/);
+});
+
+test("paid plans save outputs without a credit balance or deduction", async () => {
+  const DB = createMockDB({
+    ledger: [],
+    subscription: { plan_name: "Membership", plan_code: "membership", status: "active" }
+  });
+  const response = await accountOnRequest({
+    request: new Request("https://experiences.example.test/account/api/builders", {
+      method: "POST",
+      headers: { "x-ja-auth-email": "customer@example.test", "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "save_output", builder_id: "holiday-planner", fields: { destination: "Paris" } })
+    }),
+    env: { DB }
+  });
+  assert.equal(response.status, 200);
+  const data = await response.json();
+  assert.equal(data.token_summary.unlimited_builder_use, true);
+  assert.equal(data.token_summary.remaining_tokens, 0);
 });
 
 // 6. Token Safety and Idempotency

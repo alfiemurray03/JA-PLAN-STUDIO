@@ -1,11 +1,12 @@
 {
-  "name": "ja-tours-activities",
+  "name": "ja-plan-studio",
   "main": "src/worker.js",
   "compatibility_date": "2026-06-06",
 
   "assets": {
     "directory": "./public",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
   },
 
   "vars": {

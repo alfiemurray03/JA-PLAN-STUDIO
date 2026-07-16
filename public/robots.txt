@@ -1,4 +1,2 @@
 User-agent: *
-Allow: /
-
-Sitemap: https://japlanstudio.jagroupservices.co.uk/sitemap.xml
+Disallow: /

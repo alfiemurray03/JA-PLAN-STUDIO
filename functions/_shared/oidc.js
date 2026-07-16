@@ -13,7 +13,7 @@ const REALMS = {
     cookie: "ja_customer_oidc_session",
     transactionCookie: "ja_customer_oidc_tx",
     sessionTable: "customer_oidc_sessions",
-    path: "/account",
+    path: "/",
     loginPath: "/account/login",
     callbackPath: "/account/auth/callback"
   }
@@ -192,7 +192,12 @@ function safeReturnPath(value, realm) {
     const candidate = new URL(raw, "https://return.local");
     const allowedPath = realm === "admin"
       ? (pathname) => pathname === "/admin" || pathname.startsWith("/admin/")
-      : (pathname) => pathname === "/account" || pathname.startsWith("/account/");
+      : (pathname) =>
+          pathname === "/account" || pathname.startsWith("/account/") ||
+          pathname === "/dashboard" || pathname.startsWith("/dashboard/") ||
+          pathname === "/documents" || pathname.startsWith("/documents/") ||
+          pathname === "/builders" || pathname.startsWith("/builders/") ||
+          pathname === "/settings" || pathname.startsWith("/settings/");
     if (candidate.origin !== "https://return.local" || !allowedPath(candidate.pathname)) return fallback;
     return `${candidate.pathname}${candidate.search}`;
   } catch {
