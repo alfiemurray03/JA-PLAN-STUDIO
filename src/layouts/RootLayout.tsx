@@ -7,6 +7,7 @@ import Header from '@/layouts/parts/Header';
 import Website from '@/layouts/Website';
 import MaintenanceGate from '@/components/MaintenanceGate';
 import AccessibilityBubble from '@/components/AccessibilityBubble';
+import InstallAppModal from '@/components/InstallAppModal';
 import { useFeatureConfig } from '@/lib/feature-config-context';
 import type { A11ySettings } from '@/components/AccessibilityBubble';
 
@@ -16,9 +17,6 @@ const STANDALONE_PATHS = [
   '/documents',
   '/builders',
   '/settings',
-  '/pricing',
-  '/login',
-  '/sign-in',
   '/register',
   '/forgot-password',
 ];
@@ -90,6 +88,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
         </main>
       </MaintenanceGate>
       <Footer />
+      <InstallAppModal />
       <A11yBubbleWrapper hasSupportBubble />
     </Website>
   );
