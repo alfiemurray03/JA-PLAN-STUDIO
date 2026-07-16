@@ -29,6 +29,7 @@ const PrivacyPage = lazy(() => import('./pages/privacy'));
 const CookiesPage = lazy(() => import('./pages/cookies'));
 const AcceptableUsePage = lazy(() => import('./pages/acceptable-use'));
 const ContactPage = lazy(() => import('./pages/contact'));
+const DiscoveryPage = lazy(() => import('./pages/discovery'));
 const LetterBuilderPage = lazy(() => import('./pages/letter-builder'));
 const EmailBuilderPage = lazy(() => import('./pages/email-builder'));
 const InvoiceBuilderPage = lazy(() => import('./pages/invoice-builder'));
@@ -221,13 +222,20 @@ export const routes: RouteObject[] = [
     path: '/',
     element: <HomePage />,
   },
+  ...[
+    '/destinations', '/destinations/:slug', '/activities', '/experiences', '/headout', '/getyourguide',
+    '/booking-partners', '/how-it-works', '/plan-your-trip', '/planning-services', '/accommodation',
+    '/transfers', '/local-transport', '/travel-documentation-support', '/accessibility-support',
+    '/selected-partner-hotels', '/budget-experiences', '/family-experiences', '/couples-experiences',
+    '/about', '/faqs',
+  ].map((path) => ({ path, element: wrap(<DiscoveryPage />) })),
   {
     path: '/login',
     element: wrap(<RedirectIfAuth><LoginPage /></RedirectIfAuth>),
   },
   {
     path: '/register',
-    element: <Navigate to="/auth/oidc/start" replace />,
+    element: <Navigate to="/login" replace />,
   },
   // OIDC start — server intercepts this in production; React page is a
   // client-side fallback that fires the hard redirect immediately.

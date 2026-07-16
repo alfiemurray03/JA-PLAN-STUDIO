@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Full-page redirect to the server-side OIDC logout handler.
     // This clears the ja_session cookie AND terminates the Entra session.
     // For password-only users the server still clears the cookie and redirects to /login.
-    window.location.href = '/auth/logout';
+    window.location.href = '/account/logout';
   }, []);
 
   const refreshUser = useCallback(() => {

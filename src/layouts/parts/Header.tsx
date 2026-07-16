@@ -8,11 +8,15 @@ import { cn } from '@/lib/utils';
 
 const publicNavLinks = [
 { label: 'Builders', href: '/builders' },
+{ label: 'Destinations', href: '/destinations' },
+{ label: 'Activities', href: '/activities' },
 { label: 'Pricing', href: '/pricing' }];
 
 
 const authNavLinks = [
 { label: 'Builders', href: '/builders' },
+{ label: 'Destinations', href: '/destinations' },
+{ label: 'Activities', href: '/activities' },
 { label: 'Documents', href: '/documents' },
 { label: 'Pricing', href: '/pricing' }];
 
@@ -75,10 +79,10 @@ export default function Header() {
 
             <>
                 <Button variant="ghost" size="sm" asChild>
-                  <a href="/auth/oidc/start">Sign in</a>
+                  <a href="/account/login?return_to=%2Fdashboard">Sign in</a>
                 </Button>
                 <Button size="sm" asChild>
-                  <a href="/auth/oidc/start">Get Started Free</a>
+                  <a href="/account/login?return_to=%2Fdashboard">Get Started Free</a>
                 </Button>
               </>
             }
@@ -129,10 +133,10 @@ export default function Header() {
 
           <>
               <Button variant="outline" size="sm" asChild>
-                <a href="/auth/oidc/start" onClick={() => setMobileOpen(false)}>Sign in</a>
+                <a href="/account/login?return_to=%2Fdashboard" onClick={() => setMobileOpen(false)}>Sign in</a>
               </Button>
               <Button size="sm" asChild>
-                <a href="/auth/oidc/start" onClick={() => setMobileOpen(false)}>Get Started Free</a>
+                <a href="/account/login?return_to=%2Fdashboard" onClick={() => setMobileOpen(false)}>Get Started Free</a>
               </Button>
             </>
           }

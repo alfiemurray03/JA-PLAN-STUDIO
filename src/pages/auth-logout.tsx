@@ -13,7 +13,7 @@ import { FileText } from 'lucide-react';
 export default function AuthLogoutPage() {
   useEffect(() => {
     // Trigger the server-side logout handler via full-page navigation
-    window.location.href = '/auth/logout';
+    window.location.href = '/account/logout';
   }, []);
 
   return (

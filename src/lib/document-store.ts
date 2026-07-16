@@ -74,9 +74,28 @@ export function getCurrentUser(): AuthUser | null {
 /** Fetch current user from server (source of truth) */
 export async function refreshCurrentUser(): Promise<AuthUser | null> {
   try {
-    const res = await fetch('/api/auth/me', { credentials: 'include' });
-    const data = await res.json() as { success: boolean; user?: AuthUser };
-    return data.success && data.user ? data.user : null;
+    const res = await fetch('/account/profile', {
+      credentials: 'include',
+      headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) return null;
+    const data = await res.json() as { success: boolean; profile?: Record<string, unknown> };
+    if (!data.success || !data.profile) return null;
+    const profile = data.profile;
+    const displayName = String(profile.displayName || profile.verifiedName || profile.email || '');
+    const nameParts = displayName.trim().split(/\s+/);
+    const rawPlan = String(profile.currentPlanType || profile.currentPlan || 'free').toLowerCase().replace(/[\s-]+/g, '_');
+    const supportedPlans = new Set(['free', 'personal', 'standard', 'professional', 'org_starter', 'org_growth', 'org_professional']);
+    return {
+      id: String(profile.microsoftObjectId || profile.email || ''),
+      email: String(profile.email || profile.contactEmail || ''),
+      firstName: String(profile.microsoftGivenName || nameParts[0] || ''),
+      lastName: String(profile.microsoftFamilyName || nameParts.slice(1).join(' ')),
+      company: String(profile.microsoftCompanyName || ''),
+      plan: (supportedPlans.has(rawPlan) ? rawPlan : 'free') as AuthUser['plan'],
+      planIsLifetime: Boolean(profile.lifetimeAccess),
+      createdAt: String(profile.createdAt || new Date(0).toISOString()),
+    };
   } catch {
     return null;
   }
@@ -84,8 +103,8 @@ export async function refreshCurrentUser(): Promise<AuthUser | null> {
 
 export async function updateUserProfile(updates: Partial<AuthUser>): Promise<boolean> {
   try {
-    const res = await fetch('/api/auth/profile', {
-      method: 'PATCH',
+    const res = await fetch('/account/profile', {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),
       credentials: 'include',
@@ -233,4 +252,3 @@ export async function deleteFolder(id: string): Promise<boolean> {
     return false;
   }
 }
-

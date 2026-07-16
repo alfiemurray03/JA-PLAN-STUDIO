@@ -83,7 +83,7 @@ export default function RegisterPage() {
             <Button
               size="lg"
               className="w-full h-12 gap-2 font-semibold text-sm"
-              onClick={() => { window.location.href = '/auth/oidc/start'; }}
+              onClick={() => { window.location.href = '/account/login?return_to=%2Fdashboard'; }}
             >
               Create free account
               <ArrowRight className="w-4 h-4" />
@@ -104,7 +104,7 @@ export default function RegisterPage() {
               variant="outline"
               size="lg"
               className="w-full h-11 text-sm"
-              onClick={() => { window.location.href = '/auth/oidc/start'; }}
+              onClick={() => { window.location.href = '/account/login?return_to=%2Fdashboard'; }}
             >
               Sign in to existing account
             </Button>
