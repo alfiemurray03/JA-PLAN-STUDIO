@@ -79,7 +79,7 @@ export default async function handler(req: Request, res: Response) {
     const settingsAll: Record<string, string> = {};
     for (const row of controllerRows) settingsAll[row.key] = row.value;
     const companyName = settingsAll['company_name'] ?? 'JA Group Services Ltd';
-    const supportEmail = settingsAll['support_email'] ?? 'support@jagroupservices.co.uk';
+    const supportEmail = 'dpo@jagroupservices.co.uk';
 
     // ── Collect all customer data ──────────────────────────────────────────────
 

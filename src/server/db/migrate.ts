@@ -763,7 +763,7 @@ export async function runMigrations(): Promise<void> {
   const defaultSettings: Record<string, string> = {
     site_name: 'JA Plan Studio',
     tagline: 'Personalised Plans, Generated in Minutes',
-    support_email: 'support@jagroupservices.co.uk',
+    support_email: 'japlanstudio@jagroupservices.co.uk',
     company_name: 'JA Group Services Ltd',
     primary_color: '#1B4F8A',
     accent_color: '#8a561b',

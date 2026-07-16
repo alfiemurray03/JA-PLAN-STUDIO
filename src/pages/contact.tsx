@@ -14,12 +14,13 @@ import {
   MessageSquare, Mail, Clock, CheckCircle2, AlertTriangle,
   FileText, CreditCard, Settings, HelpCircle, Loader2 } from
 'lucide-react';
+import { GROUP_CONTACT_EMAIL, GROUP_PHONE_DISPLAY, GROUP_PHONE_HREF, PLAN_STUDIO_EMAIL } from '@/lib/contact-details';
 
 const CATEGORIES = [
 { value: 'general', label: 'General enquiry' },
 { value: 'billing', label: 'Billing & subscriptions' },
 { value: 'technical', label: 'Technical issue' },
-{ value: 'templates', label: 'Templates & documents' },
+{ value: 'planning', label: 'Experience builders & plans' },
 { value: 'account', label: 'Account & access' },
 { value: 'feedback', label: 'Feedback & suggestions' },
 { value: 'other', label: 'Other' }];
@@ -35,7 +36,7 @@ const PRIORITIES = [
 const QUICK_LINKS = [
 { icon: CreditCard, title: 'Billing & Plans', description: 'Upgrade, downgrade, or cancel your subscription.', href: '/pricing' },
 { icon: Settings, title: 'Account Settings', description: 'Update your profile, password, and preferences.', href: '/settings' },
-{ icon: FileText, title: 'Document Builders', description: 'Browse 10 professional document builders with 100+ templates.', href: '/builders' },
+{ icon: FileText, title: 'Experience Builders', description: 'Build plans for activities, days out, occasions and trips.', href: '/builders' },
 { icon: HelpCircle, title: 'Plans & Pricing', description: 'Compare plans and see what\'s included.', href: '/pricing' }];
 
 
@@ -268,14 +269,16 @@ export default function ContactPage() {
                   <h3 className="text-sm font-semibold text-foreground">Email us directly</h3>
                 </div>
                 <a
-                  href="mailto:support@japlanstudio.com"
-                  className="text-sm text-primary hover:underline font-medium">Hello@jagroupservices.co.uk
-
-
+                  href={`mailto:${PLAN_STUDIO_EMAIL}`}
+                  className="text-sm text-primary hover:underline font-medium">{PLAN_STUDIO_EMAIL}
                 </a>
                 <p className="text-xs text-muted-foreground">
-                  For sensitive account issues, email us directly.
+                  JA Plan Studio support, customer accounts and account deletion.
                 </p>
+                <div className="pt-3 mt-3 border-t border-border space-y-1 text-xs text-muted-foreground">
+                  <p>General JA Group Services enquiries: <a href={`mailto:${GROUP_CONTACT_EMAIL}`} className="text-primary hover:underline">{GROUP_CONTACT_EMAIL}</a></p>
+                  <p>Telephone: <a href={GROUP_PHONE_HREF} className="text-primary hover:underline">{GROUP_PHONE_DISPLAY}</a></p>
+                </div>
               </div>
 
               {/* Quick links */}

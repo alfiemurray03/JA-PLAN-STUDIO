@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom';
 import { Helmet } from '@dr.pogodin/react-helmet';
 import { FileText, RefreshCw } from 'lucide-react';
 import { useSiteSettings } from '@/lib/site-settings-context';
+import { PLAN_STUDIO_EMAIL, normaliseContactDetails } from '@/lib/contact-details';
 
 const EFFECTIVE_DATE = '2 June 2026';
-const CONTACT_EMAIL = 'support@jagroupservices.co.uk';
+const CONTACT_EMAIL = PLAN_STUDIO_EMAIL;
 
 interface LegalContent { body: string; effectiveDate: string; version: number; }
 
@@ -52,7 +53,7 @@ export default function AcceptableUsePage() {
           {liveContent ? (
             <div
               className="legal-html-body text-sm text-foreground leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: liveContent.body }}
+              dangerouslySetInnerHTML={{ __html: normaliseContactDetails(liveContent.body) }}
             />
           ) : loadingLive ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground py-8">

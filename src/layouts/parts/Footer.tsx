@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { ExternalLink } from 'lucide-react';
 import { useBranding } from '@/lib/branding';
 import { openInstallModal } from '@/components/InstallAppModal';
+import { GROUP_CONTACT_EMAIL, GROUP_PHONE_DISPLAY, GROUP_PHONE_HREF, PLAN_STUDIO_EMAIL } from '@/lib/contact-details';
 
 export interface FooterLink {
   label: string;
@@ -142,13 +143,17 @@ export default function Footer() {
             </p>
             {branding.support_email && (
               <a
-                href={`mailto:${branding.support_email}`}
+                href={`mailto:${PLAN_STUDIO_EMAIL}`}
                 className="text-sm text-primary hover:underline transition-colors font-medium break-all leading-relaxed inline-block max-w-full"
                 style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}
               >
-                {branding.support_email}
+                {PLAN_STUDIO_EMAIL}
               </a>
             )}
+            <div className="mt-3 space-y-1.5 text-sm text-muted-foreground">
+              <a href={`mailto:${GROUP_CONTACT_EMAIL}`} className="block hover:text-foreground transition-colors">{GROUP_CONTACT_EMAIL}</a>
+              <a href={GROUP_PHONE_HREF} className="block hover:text-foreground transition-colors">{GROUP_PHONE_DISPLAY}</a>
+            </div>
           </div>
 
           {/* Dynamic columns */}

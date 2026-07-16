@@ -168,7 +168,7 @@ export default function AuthOidcStartPage() {
                 <p className="text-white/30 text-xs">
                   Still having trouble?{' '}
                   <a
-                    href="mailto:support@jagroupservices.co.uk"
+                    href="mailto:japlanstudio@jagroupservices.co.uk"
                     className="text-[#4A90D9] hover:underline"
                   >
                     Contact support

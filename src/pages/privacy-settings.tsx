@@ -8,6 +8,7 @@ import { Helmet } from '@dr.pogodin/react-helmet';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/lib/auth-context';
 import { useSiteSettings } from '@/lib/site-settings-context';
+import { DATA_PROTECTION_EMAIL } from '@/lib/contact-details';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -142,8 +143,8 @@ const TERMINAL_STATUSES = ['completed', 'rejected', 'unable_to_complete'];
 
 export default function PrivacySettingsPage() {
   const { user } = useAuth();
-  const { siteName, brandName, companyName, supportEmail: rawSupportEmail } = useSiteSettings();
-  const supportEmail = rawSupportEmail ?? 'support@jagroupservices.co.uk';
+  const { siteName, brandName, companyName } = useSiteSettings();
+  const supportEmail = DATA_PROTECTION_EMAIL;
 
   // SAR requests
   const [sarRequests, setSarRequests] = useState<SarRequest[]>([]);
