@@ -1,263 +1,92 @@
-/**
- * /sign-in — JA Plan Studio branded sign-in page.
- *
- * Always shows the branded sign-in UI. The "Sign in" button navigates to
- * /auth/oidc/start which handles the full authentication flow.
- *
- * If ?error= is present (returned from the OIDC callback), an error banner
- * is shown above the sign-in button.
- *
- * No Microsoft branding is shown on this page — authentication is presented
- * as a seamless account sign-in experience.
- */
+import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Helmet } from '@dr.pogodin/react-helmet';
+import { ArrowRight, ShieldCheck, Loader2, AlertTriangle, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-  AlertTriangle, ShieldCheck, Compass, ArrowRight,
-  CheckCircle2, MapPinned, CalendarDays, Accessibility,
-} from 'lucide-react';
-import { useSiteSettings } from '@/lib/site-settings-context';
 
-// ── Error messages keyed by the ?error= query param ───────────────────────────
-
-const OIDC_ERRORS: Record<string, { title: string; body: string }> = {
-  oidc_unavailable: {
-    title: 'Sign-in temporarily unavailable',
-    body:  'We could not complete your sign-in. Please wait a moment and try again.',
-  },
-  oidc_state_missing: {
-    title: 'Session expired',
-    body:  'Your sign-in session timed out. Please start again.',
-  },
-  oidc_state_invalid: {
-    title: 'Sign-in could not be verified',
-    body:  'Something went wrong verifying your sign-in. Please try again.',
-  },
-  oidc_no_email: {
-    title: 'Email address not available',
-    body:  'We could not retrieve your email address. Please ensure your account has a verified email address, then try again. If the problem persists, contact support.',
-  },
-  oidc_callback_failed: {
-    title: 'Sign-in did not complete',
-    body:  'Authentication did not complete successfully. Please try again.',
-  },
-  account_suspended: {
-    title: 'Account suspended',
-    body:  'Your account has been suspended. Please contact support@jagroupservices.co.uk.',
-  },
+const errorMessages: Record<string, string> = {
+  oidc_init_failed: 'Could not start the sign-in process. Please try again.',
+  oidc_callback_failed: 'Sign-in was not completed. Please try again.',
+  oidc_state_missing: 'Your sign-in session expired. Please try again.',
+  oidc_state_invalid: 'Your sign-in session could not be verified. Please try again.',
+  oidc_no_email: 'Your account does not have an email address. Please contact support.',
+  account_suspended: 'This account is currently suspended. Please contact support.',
+  oidc_unavailable: 'Sign-in is temporarily unavailable. Please try again shortly.',
 };
-
-const FEATURES = [
-  { icon: CalendarDays, text: 'Guided builders for days out, holidays and occasions' },
-  { icon: MapPinned,    text: 'Keep itineraries, budgets and booking details organised' },
-  { icon: Accessibility,text: 'Plan around accessibility, family and support needs' },
-  { icon: ShieldCheck,  text: 'Save and manage supported plans in one secure account' },
-];
-
-// ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function LoginPage() {
   const [searchParams] = useSearchParams();
-  const errorCode = searchParams.get('error') ?? '';
-  const { siteName, brandName, companyName } = useSiteSettings();
-  const errorInfo = OIDC_ERRORS[errorCode] ?? (
-    errorCode
-      ? { title: 'Sign-in failed', body: 'An unexpected error occurred. Please try again.' }
-      : null
-  );
+  const [redirecting, setRedirecting] = useState(false);
+  const error = searchParams.get('error');
+
+  const handleSignIn = () => {
+    setRedirecting(true);
+    const requested = searchParams.get('redirect') || searchParams.get('next') || '/dashboard';
+    const returnTo = requested.startsWith('/') && !requested.startsWith('//') ? requested : '/dashboard';
+    window.location.href = `/account/login?return_to=${encodeURIComponent(returnTo)}`;
+  };
 
   return (
     <>
       <Helmet>
-        <title>Sign In — {siteName}</title>
-        <meta name="robots" content="noindex" />
+        <title>Sign In — JA Plan Studio</title>
+        <meta name="description" content="Sign in to your JA Plan Studio account." />
+        <link rel="canonical" href="/sign-in" />
+        <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 
-      {/* Full-screen split layout */}
-      <div className="min-h-screen flex bg-[#0d1b2e]">
-
-        {/* ── Left: brand panel (desktop only) ──────────────────────────────── */}
-        <div className="hidden lg:flex lg:w-1/2 xl:w-[55%] flex-col justify-between p-12 relative overflow-hidden">
-
-          {/* Background gradient orbs */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-[#1B4F8A]/30 blur-3xl" />
-            <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full bg-[#1e1b8a]/20 blur-3xl" />
-          </div>
-
-          {/* Logo */}
-          <div className="relative z-10">
-            <Link to="/" className="inline-flex items-center gap-3 group">
-              <div className="w-10 h-10 bg-[#1B4F8A] rounded-xl flex items-center justify-center shadow-lg group-hover:bg-[#1B4F8A]/80 transition-colors">
-                <Compass className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="text-white font-bold text-lg leading-tight">{siteName}</p>
-                <p className="text-white/50 text-xs">by {brandName}</p>
-              </div>
-            </Link>
-          </div>
-
-          {/* Hero copy */}
-          <div className="relative z-10 space-y-6">
-            <h1 className="text-4xl xl:text-5xl font-bold text-white leading-tight">
-              Personalised plans,<br />
-              <span className="text-[#4A90D9]">built around you.</span>
-            </h1>
-            <p className="text-white/60 text-lg max-w-md leading-relaxed">
-              Build practical plans for everyday experiences, travel,
-              accessibility and special occasions in one secure place.
-            </p>
-
-            <ul className="space-y-3">
-              {FEATURES.map(({ icon: Icon, text }) => (
-                <li key={text} className="flex items-center gap-3 text-white/70 text-sm">
-                  <div className="w-7 h-7 rounded-full bg-[#1B4F8A]/40 flex items-center justify-center shrink-0">
-                    <Icon className="w-3.5 h-3.5 text-[#4A90D9]" />
-                  </div>
-                  {text}
-                </li>
-              ))}
-            </ul>
-
-            <div className="flex flex-wrap items-center gap-2 pt-2 text-xs text-white/60">
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Everyday</span>
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Travel</span>
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Accessibility</span>
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Family</span>
+      <div className="min-h-[calc(100vh-4.5rem)] bg-background flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-sm space-y-5">
+          <div className="text-center">
+            <div className="w-16 h-16 rounded-2xl bg-blue-100 dark:bg-blue-900/40 border border-blue-200 dark:border-blue-700 flex items-center justify-center mx-auto mb-5">
+              <ShieldCheck className="w-8 h-8 text-blue-600 dark:text-blue-400" />
             </div>
+            <h1 className="text-2xl font-bold text-foreground mb-2">Sign in to JA Plan Studio</h1>
+            <p className="text-muted-foreground text-xs">Secured by JA Group Services ID</p>
           </div>
 
-          {/* Footer */}
-          <div className="relative z-10">
-            <p className="text-white/30 text-xs">
-              © {new Date().getFullYear()} {companyName}. All rights reserved.
-            </p>
-          </div>
-        </div>
-
-        {/* ── Right: sign-in panel ──────────────────────────────────────────── */}
-        <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-10 bg-white">
-
-          {/* Mobile logo */}
-          <div className="lg:hidden mb-8 text-center">
-            <Link to="/" className="inline-flex flex-col items-center gap-2">
-              <div className="w-12 h-12 bg-[#1B4F8A] rounded-2xl flex items-center justify-center shadow-md">
-                <Compass className="w-6 h-6 text-white" />
-              </div>
-              <p className="font-bold text-[#0d1b2e] text-lg">{siteName}</p>
-              <p className="text-gray-400 text-xs">by {brandName}</p>
-            </Link>
-          </div>
-
-          <div className="w-full max-w-sm space-y-6">
-
-            {/* Heading */}
-            <div>
-              <h2 className="text-2xl font-bold text-[#0d1b2e]">Welcome to {siteName}</h2>
-              <p className="text-gray-500 text-sm mt-1">
-                Sign in with JA Group Services ID to open your planning account.
-              </p>
+          {error && (
+            <div className="p-3.5 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-400 text-sm leading-relaxed flex items-start gap-2.5">
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>{errorMessages[error] ?? 'An unexpected error occurred. Please try again.'}</span>
             </div>
+          )}
 
-            {/* Error banner */}
-            {errorInfo && (
-              <Alert variant="destructive" className="border-red-200 bg-red-50">
-                <AlertTriangle className="w-4 h-4 text-red-600" />
-                <AlertDescription className="text-red-700">
-                  <span className="font-semibold block">{errorInfo.title}</span>
-                  <span className="text-sm">{errorInfo.body}</span>
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* Primary sign-in button */}
+          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
             <Button
-              type="button"
-              size="lg"
-              className="w-full h-12 gap-2 font-semibold text-sm"
-              onClick={() => { window.location.href = '/account/login?return_to=%2Fdashboard'; }}
+              onClick={handleSignIn}
+              disabled={redirecting}
+              className="w-full h-12 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl shadow-lg shadow-blue-600/20"
             >
-              Continue to secure sign-in
-              <ArrowRight className="w-4 h-4" />
+              {redirecting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Redirecting…</> : <>Continue to sign in <ArrowRight className="w-4 h-4 ml-2" /></>}
             </Button>
 
-            {/* Divider */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200" />
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="bg-white px-3 text-gray-400">New to {siteName}?</span>
-              </div>
+            <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3.5 flex gap-2.5">
+              <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+              <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">Enterprise-grade authentication. No separate JA Plan Studio password to remember.</p>
             </div>
 
-            {/* Sign-up CTA */}
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              className="w-full h-11 text-sm font-medium gap-2"
-              onClick={() => { window.location.href = '/account/login?return_to=%2Fdashboard'; }}
-            >
-              Create a free account
-            </Button>
-
-            {/* Trust note */}
-            <div className="flex items-start gap-2.5 rounded-xl bg-blue-50 border border-blue-100 px-4 py-3">
-              <ShieldCheck className="w-4 h-4 text-[#1B4F8A] mt-0.5 shrink-0" />
-              <p className="text-xs text-blue-700 leading-relaxed">
-                Secure single sign-on is provided through JA Group Services ID.
-                This customer account does not provide access to internal company systems.
-              </p>
+            <div className="border-t border-border pt-4">
+              <p className="text-xs font-semibold text-foreground uppercase tracking-wide mb-2.5">Free account includes</p>
+              <ul className="space-y-2">
+                {['1 free template demo', 'PDF export and download', 'Browse the full template catalogue'].map(item => (
+                  <li key={item} className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Check className="w-3.5 h-3.5 text-green-500 shrink-0" />{item}
+                  </li>
+                ))}
+              </ul>
             </div>
-
-            {/* What you get on sign-up */}
-            <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 space-y-2">
-              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Start planning for free</p>
-              {[
-                '30 one-time builder credits',
-                'Preview builders without using credits',
-                'Browse destinations, activities and planning ideas',
-              ].map(item => (
-                <div key={item} className="flex items-center gap-2 text-xs text-gray-600">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
-                  {item}
-                </div>
-              ))}
-              <div className="pt-1 border-t border-gray-200 mt-1">
-                <p className="text-[11px] text-gray-400">
-                  Paid plans include unlimited use of their eligible builders.{' '}
-                  <a href="/pricing" className="text-[#1B4F8A] hover:underline">See plans →</a>
-                </p>
-              </div>
-            </div>
-
-            {/* Support link */}
-            <p className="text-center text-xs text-gray-400">
-              Need help?{' '}
-              <a
-                href="mailto:support@jagroupservices.co.uk"
-                className="text-[#1B4F8A] hover:underline font-medium"
-              >
-                Contact support
-              </a>
-            </p>
-
           </div>
 
-          {/* Bottom links */}
-          <div className="mt-10 text-center">
-            <p className="text-xs text-gray-300">
-              <Link to="/terms" className="hover:text-gray-500 transition-colors">Terms of Service</Link>
-              {' · '}
-              <Link to="/privacy" className="hover:text-gray-500 transition-colors">Privacy Policy</Link>
-            </p>
-          </div>
+          <p className="text-center text-xs text-muted-foreground">
+            Need help? <Link to="/support" className="text-primary font-medium hover:underline">Contact support</Link>
+          </p>
+          <p className="text-center text-[11px] text-muted-foreground">
+            <Link to="/terms" className="hover:text-foreground">Terms of Service</Link>
+            <span className="mx-2">·</span>
+            <Link to="/privacy" className="hover:text-foreground">Privacy Policy</Link>
+          </p>
         </div>
-
       </div>
     </>
   );
