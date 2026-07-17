@@ -28,6 +28,9 @@ const CookiesPage = lazy(() => import('./pages/cookies'));
 const AcceptableUsePage = lazy(() => import('./pages/acceptable-use'));
 const ContactPage = lazy(() => import('./pages/contact'));
 const DiscoveryPage = lazy(() => import('./pages/discovery'));
+const DestinationsPage = lazy(() => import('./pages/destinations'));
+const HeadoutPage = lazy(() => import('./pages/partner-discovery').then((module) => ({ default: () => <module.PartnerDiscoveryPage provider="headout" /> })));
+const GetYourGuidePage = lazy(() => import('./pages/partner-discovery').then((module) => ({ default: () => <module.PartnerDiscoveryPage provider="getyourguide" /> })));
 
 // Plan detail pages
 
@@ -147,8 +150,11 @@ export const routes: RouteObject[] = [
     path: '/',
     element: <HomePage />,
   },
+  { path: '/destinations', element: wrap(<DestinationsPage />) },
+  { path: '/headout', element: wrap(<HeadoutPage />) },
+  { path: '/getyourguide', element: wrap(<GetYourGuidePage />) },
   ...[
-    '/destinations', '/destinations/:slug', '/activities', '/experiences', '/headout', '/getyourguide',
+    '/destinations/:slug', '/activities', '/experiences',
     '/booking-partners', '/how-it-works', '/plan-your-trip', '/planning-services', '/accommodation',
     '/transfers', '/local-transport', '/travel-documentation-support', '/accessibility-support',
     '/selected-partner-hotels', '/budget-experiences', '/family-experiences', '/couples-experiences',
