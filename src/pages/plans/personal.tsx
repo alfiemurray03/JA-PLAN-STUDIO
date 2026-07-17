@@ -69,7 +69,7 @@ export default function PersonalPlanPage() {
             <div className="mt-3 flex items-baseline gap-1">
               <span className="text-4xl font-bold text-foreground">£5.99</span>
               <span className="text-muted-foreground">/month</span>
-              <span className="ml-2 text-sm text-emerald-600 font-medium">14-day free trial</span>
+              <span className="ml-2 text-sm text-emerald-600 font-medium">30-day free trial</span>
             </div>
           </div>
         </div>
@@ -78,7 +78,7 @@ export default function PersonalPlanPage() {
         <div className="flex items-start gap-3 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 mb-6">
           <AlertTriangle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
           <p className="text-sm text-emerald-800">
-            <strong>14-day free trial.</strong> No credit card required to start. Cancel any time before the trial ends and you won't be charged.
+            <strong>30-day free trial.</strong> Your first monthly payment is collected after the trial. Cancel before it ends and you won't be charged.
           </p>
         </div>
 

@@ -529,10 +529,10 @@ function SubscriptionTab({ user, plan, planBadgeColor }: { user: ReturnType<type
   };
 
   const UPGRADE_PLANS = [
-    { id: 'personal',         name: 'Personal',              price: '£5.99/mo',  icon: Clock,     trial: true,  color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { id: 'standard',         name: 'Standard',              price: '£7.99/mo',  icon: Zap,       trial: true,  color: 'text-blue-600',   bg: 'bg-blue-50' },
-    { id: 'professional',     name: 'Professional',          price: '£14.99/mo', icon: Star,      trial: true,  color: 'text-primary',    bg: 'bg-primary/10', highlight: true },
-    { id: 'org_starter',      name: 'Org Starter',           price: '£29.99/mo', icon: Building2, trial: false, color: 'text-purple-600', bg: 'bg-purple-50' },
+    { id: 'personal',         name: 'Explore Plan',          price: '£5.99/mo',  icon: Clock,     trial: true,  color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { id: 'standard',         name: 'Plan Plan',             price: '£7.99/mo',  icon: Zap,       trial: true,  color: 'text-blue-600',   bg: 'bg-blue-50' },
+    { id: 'professional',     name: 'Complete Plan',         price: '£14.99/mo', icon: Star,      trial: true,  color: 'text-primary',    bg: 'bg-primary/10', highlight: true },
+    { id: 'org_starter',      name: 'Together Plan',         price: '£39.99/mo', icon: Building2, trial: true, color: 'text-purple-600', bg: 'bg-purple-50' },
     { id: 'org_growth',       name: 'Org Growth',            price: '£59.99/mo', icon: Building2, trial: false, color: 'text-purple-700', bg: 'bg-purple-100' },
     { id: 'org_professional', name: 'Org Professional',      price: '£99.99/mo', icon: Building2, trial: false, color: 'text-purple-800', bg: 'bg-purple-200' },
   ].filter(p => {
@@ -759,7 +759,7 @@ function SubscriptionTab({ user, plan, planBadgeColor }: { user: ReturnType<type
                           <Badge className="bg-primary text-primary-foreground text-[9px] px-1.5 py-0">Popular</Badge>
                         )}
                         {p.trial && (
-                          <Badge className="bg-green-100 text-green-800 border-green-200 text-[9px] px-1.5 py-0">14-day trial</Badge>
+                          <Badge className="bg-green-100 text-green-800 border-green-200 text-[9px] px-1.5 py-0">30-day trial</Badge>
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground">{p.price}</p>

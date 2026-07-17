@@ -231,7 +231,7 @@ test("closed public modes preserve authenticated customer and administrator rout
   assert.equal(await response.text(), "Success");
 });
 
-test("free trial activation route credits exactly 30 tokens, calculates 14 days expiry, and protects against multiple claims", async () => {
+test("free trial activation route credits exactly 30 tokens, calculates 30 days expiry, and protects against multiple claims", async () => {
   const DB = new MockD1();
   const env = getMockEnv(DB);
 
@@ -248,7 +248,7 @@ test("free trial activation route credits exactly 30 tokens, calculates 14 days 
     }
   });
 
-  // 1. Successful First Claim: activates trial, credits exactly 30 tokens, sets 14 days expiry, saves in D1
+  // 1. Successful First Claim: activates trial, credits exactly 30 tokens, sets 30 days expiry, saves in D1
   DB.trialClaimed = false;
   DB.paidSubscription = false;
   let response = await activateTrialOnRequestGet({ request, env });

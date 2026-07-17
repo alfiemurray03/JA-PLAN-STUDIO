@@ -139,7 +139,7 @@ export default async function handler(req: Request, res: Response) {
       } catch { /* non-fatal */ }
     }
 
-    const trialDays = PLAN_HAS_TRIAL[planId] ? 14 : 0;
+    const trialDays = PLAN_HAS_TRIAL[planId] ? 30 : 0;
 
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: 'subscription',

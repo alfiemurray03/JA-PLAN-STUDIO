@@ -61,7 +61,7 @@ export default function StandardPlanPage() {
             <div className="flex items-center gap-2 mb-1">
               <h1 className="text-3xl font-extrabold text-foreground">Standard Plan</h1>
               <Badge variant="secondary">£7.99/month</Badge>
-              <Badge className="bg-green-100 text-green-800 border-green-200">14-day free trial</Badge>
+              <Badge className="bg-green-100 text-green-800 border-green-200">30-day free trial</Badge>
             </div>
             <p className="text-muted-foreground">For people who plan regularly and need more builder access.</p>
           </div>
@@ -149,7 +149,7 @@ export default function StandardPlanPage() {
             <Link to="/plans/professional">See Professional →</Link>
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground text-center mt-3">14-day free trial. Cancel anytime.</p>
+        <p className="text-xs text-muted-foreground text-center mt-3">30-day free trial. Cancel before the first payment.</p>
       </div>
     </>
   );

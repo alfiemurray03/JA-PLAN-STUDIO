@@ -446,11 +446,11 @@ export async function onRequest(context) {
     const existing = await first(env.DB, `SELECT * FROM trial_access_tokens WHERE lower(email) = lower(?)`, [identity.email]);
     if (existing) return json({ error: "A trial has already been activated for this customer account.", trial: existing }, 409);
     const now = new Date();
-    const expires = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+    const expires = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
     const trialId = crypto.randomUUID();
     await env.DB.prepare(`INSERT INTO trial_access_tokens (id, email, activated_at, expires_at, token_allowance) VALUES (?, ?, ?, ?, 30)`).bind(trialId, identity.email, now.toISOString(), expires.toISOString()).run();
     const balanceAfter = (await tokenBalance(env.DB, identity.email)) + 30;
-    await env.DB.prepare(`INSERT INTO builder_token_ledger (id, email, amount, balance_after, source, reason, metadata) VALUES (?, ?, 30, ?, 'trial', 'One-time 14-day trial Builder Usage Tokens', ?)`).bind(crypto.randomUUID(), identity.email, balanceAfter, JSON.stringify({ trialId })).run();
+    await env.DB.prepare(`INSERT INTO builder_token_ledger (id, email, amount, balance_after, source, reason, metadata) VALUES (?, ?, 30, ?, 'trial', 'One-time 30-day trial Builder Usage Tokens', ?)`).bind(crypto.randomUUID(), identity.email, balanceAfter, JSON.stringify({ trialId })).run();
     return json({ activated: true, token_summary: await tokenSummary(env.DB, identity.email) });
   }
 
