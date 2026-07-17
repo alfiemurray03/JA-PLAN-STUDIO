@@ -22,15 +22,28 @@ function loadScript(id: string, src: string, attributes: Record<string, string> 
 
 function ProviderWidget({ provider, slug }: { provider: Provider; slug: string }) {
   const destination = destinations.find((item) => item.slug === slug)!;
+  const iframeId = `headout-${destination.slug}`;
+  const [headoutHeight, setHeadoutHeight] = useState(900);
   useEffect(() => {
-    if (provider === 'headout') return;
+    if (provider === 'headout') {
+      setHeadoutHeight(900);
+      const resizeHeadout = (event: MessageEvent) => {
+        if (event.origin !== 'https://partner.headout.com') return;
+        const data = event.data as { type?: string; iframeId?: string; height?: number | string } | null;
+        if (data?.type !== 'ho-event-message' || data.iframeId !== iframeId) return;
+        const height = Number(data.height);
+        if (Number.isFinite(height) && height > 0) setHeadoutHeight(Math.max(400, Math.ceil(height)));
+      };
+      window.addEventListener('message', resizeHeadout);
+      return () => window.removeEventListener('message', resizeHeadout);
+    }
     return loadScript('gyg-partner-widget', 'https://widget.getyourguide.com/dist/pa.umd.production.min.js', { 'data-gyg-partner-id': GYG_PARTNER_ID });
-  }, [provider, slug]);
+  }, [provider, slug, iframeId]);
 
   if (provider === 'headout') {
-    const params = new URLSearchParams({ affiliateCode: HEADOUT_AFFILIATE_CODE, affiliateWebsite: 'https://tours.jagroupservices.co.uk', currencyCode: 'GBP', language: 'en', city: destination.headout!, iframeId: `headout-${destination.slug}`, maxCount: '100', showMore: 'true' });
+    const params = new URLSearchParams({ affiliateCode: HEADOUT_AFFILIATE_CODE, affiliateWebsite: 'https://tours.jagroupservices.co.uk', currencyCode: 'GBP', language: 'en', city: destination.headout!, iframeId, maxCount: '100', showMore: 'true' });
     return <div className="min-h-80 rounded-2xl border border-border bg-background p-4">
-      <iframe key={destination.slug} className="h-[900px] w-full rounded-lg border-0" src={`https://partner.headout.com/embed/gallery/?${params.toString()}`} title={`Headout activities in ${destination.name}`} loading="eager" referrerPolicy="strict-origin-when-cross-origin" allow="payment" />
+      <iframe key={destination.slug} className="w-full rounded-lg border-0" style={{ height: `${headoutHeight}px` }} src={`https://partner.headout.com/embed/gallery/?${params.toString()}`} title={`Headout activities in ${destination.name}`} loading="eager" referrerPolicy="strict-origin-when-cross-origin" allow="payment" scrolling="no" />
     </div>;
   }
   const query = `${destination.name}, ${destination.country}`;
