@@ -148,7 +148,7 @@ export default function ProfessionalPlanPage() {
             <Link to="/plans/org-starter">See Organisation Plans →</Link>
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground text-center mt-3">14-day free trial. Cancel anytime.</p>
+        <p className="text-xs text-muted-foreground text-center mt-3">30-day free trial. Cancel before the first payment.</p>
       </div>
     </>
   );

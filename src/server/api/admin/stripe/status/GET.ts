@@ -78,7 +78,7 @@ export default async function handler(req: Request, res: Response) {
   const portalReturnUrl    = await getConfigValue('stripe_portal_return_url', null);
   const webhookEndpointUrl = await getConfigValue('stripe_webhook_endpoint_url', null);
   const trialEnabled       = await getConfigValue('stripe_trial_enabled', 'true');
-  const trialDays          = await getConfigValue('stripe_trial_days', '14');
+  const trialDays          = await getConfigValue('stripe_trial_days', '30');
 
   const isLiveMode = secretKey?.startsWith('sk_live_') ?? false;
 
@@ -111,7 +111,7 @@ export default async function handler(req: Request, res: Response) {
     },
     trial: {
       enabled: trialEnabled !== 'false',
-      days:    parseInt(trialDays ?? '14', 10),
+      days:    parseInt(trialDays ?? '30', 10),
     },
     stripeConnected: false,
     stripeAccount:   null as unknown,

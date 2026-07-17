@@ -111,7 +111,7 @@ export default function TermsPage() {
               <section>
                 <h2 className="text-lg font-semibold text-foreground mb-3">4. Subscriptions, Trials &amp; Billing</h2>
                 <div className="space-y-3 text-muted-foreground">
-                  <p><strong className="text-foreground">Free Trial:</strong> Standard and Professional plans include a 14-day free trial. No payment is required to start your trial.</p>
+                  <p><strong className="text-foreground">Free Trial:</strong> Explore Plan, Plan Plan, Complete Plan and Together Plan each include a 30-day free trial for eligible new subscriptions. The first monthly payment is collected when the trial ends unless the subscription is cancelled beforehand.</p>
                   <p><strong className="text-foreground">Subscriptions:</strong> Paid plans are billed monthly in advance. Prices are displayed in GBP and include VAT where applicable.</p>
                   <p><strong className="text-foreground">Cancellation:</strong> You may cancel your subscription at any time from your account settings. No refunds are issued for partial billing periods.</p>
                 </div>

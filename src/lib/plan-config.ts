@@ -98,13 +98,13 @@ export const PLAN_PRICE_DISPLAY: Record<PlanId, string> = {
   org_professional: '£99.99',
 };
 
-/** Whether plan has a 14-day trial */
+/** Whether each current paid product has a 30-day trial. */
 export const PLAN_HAS_TRIAL: Record<PlanId, boolean> = {
   free:             false,
-  personal:         false,
-  standard:         false,
-  professional:     false,
-  org_starter:      false,
+  personal:         true,
+  standard:         true,
+  professional:     true,
+  org_starter:      true,
   org_growth:       false,
   org_professional: false,
 };

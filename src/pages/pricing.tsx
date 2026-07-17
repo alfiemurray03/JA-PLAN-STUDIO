@@ -9,9 +9,22 @@ import { JA_PLAN_STUDIO_SUBSCRIPTIONS, type ServicePlan } from '@/lib/service-pl
 
 const FAQS = [
   { q: 'Are these subscriptions?', a: 'Yes. Explore, Plan, Complete and Together are monthly subscriptions. You can manage your subscription from your JA Plan Studio account.' },
+  { q: 'Does every plan include a free trial?', a: 'Yes. Every new Explore Plan, Plan Plan, Complete Plan and Together Plan subscription includes a 30-day free trial before the first monthly payment.' },
   { q: 'What does JA Plan Studio help me build?', a: 'Depending on the package, we help structure destination ideas, itinerary and experience planning, practical checks, priorities and next steps into a clear personalised plan.' },
   { q: 'Which subscription should I choose?', a: 'Explore is the simplest starting point, Plan adds more planning tools, Complete provides full individual access, and Together is designed for shared household, family and group planning.' },
   { q: 'Does JA Plan Studio make bookings?', a: 'No. JA Plan Studio provides discovery and planning guidance. Third-party bookings, prices, availability, refunds and provider terms remain between you and the relevant provider.' },
+];
+
+const FEATURE_ROWS: Array<{ feature: string; values: Record<string, string | boolean> }> = [
+  { feature: '30-day free trial', values: { personal: true, standard: true, professional: true, org_starter: true } },
+  { feature: 'Destination and activity discovery', values: { personal: true, standard: true, professional: true, org_starter: true } },
+  { feature: 'Guided experience-planning builders', values: { personal: 'Essential', standard: 'Expanded', professional: 'Full access', org_starter: 'Full access' } },
+  { feature: 'Saved plans', values: { personal: 'Up to 3', standard: 'Up to 5', professional: 'Up to 10', org_starter: 'Up to 10 shared' } },
+  { feature: 'Saved-plan retention', values: { personal: '14 days', standard: '14 days', professional: '30 days', org_starter: '30 days' } },
+  { feature: 'Download finished plans', values: { personal: false, standard: true, professional: true, org_starter: true } },
+  { feature: 'Enhanced planning and outputs', values: { personal: false, standard: false, professional: true, org_starter: true } },
+  { feature: 'Included users', values: { personal: '1', standard: '1', professional: '1', org_starter: '2' } },
+  { feature: 'Shared household, family or group planning', values: { personal: false, standard: false, professional: false, org_starter: true } },
 ];
 
 function PlanCard({ plan }: { plan: ServicePlan }) {
@@ -23,6 +36,7 @@ function PlanCard({ plan }: { plan: ServicePlan }) {
       {featured && <Badge className="absolute -top-3 left-6 bg-primary text-primary-foreground">JA Plan Studio package</Badge>}
       <p className="mb-2 text-xs font-bold uppercase tracking-wider text-primary">{plan.plan_type}</p>
       <h3 className="text-xl font-bold leading-tight text-foreground">{plan.plan_name}</h3>
+      <p className="mt-2 text-xs font-semibold text-emerald-600">30-day free trial</p>
       <div className="my-5 flex items-end gap-1"><span className="text-4xl font-extrabold text-foreground">{plan.price_label}</span><span className="pb-1 text-sm text-muted-foreground">/month</span></div>
       <p className="mb-5 text-sm leading-relaxed text-muted-foreground">{plan.description}</p>
       <ul className="mb-6 space-y-3 text-sm text-foreground">
@@ -67,7 +81,7 @@ export default function PricingPage() {
         <section className="border-b border-border bg-gradient-to-b from-primary/10 to-background px-4 py-20 text-center">
           <Badge variant="outline" className="mb-5">JA Plan Studio plans</Badge>
           <h1 className="mx-auto max-w-4xl text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">A subscription for every way you plan</h1>
-          <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-muted-foreground">Choose Explore, Plan, Complete or Together and use JA Plan Studio's guided builders to create, save and manage personalised plans.</p>
+          <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-muted-foreground">Choose Explore Plan, Plan Plan, Complete Plan or Together Plan. Every subscription starts with a 30-day free trial.</p>
         </section>
 
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
@@ -79,6 +93,37 @@ export default function PricingPage() {
               <p className="mt-2 text-muted-foreground">Four clear options, billed monthly through secure Stripe checkout.</p>
             </div>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">{plans.map(plan => <PlanCard key={plan.id} plan={plan} />)}</div>
+          </section>
+
+          <section aria-labelledby="feature-comparison" className="mb-20">
+            <div className="mb-8 text-center">
+              <Badge variant="outline" className="mb-3">Compare features</Badge>
+              <h2 id="feature-comparison" className="text-3xl font-bold text-foreground">Features included with each plan</h2>
+              <p className="mt-2 text-muted-foreground">Compare all four subscriptions before starting your 30-day free trial.</p>
+            </div>
+            <div className="overflow-x-auto rounded-2xl border border-border bg-card shadow-sm">
+              <table className="w-full min-w-[820px] border-collapse text-left text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/40">
+                    <th scope="col" className="sticky left-0 z-10 min-w-64 bg-muted px-5 py-4 font-semibold text-foreground">Feature</th>
+                    {plans.map(plan => <th key={plan.id} scope="col" className="min-w-36 px-4 py-4 text-center font-semibold text-foreground">{plan.plan_name}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {FEATURE_ROWS.map((row, index) => (
+                    <tr key={row.feature} className={index < FEATURE_ROWS.length - 1 ? 'border-b border-border' : ''}>
+                      <th scope="row" className="sticky left-0 z-10 bg-card px-5 py-4 font-medium text-foreground">{row.feature}</th>
+                      {plans.map(plan => {
+                        const value = row.values[plan.id] ?? false;
+                        return <td key={plan.id} className="px-4 py-4 text-center text-muted-foreground">
+                          {value === true ? <Check aria-label="Included" className="mx-auto h-5 w-5 text-emerald-500" /> : value === false ? <span aria-label="Not included" className="text-muted-foreground/40">—</span> : value}
+                        </td>;
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </section>
 
           <section className="mb-20">

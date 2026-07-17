@@ -219,7 +219,7 @@ export default function AdminStripeDiagnostics() {
   const [priceOrgGrowth,       setPriceOrgGrowth]       = useState('');
   const [priceOrgProfessional, setPriceOrgProfessional] = useState('');
   const [trialEnabled,         setTrialEnabled]         = useState(true);
-  const [trialDays,            setTrialDays]            = useState(14);
+  const [trialDays,            setTrialDays]            = useState(30);
   const [pricesSaving,      setPricesSaving]      = useState(false);
   const [pricesSaved,       setPricesSaved]       = useState('');
   const [pricesError,       setPricesError]       = useState('');

@@ -49,7 +49,7 @@ export async function onRequestGet(context) {
 
   const email = cleanEmail(identity.email);
   const now = new Date();
-  const expires = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+  const expires = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
   const trialId = crypto.randomUUID();
 
   try {
@@ -110,13 +110,13 @@ export async function onRequestGet(context) {
       env.DB.prepare(`INSERT INTO trial_access_tokens (id, email, activated_at, expires_at, token_allowance) VALUES (?, ?, ?, ?, 30)`).bind(
         trialId, email, now.toISOString(), expires.toISOString()
       ),
-      env.DB.prepare(`INSERT INTO builder_token_ledger (id, email, amount, balance_after, source, reason, metadata) VALUES (?, ?, 30, ?, 'trial', 'One-time 14-day trial Builder Usage Tokens', ?)`).bind(
+      env.DB.prepare(`INSERT INTO builder_token_ledger (id, email, amount, balance_after, source, reason, metadata) VALUES (?, ?, 30, ?, 'trial', 'One-time 30-day trial Builder Usage Tokens', ?)`).bind(
         ledgerId, email, balanceAfter, JSON.stringify({ trialId, claim_identifier: trialId })
       ),
       env.DB.prepare(`INSERT INTO customer_timeline_events (id, email, event_type, title, detail, actor_type, actor_email, metadata) VALUES (?, ?, 'trial_activated', 'Free Trial Activated', ?, 'system', 'system', ?)`).bind(
         crypto.randomUUID(),
         email,
-        `Activated 14-day free trial ending ${expires.toLocaleDateString("en-GB")}. Credited 30 Builder Usage Tokens once only.`,
+        `Activated 30-day free trial ending ${expires.toLocaleDateString("en-GB")}. Credited 30 Builder Usage Tokens once only.`,
         JSON.stringify({ trialId, expires_at: expires.toISOString(), tokens_credited: 30 })
       ),
       env.DB.prepare(`INSERT INTO admin_audit_log (id, actor_email, action, entity_type, entity_id, summary, metadata) VALUES (?, ?, ?, 'profiles', ?, ?, ?)`).bind(
@@ -149,7 +149,7 @@ export async function onRequestGet(context) {
       Location: "/account/dashboard/?trial_success=1",
       "Cache-Control": "no-store"
     });
-    headers.append("Set-Cookie", `ja_trial_activated=1; Path=/; Max-Age=1209600; Secure; SameSite=Lax`);
+    headers.append("Set-Cookie", `ja_trial_activated=1; Path=/; Max-Age=2592000; Secure; SameSite=Lax`);
     return new Response(null, { status: 302, headers });
 
   } catch (error) {
