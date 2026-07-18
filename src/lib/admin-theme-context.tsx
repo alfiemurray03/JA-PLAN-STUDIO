@@ -20,6 +20,24 @@ function validTheme(value: unknown): value is AdminTheme {
   return value === 'light' || value === 'dark' || value === 'system';
 }
 
+async function loadSavedTheme(): Promise<AdminTheme | null> {
+  for (const endpoint of ['/api/site-settings/public', '/site-settings']) {
+    try {
+      const response = await fetch(endpoint, { cache: 'no-store', headers: { Accept: 'application/json' } });
+      if (!response.ok) continue;
+      const data = await response.json() as {
+        settings?: Record<string, string>;
+        browser?: { admin_theme_mode?: string };
+      };
+      const saved = data.settings?.admin_theme_mode ?? data.browser?.admin_theme_mode;
+      if (validTheme(saved)) return saved;
+    } catch {
+      // Try the next runtime endpoint.
+    }
+  }
+  return null;
+}
+
 export function AdminThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<AdminTheme>(() => {
     if (typeof window === 'undefined') return 'light';
@@ -41,15 +59,11 @@ export function AdminThemeProvider({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     if (!window.location.pathname.startsWith('/admin')) return;
-    fetch('/api/site-settings/public', { cache: 'no-store', headers: { Accept: 'application/json' } })
-      .then(response => response.json() as Promise<{ settings?: Record<string, string> }>)
-      .then(data => {
-        const saved = data.settings?.admin_theme_mode;
-        if (!validTheme(saved)) return;
-        setThemeState(saved);
-        localStorage.setItem(STORAGE_KEY, saved);
-      })
-      .catch(() => { /* retain the local preference */ });
+    void loadSavedTheme().then(saved => {
+      if (!saved) return;
+      setThemeState(saved);
+      localStorage.setItem(STORAGE_KEY, saved);
+    });
   }, []);
 
   const resolvedTheme: 'light' | 'dark' =
