@@ -77,3 +77,13 @@ test('pricing and builders render separate Individual and Organisation experienc
   assert.match(plans, /Invited users can edit itineraries/);
   assert.match(plans, /personal: false, standard: false, professional: false, org_starter: true/);
 });
+
+test('Together member workspace requires both Organisation identity and Together plan', async () => {
+  const getMembers = await readFile(new URL('src/server/api/org/members/GET.ts', root), 'utf8');
+  const inviteMember = await readFile(new URL('src/server/api/org/members/POST.ts', root), 'utf8');
+  for (const source of [getMembers, inviteMember]) {
+    assert.match(source, /user\.usageType !== 'business'/);
+    assert.match(source, /org_starter/);
+    assert.match(source, /explicitly selected Organisation account/);
+  }
+});
