@@ -3177,8 +3177,9 @@ async function ensureBuilderPlatformTables(DB) {
   await DB.prepare(`CREATE TABLE IF NOT EXISTS manual_token_adjustments (id TEXT PRIMARY KEY, email TEXT NOT NULL, amount INTEGER NOT NULL, reason TEXT NOT NULL, adjustment_type TEXT NOT NULL, admin_email TEXT NOT NULL, ledger_id TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`).run();
 
   const experienceOnlyIds = new Set(["day-trip","family-day-out","school-holiday","occasion","local-discovery","budget-experience","rainy-day","date-night","birthday-plan","travel-itinerary","travel-checklist","destination-board","holiday-planner","accessible-travel-checklist","accessible-destination","accessible-venue-questions"]);
-  const allowedBuilderIds = [...experienceOnlyIds];
-  await DB.prepare(`DELETE FROM experience_builders WHERE id NOT IN (${allowedBuilderIds.map(() => '?').join(',')})`).bind(...allowedBuilderIds).run();
+  // Never prune the shared catalogue from the admin read path. The customer
+  // builder service owns catalogue seeding; admin opening this page previously
+  // deleted every newly published template that was not in this legacy set.
   for (const row of DEFAULT_PLATFORM_BUILDERS.filter(item => experienceOnlyIds.has(item[0]))) {
     const [id, name, builder_type, category, token_cost, plan_inclusion, visibility, description] = row;
     const exists = await DB.prepare(`SELECT id FROM experience_builders WHERE id = ?`).bind(id).first();

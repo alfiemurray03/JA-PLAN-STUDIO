@@ -186,11 +186,20 @@ function publicSubscription(row) {
 
 function publicInvoice(invoice) {
   return {
+    id: invoice.id,
+    number: invoice.number || null,
     reference: invoice.id,
     status: invoice.status || "unknown",
     amountPaid: invoice.amount_paid,
     amountDue: invoice.amount_due,
     currency: invoice.currency || "gbp",
+    created: invoice.created ? Number(invoice.created) : Math.floor(new Date(invoice.updated_at || 0).getTime() / 1000),
+    periodStart: invoice.period_start ? Math.floor(new Date(invoice.period_start).getTime() / 1000) : 0,
+    periodEnd: invoice.period_end ? Math.floor(new Date(invoice.period_end).getTime() / 1000) : 0,
+    pdfUrl: invoice.invoice_pdf || null,
+    hostedUrl: invoice.hosted_invoice_url || null,
+    description: invoice.description || null,
+    lines: [],
     date: invoice.period_end || invoice.updated_at,
     invoiceUrl: invoice.hosted_invoice_url || invoice.invoice_pdf || null
   };
@@ -215,7 +224,7 @@ export async function onRequest({ request, env }) {
     }
 
     if (request.method !== "GET") return json({ error: "Method not allowed." }, 405);
-    if (!profile.stripe_customer_id) return json({ portalAvailable: false, subscription: null, invoices: [] });
+    if (!profile.stripe_customer_id) return json({ success: true, portalAvailable: false, subscription: null, invoices: [] });
 
     const portalAvailable = Boolean(await stripeSecret(env.DB, env));
     if (portalAvailable) await liveBilling(env.DB, env, profile).catch((error) => console.error(JSON.stringify({ event: "stripe_billing_sync_failed", email, message: error.message })));
@@ -223,8 +232,8 @@ export async function onRequest({ request, env }) {
       env.DB.prepare(`SELECT * FROM stripe_subscriptions WHERE customer_id=? ORDER BY updated_at DESC LIMIT 1`).bind(profile.stripe_customer_id).first(),
       all(env.DB, `SELECT * FROM stripe_invoices WHERE customer_id=? ORDER BY COALESCE(period_end, updated_at) DESC LIMIT 10`, [profile.stripe_customer_id])
     ]);
-    return json({ portalAvailable, subscription: publicSubscription(subscription), invoices: invoices.map(publicInvoice) });
+    return json({ success: true, portalAvailable, subscription: publicSubscription(subscription), invoices: invoices.map(publicInvoice) });
   } catch (error) {
-    return json({ error: error.message || "Billing data unavailable." }, 500);
+    return json({ success: false, error: error.message || "Billing data unavailable." }, 500);
   }
 }

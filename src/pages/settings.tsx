@@ -838,7 +838,7 @@ function BillingTab({ plan, planIsLifetime }: { plan: string; planIsLifetime: bo
   const { supportEmail } = useSiteSettings();
 
   useEffect(() => {
-    fetch('/api/stripe/billing-history', { credentials: 'include' })
+    fetch('/account/billing', { credentials: 'include', headers: { Accept: 'application/json' } })
       .then(r => r.json() as Promise<{ success: boolean; invoices?: StripeInvoice[]; error?: string }>)
       .then(d => {
         if (d.success) setInvoices(d.invoices ?? []);
@@ -852,7 +852,7 @@ function BillingTab({ plan, planIsLifetime }: { plan: string; planIsLifetime: bo
     setPortalError('');
     setPortalLoading(true);
     try {
-      const res = await fetch('/api/stripe/portal', {
+      const res = await fetch('/account/billing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

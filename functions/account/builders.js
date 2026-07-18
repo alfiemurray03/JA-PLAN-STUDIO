@@ -45,6 +45,45 @@ export const DEFAULT_BUILDERS = [
   ["accessible-venue-questions", "Venue Accessibility Questions", "Accessible", "Accessible experiences", 10, "standard,professional,org-starter", "paid", "Prepare the right access questions to confirm directly with a venue."]
 ];
 
+// A broad professional catalogue. Templates share the proven guided experience
+// schema, while their audience/category/title/brief make discovery specific and
+// useful. Keeping these definitions deterministic also makes admin controls and
+// customer entitlements operate against stable IDs.
+const CATALOGUE_AUDIENCES = [
+  ["public", "General public", "Individuals & families", "👤"],
+  ["family", "Families", "Individuals & families", "👨‍👩‍👧‍👦"],
+  ["business", "Businesses", "Business travel & events", "💼"],
+  ["school", "Schools", "Education & youth travel", "🏫"],
+  ["college", "Colleges & universities", "Education & youth travel", "🎓"],
+  ["government", "Government teams", "Government & public service", "🏛️"],
+  ["police", "Police services", "Government & public service", "🛡️"],
+  ["charity", "Charities & community groups", "Groups & community", "🤝"],
+  ["accessible", "Accessible travel", "Accessible & inclusive", "♿"],
+  ["senior", "Older travellers", "Accessible & inclusive", "🌿"]
+];
+const CATALOGUE_EXPERIENCES = [
+  ["day-visit", "Day visit", 10], ["multi-day-trip", "Multi-day trip", 25],
+  ["transport-plan", "Transport plan", 15], ["accommodation-plan", "Accommodation plan", 15],
+  ["budget-plan", "Budget and cost plan", 15], ["itinerary", "Detailed itinerary", 25],
+  ["risk-plan", "Risk-aware experience plan", 20], ["access-plan", "Accessibility plan", 15],
+  ["group-visit", "Group visit", 20], ["event-trip", "Event travel plan", 20],
+  ["international", "International trip", 30], ["local-experience", "Local experience", 10],
+  ["wellbeing-break", "Wellbeing break", 15], ["culture-visit", "Culture and heritage visit", 15],
+  ["outdoor-visit", "Outdoor experience", 15], ["food-experience", "Food and dining experience", 10],
+  ["emergency-backup", "Disruption and backup plan", 15], ["sustainable-trip", "Lower-impact travel plan", 15],
+  ["seasonal-trip", "Seasonal experience", 15], ["bespoke-journey", "Bespoke journey", 25]
+];
+for (const [audienceId, audience, category, icon] of CATALOGUE_AUDIENCES) {
+  for (const [typeId, typeName, cost] of CATALOGUE_EXPERIENCES) {
+    const id = `${audienceId}-${typeId}`;
+    if (!DEFAULT_BUILDERS.some(builder => builder[0] === id)) DEFAULT_BUILDERS.push([
+      id, `${audience} — ${typeName}`, audience, category, cost,
+      "personal,standard,professional,org-starter", "paid",
+      `Create a professional ${typeName.toLowerCase()} for ${audience.toLowerCase()}, covering priorities, timings, budget, access needs and practical contingencies.`, icon
+    ]);
+  }
+}
+
 const ADDONS = [
   ["extra-10-tokens", "Extra 10 Builder Usage Tokens", 500, 10, "tokens"],
   ["extra-25-tokens", "Extra 25 Builder Usage Tokens", 1000, 25, "tokens"],
@@ -172,15 +211,19 @@ async function ensureTables(DB) {
 }
 
 async function seedDefaults(DB) {
+  const catalogueVersion = "experience-catalogue-2026-07-18-v1";
+  const seeded = await DB.prepare(`SELECT value FROM site_settings WHERE key='experience_builder_catalogue_version'`).first().catch(() => null);
+  const existingCount = await DB.prepare(`SELECT COUNT(*) AS count FROM experience_builders`).first().catch(() => ({ count: 0 }));
+  if (seeded?.value === catalogueVersion && Number(existingCount?.count || 0) >= DEFAULT_BUILDERS.length) return;
   const allowedIds = DEFAULT_BUILDERS.map(row => row[0]);
   const placeholders = allowedIds.map(() => "?").join(",");
   await DB.prepare(`DELETE FROM experience_builders WHERE id NOT IN (${placeholders})`).bind(...allowedIds).run();
   for (const row of DEFAULT_BUILDERS) {
-    const [id, name, builder_type, category, token_cost, plan_inclusion, visibility, description] = row;
+    const [id, name, builder_type, category, token_cost, plan_inclusion, visibility, description, catalogueIcon] = row;
 
     let form_schema = JSON.stringify(EXPERIENCE_PLANNER_SCHEMA);
     let creates_description = `A structured ${name.toLowerCase()} with activities, timings and practical checks.`;
-    let icon = category === "Trips & holidays" ? '✈️' : category === "Accessible experiences" ? '♿' : '✨';
+    let icon = catalogueIcon || (category === "Trips & holidays" ? '✈️' : category === "Accessible experiences" ? '♿' : '✨');
     let estimated_minutes = builder_type === "Travel" ? 15 : 10;
     let trial_eligible = plan_inclusion.includes("trial") ? 1 : 0;
     let featured = ["day-trip", "family-day-out", "holiday-planner"].includes(id) ? 1 : 0;
@@ -221,6 +264,7 @@ async function seedDefaults(DB) {
   for (const row of ADDONS) {
     await DB.prepare(`INSERT OR IGNORE INTO token_addon_packages (id, name, price_pence, token_amount, package_type) VALUES (?, ?, ?, ?, ?)`).bind(...row).run();
   }
+  await DB.prepare(`INSERT INTO site_settings (key,value,updated_at) VALUES ('experience_builder_catalogue_version',?,CURRENT_TIMESTAMP) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=CURRENT_TIMESTAMP`).bind(catalogueVersion).run().catch(() => {});
 }
 
 async function all(DB, sql, bindings = []) {

@@ -1386,11 +1386,13 @@ export async function onRequest(context) {
       const existing = await getProfile(env.DB, identity, env);
 
       const graphSync = await loadMicrosoftGraphProfile(env.DB, request, env, identity, session, setStage);
-      const graphFields = graphSync.ok && graphSync.profile ? graphProfileFields(graphSync.profile) : null;
-      const differs = graphFields ? graphProfileDiffers(existing, graphFields) : false;
-
       setStage(7, "update D1 profile");
-      await updateGraphProfile(env.DB, identity, graphSync, differs ? graphFields : null);
+      // D1 is authoritative for customer-edited profile fields. Microsoft Graph can
+      // be eventually consistent after PATCH /me; copying an older /me response
+      // back into D1 here made freshly saved names appear to revert. GET records
+      // Graph health only. Sign-in bootstrap and explicit POST keep the stores in
+      // sync without allowing a delayed Graph read to undo a customer change.
+      await updateGraphProfile(env.DB, identity, graphSync, null);
 
       const profile = await getProfile(env.DB, identity, env);
       await ensureStripeCustomer(env.DB, env, identity, profile).catch(() => {});
