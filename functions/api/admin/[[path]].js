@@ -200,6 +200,17 @@ async function patchCustomer(context, identity, email) {
 async function settings(context) {
   const DB = context.env.DB;
   if (context.request.method === "GET") {
+    const stripeDefaults = {
+      stripe_price_personal_override: "price_1TtxPrDZzb3r6Q3cIViE64O4",
+      stripe_price_standard_override: "price_1TtxPyDZzb3r6Q3cg9hcgXeA",
+      stripe_price_professional_override: "price_1TtxQ5DZzb3r6Q3c0XxvHRDY",
+      stripe_price_org_starter_override: "price_1TtxQDDZzb3r6Q3cI8rCEJwJ"
+    };
+    const hasUpdatedAt = await tableHasColumn(DB, "site_settings", "updated_at");
+    const seedSql = hasUpdatedAt
+      ? "INSERT INTO site_settings (key,value,updated_at) VALUES (?,?,CURRENT_TIMESTAMP) ON CONFLICT(key) DO NOTHING"
+      : "INSERT INTO site_settings (key,value) VALUES (?,?) ON CONFLICT(key) DO NOTHING";
+    await DB.batch(Object.entries(stripeDefaults).map(([key, value]) => DB.prepare(seedSql).bind(key, value)));
     const rows = await all(DB, "SELECT key,value FROM site_settings ORDER BY key");
     return json({ success: true, settings: Object.fromEntries(rows.map((row) => [row.key, row.value])), config: Object.fromEntries(rows.map((row) => [row.key, row.value])) });
   }

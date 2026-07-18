@@ -74,6 +74,13 @@ const STRIPE_PRICE_SLOTS = [
   { key: 'org_starter',  configKey: 'stripe_price_org_starter_override',  label: 'Together Plan' },
 ] as const;
 
+const DEFAULT_STRIPE_PRICES: Record<string, string> = {
+  stripe_price_personal_override: 'price_1TtxPrDZzb3r6Q3cIViE64O4',
+  stripe_price_standard_override: 'price_1TtxPyDZzb3r6Q3cg9hcgXeA',
+  stripe_price_professional_override: 'price_1TtxQ5DZzb3r6Q3c0XxvHRDY',
+  stripe_price_org_starter_override: 'price_1TtxQDDZzb3r6Q3cI8rCEJwJ',
+};
+
 type StripePriceKey = typeof STRIPE_PRICE_SLOTS[number]['key'];
 
 interface PriceVerifyResult {
@@ -124,7 +131,7 @@ export default function AdminSystem() {
   const [security, setSecurity]         = useState<Record<string, string>>(DEFAULT_SECURITY);
   const [branding, setBranding]         = useState<Record<string, string>>(DEFAULT_BRANDING);
   const [planLimits, setPlanLimits]     = useState<Record<string, string>>(DEFAULT_PLAN_LIMITS);
-  const [stripePrices, setStripePrices] = useState<Record<string, string>>({});
+  const [stripePrices, setStripePrices] = useState<Record<string, string>>(DEFAULT_STRIPE_PRICES);
   const [stripeStatus, setStripeStatus] = useState<Record<string, unknown> | null>(null);
   const [stripeVerifying, setStripeVerifying] = useState(false);
   const [verifyResults, setVerifyResults]     = useState<Record<string, PriceVerifyResult> | null>(null);
@@ -154,7 +161,7 @@ export default function AdminSystem() {
       for (const slot of STRIPE_PRICE_SLOTS) {
         if (cfg[slot.configKey]) stripeOverrides[slot.configKey] = cfg[slot.configKey];
       }
-      setStripePrices(stripeOverrides);
+      setStripePrices({ ...DEFAULT_STRIPE_PRICES, ...stripeOverrides });
 
       // Toggles
       setToggles(prev => prev.map(t => ({
