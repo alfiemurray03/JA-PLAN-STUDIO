@@ -84,14 +84,12 @@ export async function loadBrowserBranding(): Promise<BrowserBrandingSettings> {
   const cached = getCachedBrowserBranding();
   applyBrowserBranding(cached);
   try {
-    const response = await fetch('/site-settings', { headers: { Accept: 'application/json' }, cache: 'no-store' });
-    const data = await response.json() as {
-      browser?: { tab_name?: string; admin_tab_name?: string; favicon_url?: string };
-    };
+    const response = await fetch('/api/site-settings/public', { headers: { Accept: 'application/json' }, cache: 'no-store' });
+    const data = await response.json() as { success?: boolean; settings?: Record<string, string> };
     const settings = normaliseBrowserBranding({
-      browserTabName: data.browser?.tab_name,
-      adminTabName: data.browser?.admin_tab_name,
-      faviconUrl: data.browser?.favicon_url,
+      browserTabName: data.settings?.browser_tab_name,
+      adminTabName: data.settings?.admin_tab_name,
+      faviconUrl: data.settings?.favicon_url,
     });
     applyBrowserBranding(settings);
     return settings;
