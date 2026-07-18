@@ -369,7 +369,7 @@ export default function HomePage() {
                 </span>
               </h1>
               <p className="text-lg text-foreground/80 leading-relaxed mb-8 max-w-lg font-normal">
-                Use guided builders for day trips, destinations, itineraries, experiences, budgets, accessibility and travel preparation—or choose a supported planning package from our team.
+                Choose from more than 200 guided templates for day trips, destinations, itineraries, business travel, education, public services, budgets, accessibility and travel preparation.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link to="/sign-in">
@@ -481,7 +481,7 @@ export default function HomePage() {
               </div>
               <h3 className="text-foreground font-bold text-xl mb-3">Organisation Planning</h3>
               <p className="text-muted-foreground text-sm leading-relaxed mb-5">
-                A shared planning workspace with managed seats and controlled access. Ideal for businesses, charities, groups and growing teams.
+                A shared planning workspace with managed seats and controlled access for businesses, schools, colleges, universities, charities, government and public-service teams.
               </p>
               <ul className="space-y-2.5">
                 {[
@@ -615,7 +615,7 @@ export default function HomePage() {
           >
             <SectionBadge>Who it's for</SectionBadge>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight">
-              Built for everyday experiences, travel and accessible planning
+              Built for individuals, organisations, education and public services
             </h2>
           </motion.div>
 
@@ -629,6 +629,10 @@ export default function HomePage() {
               { icon: <Briefcase className="w-5 h-5" />,  label: 'Group Organisers' },
               { icon: <Zap className="w-5 h-5" />,        label: 'Day Trips' },
               { icon: <QrCode className="w-5 h-5" />,     label: 'Special Occasions' },
+              { icon: <Building2 className="w-5 h-5" />,  label: 'Businesses' },
+              { icon: <Users className="w-5 h-5" />,      label: 'Schools & Universities' },
+              { icon: <Shield className="w-5 h-5" />,     label: 'Government Teams' },
+              { icon: <Shield className="w-5 h-5" />,     label: 'Police Services' },
             ].map((w, i) => (
               <motion.div
                 key={w.label}
@@ -716,7 +720,7 @@ export default function HomePage() {
                         </ul>
                         <div className="mt-auto pt-1">
                           <a href={href} className="block">
-                            <Button className={`w-full text-sm font-semibold rounded-xl py-2 ${highlighted ? 'bg-white text-blue-600 hover:bg-blue-50 shadow-md' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-sm shadow-blue-600/20'}`}>
+                            <Button className={`w-full text-sm font-semibold rounded-xl py-2 ${highlighted ? 'bg-white text-black hover:bg-blue-50 shadow-md' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-sm shadow-blue-600/20'}`}>
                               {plan.button_label || (plan.price_pence === 0 ? 'Start free enquiry' : 'Choose plan')}
                             </Button>
                           </a>
@@ -757,7 +761,7 @@ export default function HomePage() {
           <div className="space-y-3">
             {[
               { q: 'What is JA Plan Studio?', a: 'JA Plan Studio is a secure guided-planning service for individuals and organisations. It turns clear questions into organised, personalised plans.' },
-              { q: 'Which builders are included?', a: 'Builders cover day trips, family days out, budgets, travel checklists, accessibility, itineraries, occasions, destinations, bookings and holidays, with more being added.' },
+              { q: 'Which builders are included?', a: 'The catalogue contains more than 200 guided templates across personal travel, families, business, education, government, police, community groups, accessibility, destinations, events and contingency planning. Availability follows your subscription.' },
               { q: 'What does the dashboard include?', a: 'Your dashboard brings together planning builders, saved plans, organisation members, account settings and support.' },
               { q: 'Is there a free plan?', a: 'Yes. The Free plan lets you try one guided builder. Paid plans unlock more builders, saved plans and longer retention.' },
               { q: 'Can organisations use JA Plan Studio?', a: 'Yes. Organisation plans provide shared planning, managed seats and central controls for teams and groups.' },

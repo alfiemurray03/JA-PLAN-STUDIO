@@ -418,3 +418,12 @@ html {
 .legal-html-body a { color: hsl(var(--primary)); text-decoration: underline; }
 .legal-html-body table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: .875rem; }
 .legal-html-body th, .legal-html-body td { border: 1px solid hsl(var(--border)); padding: .5rem .75rem; text-align: left; }
+
+/* Light interactive controls must retain readable foregrounds in every theme.
+   Token matching avoids affecting translucent classes such as bg-white/10. */
+:is(button, a, [role="button"])[class~="bg-white"] {
+  color: #020617 !important;
+}
+:is(button, a, [role="button"])[class~="bg-white"] :is(span, svg) {
+  color: currentColor;
+}
