@@ -1,0 +1,241 @@
+/*
+ * Complete JA Plan Studio Admin Portal dark appearance.
+ *
+ * The portal contains a mixture of theme-aware components and older screens
+ * with explicit light utility classes. These scoped rules make the complete
+ * administration surface follow the selected mode without changing customer
+ * pages or the public website.
+ */
+
+#admin-theme-root.dark .admin-portal {
+  --background: 222 47% 6%;
+  --foreground: 210 40% 96%;
+  --card: 222 47% 10%;
+  --card-foreground: 210 40% 96%;
+  --popover: 222 47% 10%;
+  --popover-foreground: 210 40% 96%;
+  --border: 217 33% 22%;
+  --input: 217 33% 18%;
+  --muted: 217 33% 16%;
+  --muted-foreground: 215 20% 68%;
+  min-height: 100vh;
+  background: #020617 !important;
+  color: #e2e8f0 !important;
+  color-scheme: dark;
+}
+
+/* Complete portal shell: canvas, fixed sidebar, top bar and mobile surfaces. */
+#admin-theme-root.dark .admin-portal > aside,
+#admin-theme-root.dark .admin-portal > aside > div,
+#admin-theme-root.dark .admin-portal .relative.w-72.bg-white,
+#admin-theme-root.dark .admin-portal nav.fixed,
+#admin-theme-root.dark .admin-portal .rounded-t-3xl.bg-white {
+  border-color: #1e293b !important;
+  background: #0f172a !important;
+  color: #e2e8f0 !important;
+}
+
+#admin-theme-root.dark .admin-portal > div.flex-1,
+#admin-theme-root.dark .admin-portal main,
+#admin-theme-root.dark .admin-portal main.flex-1 {
+  background: #020617 !important;
+  color: #e2e8f0 !important;
+}
+
+#admin-theme-root.dark .admin-portal header,
+#admin-theme-root.dark .admin-portal header.bg-white\/95 {
+  border-color: #1e293b !important;
+  background: rgb(15 23 42 / 0.96) !important;
+  color: #e2e8f0 !important;
+  box-shadow: 0 1px 0 rgb(51 65 85 / 0.55) !important;
+}
+
+/* Generic light surfaces used across old and new administration pages. */
+#admin-theme-root.dark .admin-portal .bg-white,
+#admin-theme-root.dark .admin-portal .bg-card,
+#admin-theme-root.dark .admin-portal [class~="bg-white/95"],
+#admin-theme-root.dark .admin-portal [class~="bg-white/98"] {
+  background-color: #0f172a !important;
+  color: #e2e8f0 !important;
+}
+
+#admin-theme-root.dark .admin-portal .bg-slate-50,
+#admin-theme-root.dark .admin-portal .bg-gray-50,
+#admin-theme-root.dark .admin-portal .bg-slate-50\/50,
+#admin-theme-root.dark .admin-portal .bg-gray-50\/50 {
+  background-color: #020617 !important;
+  color: #e2e8f0 !important;
+}
+
+#admin-theme-root.dark .admin-portal .bg-slate-100,
+#admin-theme-root.dark .admin-portal .bg-gray-100,
+#admin-theme-root.dark .admin-portal .bg-muted {
+  background-color: #1e293b !important;
+  color: #cbd5e1 !important;
+}
+
+#admin-theme-root.dark .admin-portal .bg-slate-200,
+#admin-theme-root.dark .admin-portal .bg-gray-200 {
+  background-color: #334155 !important;
+}
+
+/* Text tokens, including older hard-coded slate and grey utilities. */
+#admin-theme-root.dark .admin-portal :where(.text-slate-950, .text-slate-900, .text-slate-800, .text-gray-950, .text-gray-900, .text-gray-800) {
+  color: #f8fafc !important;
+}
+
+#admin-theme-root.dark .admin-portal :where(.text-slate-700, .text-slate-600, .text-gray-700, .text-gray-600) {
+  color: #cbd5e1 !important;
+}
+
+#admin-theme-root.dark .admin-portal :where(.text-slate-500, .text-slate-400, .text-gray-500, .text-gray-400) {
+  color: #94a3b8 !important;
+}
+
+#admin-theme-root.dark .admin-portal :where(.text-slate-300, .text-gray-300) {
+  color: #64748b !important;
+}
+
+/* Borders and dividers throughout shell, cards, tabs, forms and tables. */
+#admin-theme-root.dark .admin-portal :where(.border-slate-50, .border-slate-100, .border-slate-200, .border-slate-300, .border-gray-100, .border-gray-200, .border-gray-300, .border-border) {
+  border-color: #334155 !important;
+}
+
+#admin-theme-root.dark .admin-portal :where(hr, [data-orientation="horizontal"]) {
+  border-color: #334155 !important;
+  background-color: #334155 !important;
+}
+
+/* Inputs, selects, textareas and editable controls. */
+#admin-theme-root.dark .admin-portal :where(input, textarea, select, [role="combobox"]) {
+  border-color: #475569 !important;
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  caret-color: #f8fafc;
+}
+
+#admin-theme-root.dark .admin-portal :where(input, textarea)::placeholder {
+  color: #64748b !important;
+  opacity: 1;
+}
+
+#admin-theme-root.dark .admin-portal :where(input, textarea, select, [role="combobox"]):focus {
+  border-color: #60a5fa !important;
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.18) !important;
+}
+
+#admin-theme-root.dark .admin-portal button[class*="border"],
+#admin-theme-root.dark .admin-portal a[class*="border"] {
+  border-color: #475569;
+}
+
+/* Cards, sheets and utility panels not already covered by dark variants. */
+#admin-theme-root.dark .admin-portal main :where(.bg-card.border, .bg-white.border) {
+  border-color: #334155 !important;
+  background: #0f172a !important;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.24), 0 14px 30px -24px rgb(0 0 0 / 0.9) !important;
+}
+
+#admin-theme-root.dark .admin-portal main :where(.rounded-xl.border, .rounded-2xl.border) {
+  border-color: #334155 !important;
+}
+
+/* Administration tables, including sticky headers and action columns. */
+#admin-theme-root.dark .admin-portal main table {
+  border-color: #334155 !important;
+  background: #0f172a !important;
+  color: #e2e8f0 !important;
+}
+
+#admin-theme-root.dark .admin-portal main table thead,
+#admin-theme-root.dark .admin-portal .admin-data-table thead th:last-child {
+  background: #111c30 !important;
+}
+
+#admin-theme-root.dark .admin-portal main table th {
+  border-color: #334155 !important;
+  background: #111c30 !important;
+  color: #94a3b8 !important;
+}
+
+#admin-theme-root.dark .admin-portal main table td {
+  border-color: #1e293b !important;
+  color: #cbd5e1 !important;
+}
+
+#admin-theme-root.dark .admin-portal main table tbody tr,
+#admin-theme-root.dark .admin-portal main table tbody tr:nth-child(even) {
+  background: #0f172a !important;
+}
+
+#admin-theme-root.dark .admin-portal main table tbody tr:nth-child(even) {
+  background: #111c30 !important;
+}
+
+#admin-theme-root.dark .admin-portal main table tbody tr:hover {
+  background: #1e293b !important;
+}
+
+#admin-theme-root.dark .admin-portal .admin-data-table th:last-child,
+#admin-theme-root.dark .admin-portal .admin-data-table td:last-child {
+  box-shadow: -8px 0 16px -14px rgb(0 0 0 / 0.95) !important;
+}
+
+#admin-theme-root.dark .admin-table-scroll,
+#admin-theme-root.dark .admin-portal main :where(.overflow-x-auto, .overflow-auto) {
+  scrollbar-color: #475569 #0f172a;
+}
+
+#admin-theme-root.dark .admin-table-scroll::-webkit-scrollbar-track,
+#admin-theme-root.dark .admin-portal main :where(.overflow-x-auto, .overflow-auto)::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+
+#admin-theme-root.dark .admin-table-scroll::-webkit-scrollbar-thumb,
+#admin-theme-root.dark .admin-portal main :where(.overflow-x-auto, .overflow-auto)::-webkit-scrollbar-thumb {
+  border-color: #0f172a;
+  background: #475569;
+}
+
+/* Tabs and inactive navigation controls. */
+#admin-theme-root.dark .admin-portal [role="tablist"] {
+  border-color: #334155 !important;
+  background: #1e293b !important;
+}
+
+#admin-theme-root.dark .admin-portal [role="tab"][data-state="active"] {
+  background: #334155 !important;
+  color: #f8fafc !important;
+}
+
+#admin-theme-root.dark .admin-portal nav a:not(.bg-primary):hover,
+#admin-theme-root.dark .admin-portal nav button:hover {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+/* Radix dialogs, sheets, popovers and dropdowns rendered beneath the admin root. */
+#admin-theme-root.dark :where([role="dialog"], [role="menu"], [role="listbox"], [data-radix-popper-content-wrapper] > div) {
+  border-color: #334155 !important;
+  background-color: #0f172a !important;
+  color: #e2e8f0 !important;
+}
+
+#admin-theme-root.dark :where([role="menuitem"], [role="option"]):focus,
+#admin-theme-root.dark :where([role="menuitem"], [role="option"]):hover {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+/* Ensure the loading shell also follows the saved Admin appearance. */
+#admin-theme-root.dark .admin-portal-loading,
+#admin-theme-root.dark .admin-portal-loading.bg-slate-50 {
+  background: #020617 !important;
+  color: #94a3b8 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #admin-theme-root.dark .admin-portal * {
+    transition-duration: 0.01ms !important;
+  }
+}
