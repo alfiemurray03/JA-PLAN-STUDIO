@@ -254,7 +254,10 @@ export default function HomePage() {
       .then(data => {
         if (!Array.isArray(data.plans)) return;
         const recognised = new Set(JA_PLAN_STUDIO_SUBSCRIPTIONS.map(plan => plan.id));
-        const currentPlans = data.plans.filter((plan: ApiPlan) => recognised.has(plan.id));
+        const currentPlans = data.plans.filter((plan: ApiPlan) => recognised.has(plan.id)).map((plan: ApiPlan) => {
+          const defaults = JA_PLAN_STUDIO_SUBSCRIPTIONS.find(item => item.id === plan.id)!;
+          return { ...defaults, ...plan, included_features: defaults.included_features };
+        });
         if (currentPlans.length) setPlans(currentPlans);
       })
       .catch(() => {})
@@ -707,12 +710,10 @@ export default function HomePage() {
                         </div>
 
                         <p className={`text-xs leading-relaxed ${highlighted ? 'text-blue-100' : 'text-muted-foreground'}`}>{plan.description}</p>
-                        <div className={`rounded-lg px-3 py-2 text-xs font-semibold ${highlighted ? 'bg-white/15 text-white' : 'bg-primary/8 text-primary border border-primary/20'}`}>
-                          {plan.delivery_time}
-                        </div>
-                        <div className={`flex items-start gap-1.5 text-xs ${highlighted ? 'text-blue-100' : 'text-muted-foreground'}`}>
-                          <Check className="w-3.5 h-3.5 mt-0.5 shrink-0" /> {plan.revisions}
-                        </div>
+                        <p className={`text-[10px] font-bold uppercase tracking-wide ${highlighted ? 'text-white' : 'text-foreground'}`}>Included</p>
+                        <ul className="space-y-2">
+                          {plan.included_features.map(feature => <li key={feature} className={`flex items-start gap-1.5 text-xs ${highlighted ? 'text-blue-50' : 'text-muted-foreground'}`}><Check className="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-400" />{feature}</li>)}
+                        </ul>
                         <div className="mt-auto pt-1">
                           <a href={href} className="block">
                             <Button className={`w-full text-sm font-semibold rounded-xl py-2 ${highlighted ? 'bg-white text-blue-600 hover:bg-blue-50 shadow-md' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-sm shadow-blue-600/20'}`}>

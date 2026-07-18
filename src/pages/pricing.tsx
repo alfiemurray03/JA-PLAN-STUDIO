@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Helmet } from '@dr.pogodin/react-helmet';
-import { ArrowRight, Check, ChevronDown, ChevronUp, Compass, RefreshCw, Route, Sparkles } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, ChevronUp, Compass, Route, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
-import { JA_PLAN_STUDIO_SUBSCRIPTIONS, type ServicePlan } from '@/lib/service-plans';
+import { JA_PLAN_STUDIO_SUBSCRIPTIONS, PLAN_FEATURE_COMPARISON, type ServicePlan } from '@/lib/service-plans';
 
 const FAQS = [
   { q: 'Are these subscriptions?', a: 'Yes. Explore, Plan, Complete and Together are monthly subscriptions. You can manage your subscription from your JA Plan Studio account.' },
@@ -13,18 +13,6 @@ const FAQS = [
   { q: 'What does JA Plan Studio help me build?', a: 'Depending on the package, we help structure destination ideas, itinerary and experience planning, practical checks, priorities and next steps into a clear personalised plan.' },
   { q: 'Which subscription should I choose?', a: 'Explore is the simplest starting point, Plan adds more planning tools, Complete provides full individual access, and Together is designed for shared household, family and group planning.' },
   { q: 'Does JA Plan Studio make bookings?', a: 'No. JA Plan Studio provides discovery and planning guidance. Third-party bookings, prices, availability, refunds and provider terms remain between you and the relevant provider.' },
-];
-
-const FEATURE_ROWS: Array<{ feature: string; values: Record<string, string | boolean> }> = [
-  { feature: '30-day free trial', values: { personal: true, standard: true, professional: true, org_starter: true } },
-  { feature: 'Destination and activity discovery', values: { personal: true, standard: true, professional: true, org_starter: true } },
-  { feature: 'Guided experience-planning builders', values: { personal: 'Essential', standard: 'Expanded', professional: 'Full access', org_starter: 'Full access' } },
-  { feature: 'Saved plans', values: { personal: 'Up to 3', standard: 'Up to 5', professional: 'Up to 10', org_starter: 'Up to 10 shared' } },
-  { feature: 'Saved-plan retention', values: { personal: '14 days', standard: '14 days', professional: '30 days', org_starter: '30 days' } },
-  { feature: 'Download finished plans', values: { personal: false, standard: true, professional: true, org_starter: true } },
-  { feature: 'Enhanced planning and outputs', values: { personal: false, standard: false, professional: true, org_starter: true } },
-  { feature: 'Included users', values: { personal: '1', standard: '1', professional: '1', org_starter: '2' } },
-  { feature: 'Shared household, family or group planning', values: { personal: false, standard: false, professional: false, org_starter: true } },
 ];
 
 function PlanCard({ plan }: { plan: ServicePlan }) {
@@ -39,10 +27,9 @@ function PlanCard({ plan }: { plan: ServicePlan }) {
       <p className="mt-2 text-xs font-semibold text-emerald-600">30-day free trial</p>
       <div className="my-5 flex items-end gap-1"><span className="text-4xl font-extrabold text-foreground">{plan.price_label}</span><span className="pb-1 text-sm text-muted-foreground">/month</span></div>
       <p className="mb-5 text-sm leading-relaxed text-muted-foreground">{plan.description}</p>
+      <p className="mb-3 text-xs font-bold uppercase tracking-wide text-foreground">Included</p>
       <ul className="mb-6 space-y-3 text-sm text-foreground">
-        <li className="flex items-start gap-2"><RefreshCw className="mt-0.5 h-4 w-4 shrink-0 text-primary" /><span>{plan.delivery_time}</span></li>
-        <li className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" /><span>{plan.revisions}</span></li>
-        <li className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" /><span>Personalised JA Plan Studio planning output</span></li>
+        {plan.included_features.map(feature => <li key={feature} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" /><span>{feature}</span></li>)}
       </ul>
       <a href={href} className="mt-auto block">
         <Button className="w-full gap-2">{plan.button_label || 'Choose this subscription'} <ArrowRight className="h-4 w-4" /></Button>
@@ -63,7 +50,10 @@ export default function PricingPage() {
       .then(data => {
         if (!Array.isArray(data.plans)) return;
         const recognised = new Set(JA_PLAN_STUDIO_SUBSCRIPTIONS.map(plan => plan.id));
-        const current = data.plans.filter((plan: ServicePlan) => recognised.has(plan.id));
+        const current = data.plans.filter((plan: ServicePlan) => recognised.has(plan.id)).map((plan: ServicePlan) => {
+          const defaults = JA_PLAN_STUDIO_SUBSCRIPTIONS.find(item => item.id === plan.id)!;
+          return { ...defaults, ...plan, included_features: defaults.included_features };
+        });
         if (current.length) setPlans(current);
       })
       .catch(() => {});
@@ -110,8 +100,8 @@ export default function PricingPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {FEATURE_ROWS.map((row, index) => (
-                    <tr key={row.feature} className={index < FEATURE_ROWS.length - 1 ? 'border-b border-border' : ''}>
+                  {PLAN_FEATURE_COMPARISON.map((row, index) => (
+                    <tr key={row.feature} className={index < PLAN_FEATURE_COMPARISON.length - 1 ? 'border-b border-border' : ''}>
                       <th scope="row" className="sticky left-0 z-10 bg-card px-5 py-4 font-medium text-foreground">{row.feature}</th>
                       {plans.map(plan => {
                         const value = row.values[plan.id] ?? false;

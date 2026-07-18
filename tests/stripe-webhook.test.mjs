@@ -5,8 +5,9 @@ import test from "node:test";
 import { onRequestPost } from "../functions/stripe-webhook.js";
 
 class FakeDB {
-  constructor(secret = "whsec_test") {
+  constructor(secret = "whsec_test", checkout = null) {
     this.secret = secret;
+    this.checkout = checkout;
     this.statements = [];
   }
 
@@ -33,6 +34,7 @@ class FakeDB {
   async first(entry) {
     if (entry.sql.includes("stripe_webhook_signing_secret")) return { value: this.secret };
     if (entry.sql.includes("stripe_webhook_events")) return null;
+    if (entry.sql.includes("FROM stripe_checkout_sessions")) return this.checkout;
     return null;
   }
 
@@ -96,4 +98,28 @@ test("persists every required subscription and invoice lifecycle event", async (
     assert.equal(response.status, 200);
     assert.equal(DB.statements.some(({ sql }) => sql.includes(`INSERT INTO ${target}`)), true);
   }
+});
+
+test("subscription events inherit customer email and canonical entitlement code from checkout", async () => {
+  const DB = new FakeDB("whsec_test", { customer_email: "customer@example.test", plan_code: "Together Plan", plan_name: "Together Plan" });
+  const response = await onRequestPost({
+    request: signedRequest({
+      id: "evt_subscription_entitlement",
+      type: "customer.subscription.created",
+      data: {
+        object: {
+          id: "sub_together",
+          customer: "cus_together",
+          status: "trialing",
+          items: { data: [{ price: { id: "price_together", recurring: { interval: "month" } } }] }
+        }
+      }
+    }),
+    env: { DB }
+  });
+  assert.equal(response.status, 200);
+  const insert = DB.statements.find(({ sql }) => sql.includes("INSERT INTO stripe_subscriptions"));
+  assert.equal(insert.bindings[2], "customer@example.test");
+  assert.equal(insert.bindings[3], "org_starter");
+  assert.equal(insert.bindings[4], "Together Plan");
 });

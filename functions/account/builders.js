@@ -1,3 +1,5 @@
+import { normalisePlanCode, planEntitlements } from "../_shared/subscription-entitlements.js";
+
 function json(data, status = 200) {
   return new Response(JSON.stringify(data, null, 2), {
     status,
@@ -277,11 +279,38 @@ async function tokenSummary(DB, email) {
     subscription: subscription || null,
     subscription_active: activePlan,
     plan_active: Boolean(activeTrial || activePlan),
-    plan_name: activeTrial ? "14-Day Free Trial" : activePlan ? (subscription.plan_name || "Active membership") : "No active self-service plan detected",
+    plan_name: activeTrial ? "30-Day Free Trial" : activePlan ? (subscription.plan_name || "Active membership") : "No active self-service plan detected",
     deduction_rule: activePlan
       ? "Paid plans include unlimited use of the builders available on that plan. No credits are required or deducted."
       : "Free-plan credits are deducted only when a finished builder output is saved. Opening or previewing a builder does not use credits."
   };
+}
+
+function accessPlanCode(summary) {
+  return summary.trial_active
+    ? "trial"
+    : normalisePlanCode(summary.subscription?.plan_code || summary.subscription?.plan_name);
+}
+
+function builderIncluded(builder, planCode) {
+  const included = String(builder?.plan_inclusion || "").toLowerCase().split(",").map((item) => item.trim()).filter(Boolean);
+  const acceptedTags = {
+    trial: ["trial"],
+    personal: ["personal", "membership"],
+    standard: ["standard", "membership", "plus"],
+    professional: ["professional", "membership", "plus"],
+    org_starter: ["org_starter", "org-starter", "membership", "plus", "family"]
+  }[planCode] || [planCode];
+  return included.length === 0 || acceptedTags.some((tag) => included.includes(tag));
+}
+
+async function removeExpiredDrafts(DB, email, retentionDays) {
+  if (!retentionDays) return;
+  await DB.prepare(`
+    DELETE FROM builder_runs
+    WHERE lower(email) = lower(?) AND status = 'draft'
+      AND datetime(last_saved_at) <= datetime('now', ?)
+  `).bind(email, `-${retentionDays} days`).run();
 }
 
 export function outputFromInput(builder, body) {
@@ -426,16 +455,18 @@ export async function onRequest(context) {
   }
 
   if (request.method === "GET") {
-    const [builders, outputs, ledger, attempts, packages, summary, runs] = await Promise.all([
+    const summary = await tokenSummary(env.DB, identity.email);
+    const entitlement = planEntitlements(accessPlanCode(summary));
+    if (entitlement) await removeExpiredDrafts(env.DB, identity.email, entitlement.retentionDays);
+    const [builders, outputs, ledger, attempts, packages, runs] = await Promise.all([
       all(env.DB, `SELECT * FROM experience_builders WHERE COALESCE(status, 'Active') != 'Archived' ORDER BY display_order ASC, category, token_cost, name`),
       all(env.DB, `SELECT * FROM builder_outputs WHERE lower(email) = lower(?) AND archived_at IS NULL ORDER BY created_at DESC LIMIT 100`, [identity.email]),
       all(env.DB, `SELECT * FROM builder_token_ledger WHERE lower(email) = lower(?) ORDER BY created_at DESC LIMIT 100`, [identity.email]),
       all(env.DB, `SELECT * FROM builder_blocked_attempts WHERE lower(email) = lower(?) ORDER BY created_at DESC LIMIT 50`, [identity.email]),
       all(env.DB, `SELECT * FROM token_addon_packages ORDER BY package_type DESC, price_pence ASC`),
-      tokenSummary(env.DB, identity.email),
       all(env.DB, `SELECT r.*, eb.name AS builder_name, eb.icon AS builder_icon FROM builder_runs r JOIN experience_builders eb ON r.builder_id = eb.id WHERE lower(r.email) = lower(?) AND r.status = 'draft' ORDER BY r.last_saved_at DESC`, [identity.email])
     ]);
-    return json({ builders, outputs, ledger, blocked_attempts: attempts, add_on_packages: packages, token_summary: summary, drafts: runs });
+    return json({ builders, outputs, ledger, blocked_attempts: attempts, add_on_packages: packages, token_summary: summary, drafts: runs, entitlements: entitlement });
   }
 
   if (request.method !== "POST") return json({ error: "Method not allowed." }, 405);
@@ -469,6 +500,14 @@ export async function onRequest(context) {
 
   if (action === "save_draft") {
     const builderId = clean(body.builder_id, 120);
+    const builder = await first(env.DB, `SELECT * FROM experience_builders WHERE id = ?`, [builderId]);
+    if (!builder) return json({ error: "Builder not found." }, 404);
+    const summary = await tokenSummary(env.DB, identity.email);
+    if (!summary.plan_active) return json({ error: "An active trial or paid subscription is required to save a draft." }, 402);
+    const planCode = accessPlanCode(summary);
+    const entitlement = planEntitlements(planCode);
+    if (!entitlement || !builderIncluded(builder, planCode)) return json({ error: "This builder is not included in your current plan." }, 403);
+    await removeExpiredDrafts(env.DB, identity.email, entitlement.retentionDays);
     const answers = typeof body.answers === "string" ? body.answers : JSON.stringify(body.answers || {});
     const currentStep = Number(body.current_step || 0);
 
@@ -477,6 +516,10 @@ export async function onRequest(context) {
       await env.DB.prepare(`UPDATE builder_runs SET answers = ?, current_step = ?, last_saved_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(answers, currentStep, existing.id).run();
       return json({ saved: true, id: existing.id });
     } else {
+      const count = await first(env.DB, `SELECT COUNT(*) AS count FROM builder_runs WHERE lower(email) = lower(?) AND status = 'draft'`, [identity.email]);
+      if (Number(count?.count || 0) >= entitlement.draftLimit) {
+        return json({ error: `Your plan includes up to ${entitlement.draftLimit} saved drafts. Delete an existing draft or upgrade to save another.`, code: "DRAFT_LIMIT_REACHED", entitlements: entitlement }, 409);
+      }
       const newId = crypto.randomUUID();
       await env.DB.prepare(`INSERT INTO builder_runs (id, email, builder_id, answers, current_step, status, started_at, last_saved_at) VALUES (?, ?, ?, ?, ?, 'draft', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`).bind(newId, identity.email, builderId, answers, currentStep).run();
       return json({ saved: true, id: newId });
@@ -508,16 +551,8 @@ export async function onRequest(context) {
       await blockAttempt(env.DB, identity.email, builder, "No active paid subscription or active trial.", summary.remaining_tokens, Number(builder.token_cost || 0));
       return json({ error: "An active trial or paid subscription is required before completing this builder.", token_summary: summary }, 402);
     }
-    const accessCode = summary.trial_active ? "trial" : clean(summary.subscription?.plan_code || summary.subscription?.plan_name, 80).toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    const includedPlans = String(builder.plan_inclusion || "").toLowerCase().split(",").map((item) => item.trim()).filter(Boolean);
-    const currentPlanAliases = {
-      explore: ["explore", "trial"],
-      plan: ["plan", "personal"],
-      complete: ["complete", "standard"],
-      together: ["together", "professional", "org-starter"]
-    };
-    const accessCodes = currentPlanAliases[accessCode] || [accessCode];
-    if (includedPlans.length && !includedPlans.some((plan) => accessCodes.some(code => code === plan || code.includes(plan)))) {
+    const accessCode = accessPlanCode(summary);
+    if (!builderIncluded(builder, accessCode)) {
       await blockAttempt(env.DB, identity.email, builder, "Builder is not included in the active plan.", summary.remaining_tokens, Number(builder.token_cost || 0));
       return json({ error: "This builder is not included in your current plan.", token_summary: summary }, 403);
     }
