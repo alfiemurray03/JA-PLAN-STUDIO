@@ -38,7 +38,7 @@ const CardTitle = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "min-w-0 break-words text-2xl font-semibold leading-none tracking-tight",
+      "min-w-0 break-words text-2xl font-semibold leading-tight tracking-tight",
       className
     )}
     data-slot="card-title"
