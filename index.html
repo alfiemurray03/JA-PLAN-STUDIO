@@ -2,6 +2,17 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <title>JA Plan Studio</title>
+    <script>
+      (function () {
+        try {
+          var path = window.location.pathname.replace(/\/+$/, '') || '/';
+          if (path === '/admin' || path.indexOf('/admin/') === 0) {
+            document.title = 'JA Plan Studio Admin Portal';
+          }
+        } catch (e) {}
+      })();
+    </script>
     <script>
       (function () {
         try {
