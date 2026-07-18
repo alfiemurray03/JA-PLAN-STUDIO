@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFile } from "node:fs/promises";
 import { onRequest } from "../functions/account/profile.js";
 
 const profileColumns = [
@@ -268,4 +269,11 @@ test("POST /account/profile updates ordinary details without resetting consent a
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test("profile UPSERT gives customer-edited names precedence over existing identity values", async () => {
+  const source = await readFile(new URL("../functions/account/profile.js", import.meta.url), "utf8");
+  assert.match(source, /microsoft_given_name = COALESCE\(NULLIF\(excluded\.microsoft_given_name, ''\), profiles\.microsoft_given_name\)/);
+  assert.match(source, /microsoft_family_name = COALESCE\(NULLIF\(excluded\.microsoft_family_name, ''\), profiles\.microsoft_family_name\)/);
+  assert.doesNotMatch(source, /microsoft_given_name = COALESCE\(profiles\.microsoft_given_name, excluded\.microsoft_given_name\)/);
 });
