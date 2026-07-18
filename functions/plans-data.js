@@ -1,8 +1,8 @@
 const DEFAULT_PLANS = [
-  ["personal", "Explore Plan", "Monthly subscription", "£5.99", 599, "", "", "Essential planning builders", "Save and revisit your plans", "A simple starting point for exploring ideas and building clear, practical plans.", "Start 30-day free trial", 1, 0, 10],
-  ["standard", "Plan Plan", "Monthly subscription", "£7.99", 799, "", "", "More builders and planning tools", "Download your finished plans", "For regularly creating detailed destination, itinerary, experience and everyday plans.", "Start 30-day free trial", 1, 1, 20],
-  ["professional", "Complete Plan", "Monthly subscription", "£14.99", 1499, "", "", "Full planning-builder access", "Enhanced planning and outputs", "Complete access for building and managing more comprehensive personalised plans.", "Start 30-day free trial", 1, 0, 30],
-  ["org_starter", "Together Plan", "Monthly subscription", "£39.99", 3999, "", "", "Shared planning for groups", "All builders and collaborative tools", "Shared planning for households, families and groups who want to build plans together.", "Start 30-day free trial", 1, 0, 40]
+  ["personal", "Explore Plan", "Monthly subscription", "£5.99", 599, "prod_UtkvP5dvxrwLNa", "price_1TtxPrDZzb3r6Q3cIViE64O4", "Essential planning builders", "Save and revisit your plans", "A simple starting point for exploring ideas and building clear, practical plans.", "Start 30-day free trial", 1, 0, 10],
+  ["standard", "Plan Plan", "Monthly subscription", "£7.99", 799, "prod_UtkvpswzvV53y7", "price_1TtxPyDZzb3r6Q3cg9hcgXeA", "More builders and planning tools", "Download your finished plans", "For regularly creating detailed destination, itinerary, experience and everyday plans.", "Start 30-day free trial", 1, 1, 20],
+  ["professional", "Complete Plan", "Monthly subscription", "£14.99", 1499, "prod_Utkv85XaRxReja", "price_1TtxQ5DZzb3r6Q3c0XxvHRDY", "Full planning-builder access", "Enhanced planning and outputs", "Complete access for building and managing more comprehensive personalised plans.", "Start 30-day free trial", 1, 0, 30],
+  ["org_starter", "Together Plan", "Monthly subscription", "£39.99", 3999, "prod_Utkwas33GBC6Yn", "price_1TtxQDDZzb3r6Q3cI8rCEJwJ", "Shared planning for groups", "All builders and collaborative tools", "Shared planning for households, families and groups who want to build plans together.", "Start 30-day free trial", 1, 0, 40]
 ];
 
 export async function onRequestGet(context) {
@@ -85,6 +85,8 @@ async function syncServicePlans(DB) {
         plan_type = excluded.plan_type,
         price_label = excluded.price_label,
         price_pence = excluded.price_pence,
+        stripe_product_id = CASE WHEN COALESCE(service_plans.stripe_product_id, '') = '' THEN excluded.stripe_product_id ELSE service_plans.stripe_product_id END,
+        stripe_price_id = CASE WHEN COALESCE(service_plans.stripe_price_id, '') = '' THEN excluded.stripe_price_id ELSE service_plans.stripe_price_id END,
         delivery_time = excluded.delivery_time,
         revisions = excluded.revisions,
         description = excluded.description,
