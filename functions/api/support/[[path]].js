@@ -89,6 +89,11 @@ async function submitChatEnquiry(context, identity) {
 
   await ensureEnquiryTables(env.DB);
   const result = await storeEnquiry(env.DB, enquiry, request);
+  await env.DB.prepare(`UPDATE enquiries
+    SET form_type = 'Support Chat', enquiry_type = 'Support Chat',
+      category = COALESCE(NULLIF(category, ''), 'Technical Support'), updated_at = CURRENT_TIMESTAMP
+    WHERE reference = ?`).bind(result.reference).run();
+
   if (!result.duplicate) {
     await recordEnquiryConsent(env.DB, enquiry, request, result.reference);
     const notificationWork = sendNewEnquiryNotifications(env.DB, env, result.reference).catch((error) => {
