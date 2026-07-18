@@ -57,32 +57,41 @@ function updateIconLinks(url: string) {
     const link = document.createElement('link');
     link.rel = 'icon';
     link.dataset.jaManagedFavicon = 'true';
+    link.href = url;
     document.head.appendChild(link);
-    links.push(link);
+    return;
   }
-  for (const link of links) link.href = url;
+
+  const resolvedUrl = new URL(url, window.location.href).href;
+  for (const link of links) {
+    if (link.href !== resolvedUrl) link.href = url;
+  }
 }
 
 function updateTitle(settings: BrowserBrandingSettings, previous: BrowserBrandingSettings) {
   const admin = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin/');
   const configuredName = admin ? settings.adminTabName : settings.browserTabName;
   const current = String(document.title || '').trim();
+  let next = current;
 
   if (!current || current === window.location.hostname || current === window.location.href) {
-    document.title = configuredName;
-    return;
+    next = configuredName;
+  } else {
+    const knownNames = Array.from(new Set([
+      DEFAULTS.browserTabName,
+      DEFAULTS.adminTabName,
+      previous.browserTabName,
+      previous.adminTabName,
+      activeSettings.browserTabName,
+      activeSettings.adminTabName,
+    ].filter(Boolean))).sort((a, b) => b.length - a.length);
+    const pattern = new RegExp(knownNames.map(escapeRegExp).join('|'), 'gi');
+    next = pattern.test(current) ? current.replace(pattern, configuredName) : current;
   }
 
-  const knownNames = Array.from(new Set([
-    DEFAULTS.browserTabName,
-    DEFAULTS.adminTabName,
-    previous.browserTabName,
-    previous.adminTabName,
-    activeSettings.browserTabName,
-    activeSettings.adminTabName,
-  ].filter(Boolean))).sort((a, b) => b.length - a.length);
-  const pattern = new RegExp(knownNames.map(escapeRegExp).join('|'), 'gi');
-  document.title = pattern.test(current) ? current.replace(pattern, configuredName) : current;
+  // Reassigning the same title triggers the head MutationObserver again in
+  // some browsers. Only mutate the DOM when the visible value really changes.
+  if (next !== current) document.title = next;
 }
 
 export function applyBrowserBranding(value: Partial<BrowserBrandingSettings>) {
