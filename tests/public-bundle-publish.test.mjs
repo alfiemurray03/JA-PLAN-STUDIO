@@ -20,6 +20,12 @@ test('compiled public bundle includes Standard and Business plan catalogue text'
   assert.match(compiled, /Standard Plans/);
   assert.match(compiled, /Business Plans/);
   assert.match(compiled, /accountType=/);
+
+  const index = await source('public/index.html');
+  assert.doesNotMatch(index, /index-BRiwnWAa\.js/);
+  assert.match(files.join('\n'), /StandardBusinessPlans-/);
+  assert.match(files.join('\n'), /home-/);
+  assert.match(files.join('\n'), /plans-/);
 });
 
 test('publish workflow builds, verifies and commits the public directory', async () => {
@@ -28,5 +34,6 @@ test('publish workflow builds, verifies and commits the public directory', async
   assert.match(workflow, /Verify Standard and Business plans are compiled/);
   assert.match(workflow, /git add -A public/);
   assert.match(workflow, /github-actions\[bot\]/);
-  assert.match(workflow, /git push origin HEAD:main/);
+  assert.match(workflow, /GITHUB_REF_NAME/);
+  assert.match(workflow, /'agent\/\*\*'/);
 });
