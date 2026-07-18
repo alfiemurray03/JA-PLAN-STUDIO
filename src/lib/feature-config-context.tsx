@@ -1,10 +1,7 @@
 /**
  * FeatureConfigContext
  * Loads public feature toggles + accessibility settings from /api/system-config/public.
- * Provides useFeatureConfig() hook throughout the app.
- *
- * Defaults: all features enabled, maintenance off — so the app works even
- * if the API call fails (e.g. DB not ready yet).
+ * Provides useFeatureConfig() throughout the customer application.
  */
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
@@ -17,7 +14,6 @@ export interface FeatureConfig {
   maintenance:     boolean;
   payments:        boolean;
 
-  // Accessibility bubble
   a11y_enabled:        boolean;
   a11y_position:       'bottom-right' | 'bottom-left';
   a11y_feat_font_size: boolean;
@@ -35,7 +31,7 @@ const DEFAULTS: FeatureConfig = {
   new_templates:   true,
   usage_analytics: true,
   maintenance:     false,
-  payments:        false, // OFF by default — admin must explicitly enable
+  payments:        false,
 
   a11y_enabled:        true,
   a11y_position:       'bottom-right',
@@ -64,23 +60,35 @@ export function FeatureConfigProvider({ children }: { children: React.ReactNode 
   const [isLoading, setIsLoading] = useState(true);
 
   const refresh = useCallback(async () => {
+    setIsLoading(true);
     try {
-      const res = await fetch('/api/system-config/public');
-      if (!res.ok) return;
+      const res = await fetch('/api/system-config/public', {
+        cache: 'no-store',
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) throw new Error(`Feature configuration returned ${res.status}.`);
       const data = await res.json() as { success: boolean; config?: Partial<FeatureConfig> };
-      if (data.success && data.config) {
-        setConfig({ ...DEFAULTS, ...data.config });
-      }
-    } catch {
-      // Fail silently — defaults remain active
+      if (!data.success || !data.config) throw new Error('Feature configuration response was incomplete.');
+      setConfig({ ...DEFAULTS, ...data.config });
+    } catch (error) {
+      console.warn('feature-config.refresh', error);
+      // Safe defaults deliberately keep new payment collection disabled.
+      setConfig(DEFAULTS);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    refresh();
+    void refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    document.documentElement.dataset.paymentsEnabled = isLoading
+      ? 'loading'
+      : config.payments ? 'true' : 'false';
+  }, [config.payments, isLoading]);
 
   return (
     <FeatureConfigContext.Provider value={{ config, isLoading, refresh }}>

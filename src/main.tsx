@@ -4,6 +4,7 @@ import { HelmetProvider } from '@dr.pogodin/react-helmet';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
 import './styles/globals.css';
+import './styles/admin-polish.css';
 import './styles/pdf-document.css';
 
 if (import.meta.env.MODE === 'development') {

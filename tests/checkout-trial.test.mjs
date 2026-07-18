@@ -39,7 +39,11 @@ test('admin Stripe price override is used by the live Explore checkout', async (
   try {
     const response = await onRequestGet({
       request: new Request('https://japlanstudio.example/create-checkout-session?plan=personal'),
-      env: { DB: database({ stripe_price_personal_override: 'price_admin_explore' }), STRIPE_SECRET_KEY: 'sk_test', STRIPE_PRICE_EXPLORE: 'price_secret_explore' },
+      env: {
+        DB: database({ toggle_payments: 'true', stripe_price_personal_override: 'price_admin_explore' }),
+        STRIPE_SECRET_KEY: 'sk_test',
+        STRIPE_PRICE_EXPLORE: 'price_secret_explore',
+      },
     });
     assert.equal(response.status, 303);
     assert.equal(new URLSearchParams(checkoutBody).get('line_items[0][price]'), 'price_admin_explore');
@@ -59,7 +63,11 @@ for (const plan of Object.keys(PLAN_DETAILS)) {
     try {
       const response = await onRequestGet({
         request: new Request(`https://japlanstudio.example/create-checkout-session?plan=${plan}`),
-        env: { DB: database(), STRIPE_SECRET_KEY: 'sk_test', [`STRIPE_PRICE_${plan === 'personal' ? 'EXPLORE' : plan === 'standard' ? 'PLAN' : plan === 'professional' ? 'COMPLETE' : 'TOGETHER'}`]: `price_${plan}` },
+        env: {
+          DB: database({ toggle_payments: 'true' }),
+          STRIPE_SECRET_KEY: 'sk_test',
+          [`STRIPE_PRICE_${plan === 'personal' ? 'EXPLORE' : plan === 'standard' ? 'PLAN' : plan === 'professional' ? 'COMPLETE' : 'TOGETHER'}`]: `price_${plan}`,
+        },
       });
       assert.equal(response.status, 303);
       const params = new URLSearchParams(checkoutBody);

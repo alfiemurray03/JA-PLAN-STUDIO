@@ -1,0 +1,101 @@
+name: Validate JA Plan Studio
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      # The repository currently contains a substantial inherited TypeScript
+      # baseline outside this PR's scope. Keep the complete result visible and
+      # downloadable without allowing unrelated historical errors to conceal
+      # whether the changed customer/admin paths build correctly.
+      - name: Type-check repository baseline
+        id: typecheck
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run type-check 2>&1 | tee typecheck.log
+
+      - name: Build production application
+        id: build
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee build.log
+
+      - name: Run changed-scope regression tests
+        id: targeted
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test \
+            tests/admin-ui-payments-reliability.test.mjs \
+            tests/stripe-support-coming-soon-fixes.test.mjs \
+            tests/checkout-trial.test.mjs 2>&1 | tee targeted-tests.log
+
+      # Run the complete inherited suite after the build so generated assets
+      # exist. Its result remains diagnostic until obsolete static-site tests
+      # are reconciled with the current React/Vite architecture.
+      - name: Run full repository test baseline
+        id: fulltests
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test tests/*.test.mjs 2>&1 | tee full-tests.log
+
+      - name: Upload validation output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-output
+          path: |
+            typecheck.log
+            build.log
+            targeted-tests.log
+            full-tests.log
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Enforce changed-scope validation
+        if: always()
+        shell: bash
+        env:
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          TARGETED_OUTCOME: ${{ steps.targeted.outcome }}
+          TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
+          FULL_TEST_OUTCOME: ${{ steps.fulltests.outcome }}
+        run: |
+          printf 'Production build: %s\nChanged-scope tests: %s\nRepository type-check baseline: %s\nFull test baseline: %s\n' \
+            "$BUILD_OUTCOME" "$TARGETED_OUTCOME" "$TYPECHECK_OUTCOME" "$FULL_TEST_OUTCOME"
+          test "$BUILD_OUTCOME" = success
+          test "$TARGETED_OUTCOME" = success

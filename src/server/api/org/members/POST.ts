@@ -18,89 +18,40 @@ export default async function handler(req: Request, res: Response) {
 
     const [user] = await db.select().from(ja_users).where(eq(ja_users.id, session.userId)).limit(1);
     if (!user) return res.status(401).json({ success: false, error: 'User not found.' });
-
+    if (user.usageType !== 'business') {
+      return res.status(403).json({ success: false, error: 'An explicitly selected Organisation account is required.' });
+    }
     if (!['org_starter', 'org_growth', 'org_professional'].includes(user.plan)) {
-      return res.status(403).json({ success: false, error: 'Organisation plan required.' });
+      return res.status(403).json({ success: false, error: 'The Together Plan is required to invite organisation members.' });
     }
 
     const { email, role = 'member' } = req.body as { email?: string; role?: string };
-    if (!email || typeof email !== 'string') {
-      return res.status(400).json({ success: false, error: 'Email is required.' });
-    }
+    if (!email || typeof email !== 'string') return res.status(400).json({ success: false, error: 'Email is required.' });
     const validRoles = ['admin', 'manager', 'member', 'read_only'];
-    if (!validRoles.includes(role)) {
-      return res.status(400).json({ success: false, error: 'Invalid role. Must be admin, manager, member, or read_only.' });
-    }
+    if (!validRoles.includes(role)) return res.status(400).json({ success: false, error: 'Invalid role. Must be admin, manager, member, or read_only.' });
 
-    // Find the org this user owns/admins
-    const [myMembership] = await db
-      .select()
-      .from(ja_org_members)
-      .where(eq(ja_org_members.userId, user.id))
-      .limit(1);
-
+    const [myMembership] = await db.select().from(ja_org_members).where(eq(ja_org_members.userId, user.id)).limit(1);
     if (!myMembership || (myMembership.role !== 'owner' && myMembership.role !== 'admin')) {
-      return res.status(403).json({ success: false, error: 'Only org owners and admins can invite members.' });
+      return res.status(403).json({ success: false, error: 'Only organisation owners and admins can invite members.' });
     }
 
     const [org] = await db.select().from(ja_organisations).where(eq(ja_organisations.id, myMembership.orgId)).limit(1);
     if (!org) return res.status(404).json({ success: false, error: 'Organisation not found.' });
-
-    // Check seat limit
     const currentMembers = await db.select().from(ja_org_members).where(eq(ja_org_members.orgId, org.id));
-    if (currentMembers.length >= org.maxSeats) {
-      return res.status(400).json({
-        success: false,
-        error: `Seat limit reached (${org.maxSeats} seats). Upgrade your plan to add more members.`,
-      });
-    }
+    if (currentMembers.length >= org.maxSeats) return res.status(400).json({ success: false, error: `Seat limit reached (${org.maxSeats} seats). Upgrade your plan to add more members.` });
 
-    // Find the invited user
-    const [invitedUser] = await db
-      .select()
-      .from(ja_users)
-      .where(eq(ja_users.email, email.toLowerCase().trim()))
-      .limit(1);
+    const [invitedUser] = await db.select().from(ja_users).where(eq(ja_users.email, email.toLowerCase().trim())).limit(1);
+    if (!invitedUser) return res.status(404).json({ success: false, error: 'No account found with that email address. They must register first.' });
+    if (invitedUser.id === user.id) return res.status(400).json({ success: false, error: 'You cannot invite yourself.' });
 
-    if (!invitedUser) {
-      return res.status(404).json({
-        success: false,
-        error: 'No account found with that email address. They must register first.',
-      });
-    }
+    const [existing] = await db.select().from(ja_org_members).where(and(eq(ja_org_members.orgId, org.id), eq(ja_org_members.userId, invitedUser.id))).limit(1);
+    if (existing) return res.status(400).json({ success: false, error: 'This user is already a member of your organisation.' });
 
-    if (invitedUser.id === user.id) {
-      return res.status(400).json({ success: false, error: 'You cannot invite yourself.' });
-    }
-
-    // Check if already a member
-    const [existing] = await db
-      .select()
-      .from(ja_org_members)
-      .where(and(eq(ja_org_members.orgId, org.id), eq(ja_org_members.userId, invitedUser.id)))
-      .limit(1);
-
-    if (existing) {
-      return res.status(400).json({ success: false, error: 'This user is already a member of your organisation.' });
-    }
-
-    await db.insert(ja_org_members).values({
-      orgId: org.id,
-      userId: invitedUser.id,
-      role: role as 'admin' | 'manager' | 'member' | 'read_only',
-      invitedBy: user.id,
-    });
-
+    await db.insert(ja_org_members).values({ orgId: org.id, userId: invitedUser.id, role: role as 'admin' | 'manager' | 'member' | 'read_only', invitedBy: user.id });
     return res.status(201).json({
       success: true,
       message: `${invitedUser.firstName ?? invitedUser.email} has been added to your organisation.`,
-      member: {
-        userId: invitedUser.id,
-        email: invitedUser.email,
-        firstName: invitedUser.firstName,
-        lastName: invitedUser.lastName,
-        role,
-      },
+      member: { userId: invitedUser.id, email: invitedUser.email, firstName: invitedUser.firstName, lastName: invitedUser.lastName, role },
     });
   } catch (err) {
     console.error('POST /api/org/members error:', err);
