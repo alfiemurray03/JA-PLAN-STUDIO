@@ -21,6 +21,7 @@ import {
   MessageSquare, Plus, Send, Clock, CheckCircle2, AlertCircle,
   Loader2, ChevronRight, RefreshCw, HelpCircle, Mail, Phone,
   ExternalLink, Info, X,
+  Search, BookOpen, CreditCard, UserRound, Compass, ShieldCheck,
 } from 'lucide-react';
 import { formatDistanceToNow } from '@/lib/date-utils';
 
@@ -70,12 +71,22 @@ const CATEGORIES = [
   { value: 'other',     label: 'Other' },
 ];
 
+const HELP_ARTICLES = [
+  { category: 'Account', title: 'Update your personal details', summary: 'Change your name, contact details and Microsoft account information safely.', icon: UserRound, steps: ['Open Settings → Profile.', 'Update the fields you need.', 'Select Save changes and wait for the confirmation.'] },
+  { category: 'Billing', title: 'Subscriptions, trials and invoices', summary: 'Understand your plan, 30-day trial, renewal date, invoices and Stripe billing portal.', icon: CreditCard, steps: ['Open Settings → Billing.', 'Review invoices or open the secure billing portal.', 'Plan changes apply to your builder access automatically.'] },
+  { category: 'Builders', title: 'Credits and five-hour limits', summary: 'See why credits change, when rolling usage becomes available again, and which plans are unlimited.', icon: Compass, steps: ['Open any builder to see its credit cost.', 'The credit box updates after an output is created.', 'The countdown shows when rolling allowance is released.'] },
+  { category: 'Privacy', title: 'Privacy and data requests', summary: 'Download your data, request correction or deletion, and track the request status.', icon: ShieldCheck, steps: ['Open Privacy & Data.', 'Choose the request type and provide details.', 'Track progress from the same page.'] },
+  { category: 'Getting started', title: 'Create and save an experience plan', summary: 'Choose a category, preview a template, complete the guided questions and save your output.', icon: BookOpen, steps: ['Open Experience Builders.', 'Choose a category and template.', 'Complete the questions, then create or save your plan.'] },
+];
+
 export default function SupportPage() {
   const { user } = useAuth();
   const { siteName, supportEmail } = useSiteSettings();
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [helpSearch, setHelpSearch] = useState('');
+  const [openArticle, setOpenArticle] = useState<string | null>(null);
 
   // New ticket form
   const [showNewForm, setShowNewForm] = useState(false);
@@ -211,7 +222,7 @@ export default function SupportPage() {
   return (
     <>
       <Helmet>
-        <title>Support Centre — {siteName}</title>
+        <title>Help Centre — {siteName}</title>
         <meta name="description" content="Get help, submit support tickets, and track your requests." />
         <meta name="robots" content="noindex" />
       </Helmet>
@@ -221,9 +232,9 @@ export default function SupportPage() {
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Support Centre</h1>
+              <h1 className="text-2xl font-bold text-foreground">Help Centre</h1>
               <p className="text-sm text-muted-foreground mt-1">
-                Get help with your account, documents, and billing.
+                Find practical answers for your account, builders, privacy and billing, or contact the support team.
               </p>
             </div>
             <Button
@@ -285,6 +296,29 @@ export default function SupportPage() {
               </div>
             </CardContent>
           </Card>
+
+          <section aria-labelledby="self-help-heading" className="space-y-4">
+            <div>
+              <h2 id="self-help-heading" className="text-xl font-bold text-foreground">Self-help guides</h2>
+              <p className="text-sm text-muted-foreground mt-1">Quick instructions for the most common questions.</p>
+            </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input value={helpSearch} onChange={event => setHelpSearch(event.target.value)} className="pl-10" placeholder="Search help articles…" aria-label="Search help articles" />
+            </div>
+            <div className="grid md:grid-cols-2 gap-4">
+              {HELP_ARTICLES.filter(article => `${article.category} ${article.title} ${article.summary}`.toLowerCase().includes(helpSearch.toLowerCase())).map(article => {
+                const Icon = article.icon;
+                const expanded = openArticle === article.title;
+                return <Card key={article.title} className="overflow-hidden">
+                  <button type="button" onClick={() => setOpenArticle(expanded ? null : article.title)} className="w-full bg-white p-5 text-left text-slate-950 hover:bg-slate-50">
+                    <div className="flex items-start gap-3"><span className="rounded-xl bg-blue-50 p-2 text-blue-700"><Icon className="h-5 w-5" /></span><span><span className="text-xs font-semibold uppercase tracking-wide text-blue-700">{article.category}</span><span className="mt-1 block font-bold text-slate-950">{article.title}</span><span className="mt-1 block text-sm text-slate-600">{article.summary}</span></span></div>
+                  </button>
+                  {expanded && <CardContent className="border-t bg-slate-50 pt-4"><ol className="space-y-2 text-sm text-slate-700">{article.steps.map((step, index) => <li key={step} className="flex gap-2"><span className="font-bold text-blue-700">{index + 1}.</span>{step}</li>)}</ol></CardContent>}
+                </Card>;
+              })}
+            </div>
+          </section>
 
           {/* New ticket form */}
           {showNewForm && (
