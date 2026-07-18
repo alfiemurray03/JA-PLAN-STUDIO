@@ -33,7 +33,7 @@ function createMockDB(options = {}) {
       builder_type: "Travel",
       category: "Travel",
       token_cost: 5,
-      plan_inclusion: "trial,membership,plus,family",
+      plan_inclusion: "trial,personal,standard,professional,org-starter",
       status: "Active",
       visibility: "paid",
       description: "Organise holiday ideas...",
@@ -45,7 +45,7 @@ function createMockDB(options = {}) {
       builder_type: "Everyday",
       category: "Everyday experiences",
       token_cost: 10,
-      plan_inclusion: "trial,membership",
+      plan_inclusion: "trial,personal",
       status: "Archived", // Unpublished
       visibility: "paid",
       description: "Draft only"
@@ -83,6 +83,7 @@ function createMockDB(options = {}) {
             return builders.find(b => b.id === this.args[0]) || null;
           }
           if (sqlLower.includes("from builder_runs") && sqlLower.includes("status = 'draft'")) {
+            if (sqlLower.includes("count(*)")) return { count: drafts.filter(d => d.email.toLowerCase() === this.args[0].toLowerCase()).length };
             return drafts.find(d => d.builder_id === this.args[1] && d.email.toLowerCase() === this.args[0].toLowerCase()) || null;
           }
           if (sqlLower.includes("from builder_outputs") && sqlLower.includes("request_id = ?")) {
@@ -206,7 +207,7 @@ test("builder catalogue API rejects unauthenticated users and filters unpublishe
 // 2. Draft Autosave & Resume logic
 test("draft autosave and resume allows saving progress in builder_runs", async () => {
   const drafts = [];
-  const DB = createMockDB({ drafts });
+  const DB = createMockDB({ drafts, subscription: { plan_name: "Plan Plan", plan_code: "standard", status: "active" } });
 
   // 1. Save progress (Autosave)
   const saveContext = {
@@ -351,7 +352,7 @@ test("insufficient tokens blocks creation and logs block attempt", async () => {
 test("paid plans save outputs without a credit balance or deduction", async () => {
   const DB = createMockDB({
     ledger: [],
-    subscription: { plan_name: "Membership", plan_code: "membership", status: "active" }
+    subscription: { plan_name: "Plan Plan", plan_code: "standard", status: "active" }
   });
   const response = await accountOnRequest({
     request: new Request("https://experiences.example.test/account/api/builders", {

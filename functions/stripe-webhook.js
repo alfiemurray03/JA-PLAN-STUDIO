@@ -1,3 +1,5 @@
+import { normalisePlanCode } from "./_shared/subscription-entitlements.js";
+
 const SUPPORTED_EVENTS = new Set([
   "checkout.session.completed",
   "customer.subscription.created",
@@ -158,15 +160,28 @@ async function saveCheckoutSession(DB, session) {
     session.currency || null, session.metadata?.plan_code || null, session.metadata?.plan_name || null,
     idValue(session.payment_intent), stripeTime(session.created)
   ).run();
+  const planCode = normalisePlanCode(session.metadata?.plan_code || session.metadata?.plan_name);
+  await DB.prepare(`
+    UPDATE stripe_subscriptions SET
+      customer_email = COALESCE(customer_email, ?),
+      plan_code = COALESCE(plan_code, ?),
+      plan_name = COALESCE(plan_name, ?),
+      updated_at = CURRENT_TIMESTAMP
+    WHERE customer_id = ?
+  `).bind(email, planCode || null, session.metadata?.plan_name || null, customerId).run();
   await updateProfile(DB, customerId, email, session.metadata?.plan_name || null, null);
 }
 
 async function saveSubscription(DB, subscription, eventType) {
   const customerId = idValue(subscription.customer);
-  const email = subscription.customer_details?.email || subscription.metadata?.customer_email || null;
+  const checkout = customerId ? await DB.prepare(`
+    SELECT customer_email, plan_code, plan_name FROM stripe_checkout_sessions
+    WHERE customer_id = ? ORDER BY updated_at DESC LIMIT 1
+  `).bind(customerId).first().catch(() => null) : null;
+  const email = subscription.customer_details?.email || subscription.metadata?.customer_email || checkout?.customer_email || null;
   const item = subscription.items?.data?.[0] || null;
-  const planCode = subscription.metadata?.plan_code || item?.price?.metadata?.plan_code || null;
-  const planName = subscription.metadata?.plan_name || item?.price?.product?.name || item?.price?.nickname || planCode;
+  const planCode = normalisePlanCode(subscription.metadata?.plan_code || item?.price?.metadata?.plan_code || checkout?.plan_code || checkout?.plan_name) || null;
+  const planName = subscription.metadata?.plan_name || checkout?.plan_name || item?.price?.product?.name || item?.price?.nickname || planCode;
   const paymentMethod = subscription.default_payment_method?.card || null;
   const latestInvoice = typeof subscription.latest_invoice === "object" ? subscription.latest_invoice : null;
   const status = eventType === "customer.subscription.deleted" ? "canceled" : (subscription.status || null);
