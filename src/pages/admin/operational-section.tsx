@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import AdminLayout from '@/components/AdminLayout';
+import AdminBrandingPage from '@/pages/admin/branding';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -28,7 +29,7 @@ const DEFINITIONS: Record<string, SectionDefinition> = {
   '/admin/usage': { section: 'usage', title: 'Customer Usage', subtitle: 'Builder activity and customer usage information.' },
   '/admin/addons': { section: 'addons', title: 'Paid Add-Ons', subtitle: 'Optional paid features and customer entitlements.' },
   '/admin/plans': { section: 'plans', title: 'Subscription Plans', subtitle: 'Configured customer plans, pricing and availability.' },
-  '/admin/branding': { section: 'branding', title: 'Branding', subtitle: 'JA Plan Studio identity, company details and public presentation.' },
+  '/admin/branding': { section: 'branding', title: 'Branding & Appearance', subtitle: 'Browser-tab identity and complete Admin Portal appearance.' },
   '/admin/affiliate-content': { section: 'affiliate', title: 'Affiliate Content', subtitle: 'Approved affiliate disclosures and website content.' },
 };
 
@@ -102,11 +103,18 @@ function DataTable({ title, rows }: { title: string; rows: unknown[] }) {
 export default function AdminOperationalSection() {
   const location = useLocation();
   const definition = DEFINITIONS[location.pathname] || DEFINITIONS['/admin/operations'];
+  const isBranding = definition.section === 'branding';
   const [data, setData] = useState<Record<string, unknown>>({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!isBranding);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
+    if (isBranding) {
+      setLoading(false);
+      setError('');
+      setData({});
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -120,13 +128,15 @@ export default function AdminOperationalSection() {
     } finally {
       setLoading(false);
     }
-  }, [definition.section]);
+  }, [definition.section, isBranding]);
 
   useEffect(() => { void load(); }, [load]);
 
   const scalars = useMemo(() => scalarEntries(data), [data]);
   const objects = useMemo(() => objectEntries(data), [data]);
   const arrays = useMemo(() => arrayEntries(data), [data]);
+
+  if (isBranding) return <AdminBrandingPage />;
 
   return (
     <AdminLayout title={definition.title} subtitle={definition.subtitle}>
