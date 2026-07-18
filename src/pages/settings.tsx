@@ -507,12 +507,6 @@ function SubscriptionTab({ user, plan, planBadgeColor }: { user: ReturnType<type
   const [portalLoading, setPortalLoading] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [error, setError] = useState('');
-  const [seatType, setSeatType] = useState<'user' | 'manager' | 'admin'>('user');
-  const [seatQty, setSeatQty] = useState(1);
-  const [seatLoading, setSeatLoading] = useState(false);
-  const [seatError, setSeatError] = useState('');
-
-  const isOrgPlan = plan === 'org_starter';
   const limit = PLAN_LIMITS[plan] ?? 0;
 
   const PLAN_FEATURES: Record<string, string[]> = {
@@ -576,29 +570,6 @@ function SubscriptionTab({ user, plan, planBadgeColor }: { user: ReturnType<type
       setError('Network error. Please try again.');
     } finally {
       setCheckoutLoading(null);
-    }
-  }
-
-  async function purchaseSeats() {
-    setSeatError('');
-    setSeatLoading(true);
-    try {
-      const res = await fetch('/api/stripe/add-seats', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ seatType, quantity: seatQty }),
-      });
-      const data = await res.json() as { success: boolean; url?: string; error?: string };
-      if (data.success && data.url) {
-        window.location.href = data.url;
-      } else {
-        setSeatError(data.error ?? 'Unable to start seat checkout. Please try again.');
-      }
-    } catch {
-      setSeatError('Network error. Please try again.');
-    } finally {
-      setSeatLoading(false);
     }
   }
 
@@ -779,117 +750,6 @@ function SubscriptionTab({ user, plan, planBadgeColor }: { user: ReturnType<type
         </Card>
       )}
 
-      {/* ── Org Seat Purchase ── */}
-      {isOrgPlan && (
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-purple-600" />
-              Add Seats to Your Organisation
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Purchase additional seats for your organisation. Each seat is billed monthly alongside your plan.
-            </p>
-
-            {/* Seat type + quantity */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Seat Type</Label>
-                <div className="flex flex-col gap-2">
-                  {[
-                    { value: 'user',    label: 'User',    price: '£5.00/mo', desc: 'Standard access — create and edit documents' },
-                    { value: 'manager', label: 'Manager', price: '£8.00/mo', desc: 'Manage members and shared documents' },
-                    { value: 'admin',   label: 'Admin',   price: '£12.00/mo', desc: 'Full org admin access' },
-                  ].map(opt => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => setSeatType(opt.value as 'user' | 'manager' | 'admin')}
-                      className={`flex items-center justify-between p-3 rounded-xl border text-left transition-colors ${
-                        seatType === opt.value
-                          ? 'border-purple-400 bg-purple-50 dark:bg-purple-950/30'
-                          : 'border-border bg-muted/20 hover:bg-muted/40'
-                      }`}
-                    >
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{opt.label}</p>
-                        <p className="text-xs text-muted-foreground">{opt.desc}</p>
-                      </div>
-                      <span className={`text-xs font-semibold shrink-0 ml-3 ${seatType === opt.value ? 'text-purple-700 dark:text-purple-300' : 'text-muted-foreground'}`}>
-                        {opt.price}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="seat-qty" className="text-xs text-muted-foreground">Number of Seats</Label>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-9 w-9 p-0 shrink-0"
-                      onClick={() => setSeatQty(q => Math.max(1, q - 1))}
-                      disabled={seatQty <= 1}
-                    >−</Button>
-                    <Input
-                      id="seat-qty"
-                      type="number"
-                      min={1}
-                      max={50}
-                      value={seatQty}
-                      onChange={e => setSeatQty(Math.max(1, Math.min(50, parseInt(e.target.value) || 1)))}
-                      className="text-center h-9 w-16 text-sm"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-9 w-9 p-0 shrink-0"
-                      onClick={() => setSeatQty(q => Math.min(50, q + 1))}
-                      disabled={seatQty >= 50}
-                    >+</Button>
-                  </div>
-                </div>
-
-                {/* Cost summary */}
-                <div className="bg-muted/40 rounded-xl p-4 space-y-1.5">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Summary</p>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{seatQty} × {seatType} seat{seatQty > 1 ? 's' : ''}</span>
-                    <span className="font-semibold text-foreground">
-                      £{((seatType === 'user' ? 5 : seatType === 'manager' ? 8 : 12) * seatQty).toFixed(2)}/mo
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Billed monthly. Cancel anytime via billing portal.</p>
-                </div>
-
-                {seatError && (
-                  <Alert variant="destructive">
-                    <AlertTriangle className="w-4 h-4" />
-                    <AlertDescription>{seatError}</AlertDescription>
-                  </Alert>
-                )}
-
-                <Button
-                  className="w-full gap-2 bg-purple-600 hover:bg-purple-700 text-white"
-                  onClick={purchaseSeats}
-                  disabled={seatLoading}
-                >
-                  {seatLoading
-                    ? <><Loader2 className="w-4 h-4 animate-spin" />Processing…</>
-                    : <><Building2 className="w-4 h-4" />Purchase {seatQty} Seat{seatQty > 1 ? 's' : ''}</>}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

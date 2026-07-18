@@ -48,6 +48,7 @@ import {
 import { cn } from '@/lib/utils';
 import NotificationBell from '@/components/NotificationBell';
 import type { PlanId } from '@/lib/plan-config';
+import { customerPlanLabel } from '@/lib/customer-plan';
 import {
   DEFAULT_PORTAL_NAV,
   applyPortalNavOverrides,
@@ -262,7 +263,7 @@ interface SidebarContentProps {
   sections: PortalNavSection[];
   pathname: string;
   onNavigate: () => void;
-  user: { firstName: string; lastName: string; email: string; plan?: string } | null;
+  user: { firstName: string; lastName: string; email: string; plan?: string; planIsLifetime?: boolean } | null;
   onLogout: () => void;
 }
 
@@ -339,8 +340,8 @@ function SidebarContent({ sections, pathname, onNavigate, user, onLogout }: Side
                 <div className="text-xs font-semibold text-foreground truncate">
                   {user?.firstName} {user?.lastName}
                 </div>
-                <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full font-medium capitalize', planBadgeClass)}>
-                  {user?.plan ?? 'free'}
+                <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full font-medium', planBadgeClass)}>
+                  {customerPlanLabel(user?.plan, user?.planIsLifetime)}
                 </span>
               </div>
               <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" aria-hidden="true" />
