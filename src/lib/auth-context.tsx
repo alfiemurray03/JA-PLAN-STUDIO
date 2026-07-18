@@ -22,6 +22,15 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+function startCustomerMicrosoftLogout(): void {
+  // Dashboard layout handlers may still perform a client-side navigation after
+  // invoking logout(). Defer the terminal navigation until the click handler has
+  // completed so that React cannot cancel the External ID end-session request.
+  window.setTimeout(() => {
+    window.location.replace('/account/logout');
+  }, 0);
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -58,10 +67,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     setUser(null);
-    // Full-page redirect to the server-side OIDC logout handler.
-    // This clears the ja_session cookie AND terminates the Entra session.
-    // For password-only users the server still clears the cookie and redirects to /login.
-    window.location.href = '/account/logout';
+
+    // /account/logout revokes only the customer OIDC and legacy customer
+    // sessions, clears only customer cookies and redirects to the JA Group
+    // Services ID end_session_endpoint. The Admin session remains untouched.
+    startCustomerMicrosoftLogout();
   }, []);
 
   const refreshUser = useCallback(() => {

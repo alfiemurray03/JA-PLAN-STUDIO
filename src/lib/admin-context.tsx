@@ -55,6 +55,15 @@ function clearCachedAdmin(): void {
   try { localStorage.removeItem(CACHE_KEY); } catch { /* ignore */ }
 }
 
+function startAdminMicrosoftLogout(): void {
+  // Some legacy layout handlers perform a client-side navigation immediately
+  // after calling logout(). Schedule the terminal server navigation after that
+  // handler finishes so React cannot overwrite the Microsoft end-session flow.
+  window.setTimeout(() => {
+    window.location.replace('/admin/logout');
+  }, 0);
+}
+
 // ── Context ───────────────────────────────────────────────────────────────────
 
 const AdminContext = createContext<AdminContextType | null>(null);
@@ -87,16 +96,13 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
-    try {
-      await fetch('/api/admin/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
-    } catch { /* best-effort */ }
     clearCachedAdmin();
     setAdmin(null);
-    // Redirect to admin login page after logout
-    window.location.href = '/admin';
+
+    // /admin/logout revokes only the Admin OIDC session, clears only the
+    // ja_admin_session cookie and redirects to the staff tenant's Microsoft
+    // end_session_endpoint. It never clears the customer portal session.
+    startAdminMicrosoftLogout();
   }, []);
 
   return (
