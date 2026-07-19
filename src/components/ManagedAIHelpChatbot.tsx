@@ -161,21 +161,37 @@ export default function ManagedAIHelpChatbot() {
   }, [user]);
 
   useEffect(() => {
+    if (!config.maintenanceEnabled) return;
+    setMode('chat');
+    setMessages([]);
+    setInput('');
+    setThinking(false);
+    setChatError('');
+    setSubmitError('');
+    setSubmitting(false);
+  }, [config.maintenanceEnabled]);
+
+  useEffect(() => {
+    if (ready && open && !config.maintenanceEnabled && messages.length === 0) initialiseConversation();
+  }, [ready, open, config.maintenanceEnabled, messages.length]);
+
+  useEffect(() => {
     if (!ready || !config.enabled || config.autoOpenDelaySeconds <= 0 || hiddenForPortal) return;
     const timer = window.setTimeout(() => openWidget(), config.autoOpenDelaySeconds * 1000);
     return () => window.clearTimeout(timer);
   }, [ready, config.enabled, config.autoOpenDelaySeconds, hiddenForPortal]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || config.maintenanceEnabled) return;
     const timer = window.setInterval(() => void sendEvent('heartbeat'), 60_000);
     return () => window.clearInterval(timer);
-  }, [open]);
+  }, [open, config.maintenanceEnabled]);
 
   useEffect(() => { if (open) bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, open, mode, thinking]);
-  useEffect(() => { if (open && mode === 'chat') window.setTimeout(() => inputRef.current?.focus(), 100); }, [open, mode]);
+  useEffect(() => { if (open && mode === 'chat' && !config.maintenanceEnabled) window.setTimeout(() => inputRef.current?.focus(), 100); }, [open, mode, config.maintenanceEnabled]);
 
   function sendEvent(event: 'open' | 'heartbeat' | 'close') {
+    if (config.maintenanceEnabled) return Promise.resolve(undefined);
     return fetch('/api/support-assistant', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', keepalive: true,
       body: JSON.stringify({ event, sessionId: sessionIdRef.current, email: user?.email || '', pagePath: window.location.pathname }),
@@ -183,13 +199,18 @@ export default function ManagedAIHelpChatbot() {
   }
 
   function initialiseConversation() {
-    if (messages.length) return;
-    setMessages([{ id: id('assistant'), role: 'assistant', text: config.maintenanceEnabled ? [config.maintenanceMessage, formatMaintenanceWindow(config.maintenanceStart, config.maintenanceEnd)].filter(Boolean).join('\n\n') : `${config.welcomeMessage}\n\nBefore we look at the issue, what is your full name?`, suggestions: [] }]);
+    if (config.maintenanceEnabled || messages.length) return;
+    setMessages([{ id: id('assistant'), role: 'assistant', text: `${config.welcomeMessage}\n\nBefore we look at the issue, what is your full name?`, suggestions: [] }]);
   }
 
   function openWidget() {
+    setOpen(true);
+    setMode('chat');
+    setChatError('');
+    if (config.maintenanceEnabled) return;
     openedAtRef.current = Date.now();
-    setOpen(true); setMode('chat'); setChatError(''); initialiseConversation(); void sendEvent('open');
+    initialiseConversation();
+    void sendEvent('open');
   }
 
   function closeWidget() { setOpen(false); void sendEvent('close'); }
@@ -199,6 +220,7 @@ export default function ManagedAIHelpChatbot() {
   }
 
   function startEnquiry(subject = suggestedSubject, category = suggestedCategory) {
+    if (config.maintenanceEnabled) return;
     const lastUserMessage = [...messages].reverse().find(message => message.role === 'user')?.text ?? '';
     setForm(current => ({ ...current, name: current.name || displayName(user), email: current.email || user?.email || '', subject: current.subject || subject || 'Help with JA Plan Studio', message: current.message || lastUserMessage, category: category || 'Technical Support' }));
     setFieldErrors({}); setSubmitError(''); setMode('enquiry');
@@ -437,15 +459,17 @@ export default function ManagedAIHelpChatbot() {
           className={`fixed inset-x-3 bottom-20 z-[69] flex flex-col overflow-hidden border border-slate-200 bg-white text-slate-950 shadow-2xl [color-scheme:light] sm:left-auto ${panelSideClass}`}>
           <header style={{ backgroundColor: config.primaryColor }} className="flex shrink-0 items-center justify-between px-4 py-3 text-white">
             <div className="flex min-w-0 items-center gap-3">
-              {mode !== 'chat' && <button type="button" onClick={() => setMode('chat')} className="rounded-lg p-1.5 text-white/80 hover:bg-white/10" aria-label="Back to conversation"><ArrowLeft className="h-4 w-4" /></button>}
+              {!config.maintenanceEnabled && mode !== 'chat' && <button type="button" onClick={() => setMode('chat')} className="rounded-lg p-1.5 text-white/80 hover:bg-white/10" aria-label="Back to conversation"><ArrowLeft className="h-4 w-4" /></button>}
               <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/15">{config.maintenanceEnabled ? <Wrench className="h-5 w-5" /> : config.avatarUrl ? <img src={config.avatarUrl} alt="" className="h-full w-full object-cover" /> : <Bot className="h-5 w-5" />}</span>
               <div className="min-w-0"><p className="truncate text-sm font-bold">{mode === 'enquiry' ? 'Contact Enquiry' : mode === 'sent' ? 'Enquiry received' : config.assistantName}</p><p className="truncate text-[11px] text-white/80">{config.maintenanceEnabled ? 'Maintenance mode' : `AI-assisted Help Centre · Team replies ${config.responseTime}`}</p></div>
             </div>
             <button type="button" onClick={closeWidget} aria-label="Close assistant" className="rounded-lg p-1.5 text-white/80 hover:bg-white/10"><X className="h-4 w-4" /></button>
           </header>
-          {maintenanceWindow && <div role="status" className="shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-xs font-semibold text-amber-950">{maintenanceWindow}</div>}
+          {!config.maintenanceEnabled && maintenanceWindow && <div role="status" className="shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-xs font-semibold text-amber-950">{maintenanceWindow}</div>}
 
-          {mode === 'chat' && <>
+          {config.maintenanceEnabled && <div className="flex flex-1 flex-col items-center justify-center bg-slate-50 px-6 py-8 text-center" role="status"><span className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-800"><Wrench className="h-7 w-7" /></span><h2 className="mt-4 text-lg font-bold text-slate-950">Chat temporarily unavailable</h2><p className="mt-2 max-w-sm whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{config.maintenanceMessage}</p>{maintenanceWindow && <p className="mt-4 max-w-sm rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-950">{maintenanceWindow}</p>}<p className="mt-4 text-xs text-slate-500">Conversations and enquiries are disabled until maintenance has ended.</p></div>}
+
+          {!config.maintenanceEnabled && mode === 'chat' && <>
             <div className="flex-1 space-y-4 overflow-y-auto bg-slate-50 px-4 py-4" aria-live="polite">
               {messages.map(message => <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}><div className="max-w-[88%]">
                 <div style={message.role === 'user' ? { backgroundColor: config.primaryColor } : undefined} className={`whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm ${message.role === 'user' ? 'rounded-br-md text-white' : 'rounded-bl-md border border-slate-200 bg-white text-slate-900'}`}>{message.text}</div>
@@ -458,7 +482,7 @@ export default function ManagedAIHelpChatbot() {
             {!config.maintenanceEnabled && <footer className="shrink-0 border-t border-slate-200 bg-white p-3">{chatError && <p className="mb-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{chatError}</p>}<div className="flex items-end gap-2"><Input ref={inputRef} value={input} onChange={event => setInput(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); void sendMessage(); } }} placeholder={config.inputPlaceholder} className="h-10 flex-1 border-slate-300 bg-white text-sm text-slate-900" /><Button type="button" onClick={() => void sendMessage()} disabled={thinking || !input.trim()} style={{ backgroundColor: config.primaryColor }} className="h-10 w-10 shrink-0 p-0 text-white"><Send className="h-4 w-4" /></Button></div><div className="mt-2 flex items-center justify-between text-[10px] text-slate-500"><span>{config.showPoweredBy ? 'Powered by JA Plan Studio Help Centre' : 'AI answers may be checked before acting.'}</span>{config.escalationEnabled && <button type="button" onClick={() => startEnquiry()} className="font-semibold hover:underline" style={{ color: config.primaryColor }}>Contact the team</button>}</div></footer>}
           </>}
 
-          {mode === 'enquiry' && <div className="flex-1 overflow-y-auto bg-white px-4 py-4"><div className="mb-4 rounded-xl border p-3" style={{ borderColor: config.accentColor, backgroundColor: config.accentColor }}><div className="flex gap-2"><LifeBuoy className="mt-0.5 h-4 w-4 shrink-0" style={{ color: config.primaryColor }} /><div><p className="text-sm font-semibold text-slate-950">Send this to Contact Enquiries</p><p className="mt-1 text-xs text-slate-700">This creates a support case and reference for the JA Plan Studio Support Team. Signed-out visitors can submit as well.</p></div></div></div><div className="space-y-3">
+          {!config.maintenanceEnabled && mode === 'enquiry' && <div className="flex-1 overflow-y-auto bg-white px-4 py-4"><div className="mb-4 rounded-xl border p-3" style={{ borderColor: config.accentColor, backgroundColor: config.accentColor }}><div className="flex gap-2"><LifeBuoy className="mt-0.5 h-4 w-4 shrink-0" style={{ color: config.primaryColor }} /><div><p className="text-sm font-semibold text-slate-950">Send this to Contact Enquiries</p><p className="mt-1 text-xs text-slate-700">This creates a support case and reference for the JA Plan Studio Support Team. Signed-out visitors can submit as well.</p></div></div></div><div className="space-y-3">
             {[['name','Name','text'],['email','Email address','email'],['telephone','Telephone','tel'],['subject',`Subject (${form.subject.trim().length}/180)`,'text']].map(([key,label,type]) => <div key={key}><label className="mb-1 block text-xs font-semibold text-slate-800">{label}</label><Input type={type} value={String(form[key as keyof EnquiryForm])} onChange={event => setForm(current => ({ ...current, [key]: event.target.value }))} className="border-slate-300 bg-white text-slate-900" />{fieldErrors[key] && <p className="mt-1 text-xs text-red-600">{fieldErrors[key]}</p>}</div>)}
             <div><label className="mb-1 block text-xs font-semibold text-slate-800">Message ({form.message.trim().length}/6000)</label><Textarea value={form.message} rows={6} maxLength={6000} onChange={event => setForm(current => ({ ...current, message: event.target.value }))} className="min-h-[130px] border-slate-300 bg-white text-slate-900" />{fieldErrors.message && <p className="mt-1 text-xs text-red-600">{fieldErrors.message}</p>}</div>
             <label className="flex cursor-pointer items-start gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3"><input type="checkbox" checked={form.consent} onChange={event => setForm(current => ({ ...current, consent: event.target.checked }))} className="mt-0.5 h-4 w-4" /><span className="text-xs text-slate-700">I accept the <a href="/terms" target="_blank" rel="noreferrer" className="font-semibold underline">Terms of Service</a> and have read the <a href="/privacy" target="_blank" rel="noreferrer" className="font-semibold underline">Privacy Notice</a>.</span></label>{fieldErrors.consent && <p className="text-xs text-red-600">{fieldErrors.consent}</p>}
@@ -466,7 +490,7 @@ export default function ManagedAIHelpChatbot() {
             <Button type="button" onClick={() => void submitEnquiry()} disabled={submitting} style={{ backgroundColor: config.primaryColor }} className="w-full text-white">{submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}{submitting ? 'Sending enquiry…' : 'Send enquiry'}</Button>
           </div></div>}
 
-          {mode === 'sent' && <div className="flex flex-1 flex-col items-center justify-center bg-white px-6 text-center"><span className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100"><CheckCircle2 className="h-8 w-8 text-green-600" /></span><h2 className="mt-4 text-lg font-bold">Enquiry received</h2><p className="mt-2 text-sm text-slate-600">Your enquiry has been submitted to the JA Plan Studio Support Team.</p><div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"><p className="text-[10px] font-bold uppercase text-slate-500">Reference</p><p className="mt-1 font-mono text-sm font-bold">{reference}</p></div><p className="mt-3 text-xs text-slate-500">The team normally replies {config.responseTime}.</p><div className="mt-5 flex flex-wrap justify-center gap-2"><Button type="button" size="sm" variant="outline" onClick={downloadTranscript}><Download className="mr-2 h-4 w-4" />Download transcript</Button><Button type="button" size="sm" variant="outline" onClick={printTranscript}><Printer className="mr-2 h-4 w-4" />Print transcript</Button><Button type="button" size="sm" onClick={restart}>Start another conversation</Button></div></div>}
+          {!config.maintenanceEnabled && mode === 'sent' && <div className="flex flex-1 flex-col items-center justify-center bg-white px-6 text-center"><span className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100"><CheckCircle2 className="h-8 w-8 text-green-600" /></span><h2 className="mt-4 text-lg font-bold">Enquiry received</h2><p className="mt-2 text-sm text-slate-600">Your enquiry has been submitted to the JA Plan Studio Support Team.</p><div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"><p className="text-[10px] font-bold uppercase text-slate-500">Reference</p><p className="mt-1 font-mono text-sm font-bold">{reference}</p></div><p className="mt-3 text-xs text-slate-500">The team normally replies {config.responseTime}.</p><div className="mt-5 flex flex-wrap justify-center gap-2"><Button type="button" size="sm" variant="outline" onClick={downloadTranscript}><Download className="mr-2 h-4 w-4" />Download transcript</Button><Button type="button" size="sm" variant="outline" onClick={printTranscript}><Printer className="mr-2 h-4 w-4" />Print transcript</Button><Button type="button" size="sm" onClick={restart}>Start another conversation</Button></div></div>}
         </section>
       )}
     </div>
