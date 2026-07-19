@@ -8,6 +8,7 @@ import {
 
 import CookieBannerErrorBoundary from '@/components/CookieBannerErrorBoundary';
 import RouteErrorPage from '@/components/RouteErrorPage';
+import AccessibilityRuntime from '@/components/AccessibilityRuntime';
 import RootLayout from './layouts/RootLayout';
 import Spinner from './components/Spinner';
 import { routes, adminRoutes, resellerRoutes } from './routes';
@@ -19,6 +20,7 @@ import { FeatureConfigProvider } from './lib/feature-config-context';
 import { SiteSettingsProvider } from './lib/site-settings-context';
 import { ResellerAuthProvider } from './lib/reseller-auth-context';
 import AIHelpChatbot from '@/components/AIHelpChatbot';
+import './styles/accessibility-global.css';
 
 const StandardBusinessHomePage = lazy(() => import('./pages/home'));
 const StandardBusinessPlansPage = lazy(() => import('./pages/plans'));
@@ -32,8 +34,9 @@ const CookieBanner = lazy(() =>
 );
 
 const SpinnerFallback = () => (
-  <div className="flex justify-center py-8 h-screen items-center">
+  <div className="flex justify-center py-8 h-screen items-center" role="status" aria-live="polite" aria-label="Loading JA Plan Studio">
     <Spinner />
+    <span className="sr-only">Loading JA Plan Studio…</span>
   </div>
 );
 
@@ -77,29 +80,30 @@ const router = createBrowserRouter(routeTree);
 export default function App() {
   return (
     <SiteSettingsProvider>
-    <ThemeProvider>
-      <AuthProvider>
-        <AdminProvider>
-          <AdminThemeProvider>
-            <div id="admin-theme-root">
-            <FeatureConfigProvider>
-            <ResellerAuthProvider>
-            <>
-              <RouterProvider router={router} />
-              <CookieBannerErrorBoundary>
-                <Suspense fallback={null}>
-                  <CookieBanner />
-                </Suspense>
-              </CookieBannerErrorBoundary>
-              <AIHelpChatbot />
-            </>
-            </ResellerAuthProvider>
-            </FeatureConfigProvider>
-            </div>
-          </AdminThemeProvider>
-        </AdminProvider>
-      </AuthProvider>
-    </ThemeProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <AdminProvider>
+            <AdminThemeProvider>
+              <div id="admin-theme-root">
+                <FeatureConfigProvider>
+                  <ResellerAuthProvider>
+                    <>
+                      <AccessibilityRuntime />
+                      <RouterProvider router={router} />
+                      <CookieBannerErrorBoundary>
+                        <Suspense fallback={null}>
+                          <CookieBanner />
+                        </Suspense>
+                      </CookieBannerErrorBoundary>
+                      <AIHelpChatbot />
+                    </>
+                  </ResellerAuthProvider>
+                </FeatureConfigProvider>
+              </div>
+            </AdminThemeProvider>
+          </AdminProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </SiteSettingsProvider>
   );
 }
