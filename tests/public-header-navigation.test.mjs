@@ -5,12 +5,13 @@ import { readFile } from 'node:fs/promises';
 const header = await readFile(new URL('../src/layouts/parts/Header.tsx', import.meta.url), 'utf8');
 const routes = await readFile(new URL('../src/routes.tsx', import.meta.url), 'utf8');
 
-test('public header only exposes partner, Plan and Help dropdowns', () => {
-  assert.match(header, /label: 'Get Your Guide & Headout'/);
+test('public header only exposes Book, Plan and Help dropdowns', () => {
+  assert.match(header, /label: 'Book'/);
   assert.match(header, /href: '\/getyourguide', label: 'Get Your Guide'/);
   assert.match(header, /href: '\/headout', label: 'Headout'/);
   assert.match(header, /label: 'Plan'/);
   assert.match(header, /label: 'Help'/);
+  assert.doesNotMatch(header, /label: 'Get Your Guide & Headout'/);
   assert.doesNotMatch(header, /label: 'Activities'/);
   assert.doesNotMatch(header, /label: 'Experiences'/);
   assert.doesNotMatch(header, /label: 'Discover'/);
