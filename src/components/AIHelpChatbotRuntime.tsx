@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bot, ChevronDown, LifeBuoy, Wrench, X } from 'lucide-react';
+import { ChevronDown, LifeBuoy, Wrench, X } from 'lucide-react';
 import ManagedAIHelpChatbot from './ManagedAIHelpChatbot';
 
 interface RuntimeConfig {
