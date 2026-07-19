@@ -218,7 +218,7 @@ export default function ManagedAIHelpChatbot() {
     } catch (reason) {
       const message = reason instanceof Error ? reason.message : 'The issue could not be escalated.';
       setChatError(message);
-      appendAssistant(`I could not send the escalation automatically: ${message}`, { suggestions: ['Try escalation again', 'Contact the team'] });
+      appendAssistant(`I could not send the escalation automatically: ${message}`, { suggestions: ['Create an enquiry'] });
     } finally {
       setSubmitting(false);
     }
