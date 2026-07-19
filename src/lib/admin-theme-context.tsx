@@ -4,7 +4,7 @@
  * The selected mode is cached locally and persisted to Admin site settings.
  */
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Moon, Sun } from 'lucide-react';
+import { Bot, Moon, Sun } from 'lucide-react';
 
 export type AdminTheme = 'light' | 'dark' | 'system';
 
@@ -83,9 +83,6 @@ export function AdminThemeProvider({ children }: { children: React.ReactNode }) 
     }).catch(() => { /* the local preference still remains effective */ });
   }
 
-  // Apply the class to the root only while an Admin route is active. A DOM
-  // observer keeps this correct during React Router navigation, including
-  // pushState changes that do not emit a browser popstate event.
   useEffect(() => {
     const root = document.getElementById('admin-theme-root');
     if (!root) return;
@@ -116,16 +113,26 @@ export function AdminThemeProvider({ children }: { children: React.ReactNode }) 
     <AdminThemeContext.Provider value={{ theme, resolvedTheme, setTheme }}>
       {children}
       {adminPortalMounted && (
-        <button
-          type="button"
-          className="fixed bottom-20 right-4 z-[60] inline-flex min-h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-xl transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 lg:bottom-6 lg:right-6 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
-          onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-          aria-label={toggleLabel}
-          title={toggleLabel}
-        >
-          {resolvedTheme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          <span>{resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
-        </button>
+        <div className="fixed bottom-20 right-4 z-[60] flex flex-col items-end gap-2 lg:bottom-6 lg:right-6">
+          <a
+            href="/admin/ai-chatbot"
+            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-xl transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
+            title="Open AI Chatbot Control Centre"
+          >
+            <Bot className="h-4 w-4" />
+            <span>Chatbot settings</span>
+          </a>
+          <button
+            type="button"
+            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-xl transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
+            onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+            aria-label={toggleLabel}
+            title={toggleLabel}
+          >
+            {resolvedTheme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            <span>{resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+          </button>
+        </div>
       )}
     </AdminThemeContext.Provider>
   );
