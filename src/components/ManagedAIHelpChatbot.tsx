@@ -461,7 +461,7 @@ export default function ManagedAIHelpChatbot() {
             </div>
             <button type="button" onClick={closeWidget} aria-label="Close assistant" className="rounded-lg p-1.5 text-white/80 hover:bg-white/10"><X className="h-4 w-4" /></button>
           </header>
-          {maintenanceWindow && <div role="status" className="shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-xs font-semibold text-amber-950">{maintenanceWindow}</div>}
+          {!config.maintenanceEnabled && maintenanceWindow && <div role="status" className="shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-xs font-semibold text-amber-950">{maintenanceWindow}</div>}
 
           {config.maintenanceEnabled && <div className="flex flex-1 flex-col items-center justify-center bg-slate-50 px-6 py-8 text-center" role="status"><span className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-800"><Wrench className="h-7 w-7" /></span><h2 className="mt-4 text-lg font-bold text-slate-950">Chat temporarily unavailable</h2><p className="mt-2 max-w-sm whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{config.maintenanceMessage}</p>{maintenanceWindow && <p className="mt-4 max-w-sm rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-950">{maintenanceWindow}</p>}<p className="mt-4 text-xs text-slate-500">Conversations and enquiries are disabled until maintenance has ended.</p></div>}
 
