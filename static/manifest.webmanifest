@@ -1,0 +1,43 @@
+{
+  "id": "/",
+  "name": "JA Plan Studio",
+  "short_name": "JA Plan Studio",
+  "description": "Guided planning builders, saved plans and secure customer and administration access.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#0b172d",
+  "theme_color": "#0b172d",
+  "categories": ["productivity", "travel", "business"],
+  "lang": "en-GB",
+  "icons": [
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Explore Builders",
+      "short_name": "Builders",
+      "url": "/builders",
+      "icons": [{ "src": "/pwa-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Customer Dashboard",
+      "short_name": "Dashboard",
+      "url": "/dashboard",
+      "icons": [{ "src": "/pwa-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Admin Portal",
+      "short_name": "Admin",
+      "url": "/admin",
+      "icons": [{ "src": "/pwa-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    }
+  ]
+}
