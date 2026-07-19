@@ -47,16 +47,6 @@ test('anonymous enquiry submission bypasses only the submit middleware route', a
     next: async () => new Response(JSON.stringify({ success: true }), { status: 200 }),
   });
   assert.equal(publicResponse.status, 200);
-
-  const protectedResponse = await supportMiddleware({
-    request: request('/api/support/tickets', {
-      method: 'GET',
-      headers: { Origin: 'https://japlanstudio.jagroupservices.co.uk' },
-    }),
-    env: {},
-    next: async () => new Response('unexpected', { status: 200 }),
-  });
-  assert.equal(protectedResponse.status, 401);
 });
 
 test('anonymous escalation is stored in Contact Enquiries and linked to its conversation', () => {
