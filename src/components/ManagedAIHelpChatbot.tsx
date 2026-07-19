@@ -150,7 +150,7 @@ export default function ManagedAIHelpChatbot() {
 
   function initialiseConversation() {
     if (messages.length) return;
-    setMessages([{ id: id('assistant'), role: 'assistant', text: config.maintenanceEnabled ? config.maintenanceMessage : `Hello 👋 Welcome to JA Plan Studio. I’m ${config.assistantName}. Before we look at the issue, what is your full name?`, suggestions: config.maintenanceEnabled ? (config.escalationEnabled ? ['Create an enquiry'] : []) : [] }]);
+    setMessages([{ id: id('assistant'), role: 'assistant', text: config.maintenanceEnabled ? config.maintenanceMessage : `Hello 👋 Welcome to JA Plan Studio. I’m ${config.assistantName}. Before we look at the issue, what is your full name?`, suggestions: config.maintenanceEnabled ? (config.escalationEnabled && config.maintenanceAllowEnquiries ? ['Create an enquiry'] : []) : [] }]);
   }
 
   function openWidget() {
@@ -240,7 +240,11 @@ export default function ManagedAIHelpChatbot() {
 
   async function sendMessage(raw = input) {
     const value = raw.trim();
-    if (!value || thinking || config.maintenanceEnabled) return;
+    if (!value || thinking) return;
+    if (config.maintenanceEnabled) {
+      if (value === 'Create an enquiry' && config.escalationEnabled && config.maintenanceAllowEnquiries) startEnquiry();
+      return;
+    }
 
     if (intakeStep !== 'issue') {
       const intakeMessage: ChatMessage = { id: id('user'), role: 'user', text: value };
