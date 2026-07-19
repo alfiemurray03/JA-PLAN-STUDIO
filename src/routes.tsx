@@ -21,6 +21,7 @@ const ExperienceBuilderPage = lazy(() => import('./pages/experience-builder'));
 const PricingPage = lazy(() => import('./pages/pricing'));
 const SettingsPage = lazy(() => import('./pages/settings'));
 const SupportPage = lazy(() => import('./pages/support'));
+const PublicHelpCentrePage = lazy(() => import('./pages/help-centre'));
 const PrivacySettingsPage = lazy(() => import('./pages/privacy-settings'));
 const TermsPage = lazy(() => import('./pages/terms'));
 const PrivacyPage = lazy(() => import('./pages/privacy'));
@@ -55,6 +56,7 @@ const AdminLegalPage = lazy(() => import('./pages/admin/legal'));
 const AdminPagesPage = lazy(() => import('./pages/admin/pages'));
 const AdminBuildersPage = lazy(() => import('./pages/admin/builders'));
 const AdminSiteSettingsPage = lazy(() => import('./pages/admin/site-settings'));
+const AdminAIChatbotPage = lazy(() => import('./pages/admin/ai-chatbot'));
 const AdminAnalyticsPage = lazy(() => import('./pages/admin/analytics'));
 const AdminSupportPage = lazy(() => import('./pages/admin/support'));
 const AdminAuditPage = lazy(() => import('./pages/admin/audit'));
@@ -265,6 +267,10 @@ export const routes: RouteObject[] = [
     element: wrap(<RequireAuth><SettingsPage /></RequireAuth>),
   },
   {
+    path: '/help-centre',
+    element: wrap(<PublicHelpCentrePage />),
+  },
+  {
     path: '/support',
     element: wrap(<RequireAuth><SupportPage /></RequireAuth>),
   },
@@ -403,6 +409,10 @@ export const adminRoutes: RouteObject[] = [
   {
     path: '/admin/site-settings',
     element: wrap(<RequireAdmin><AdminSiteSettingsPage /></RequireAdmin>),
+  },
+  {
+    path: '/admin/ai-chatbot',
+    element: wrap(<RequireAdmin><AdminAIChatbotPage /></RequireAdmin>),
   },
   {
     path: '/admin/analytics',
