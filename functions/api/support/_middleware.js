@@ -52,7 +52,7 @@ export async function onRequest(context) {
   }
 
   if (!identity && !publicSubmission) {
-    return json({ success: false, error: "Please sign in to view customer support conversations." }, 401);
+    return json({ success: false, error: "Please sign in to use customer support." }, 401);
   }
 
   request = withIdentity(request, identity);
