@@ -1,5 +1,5 @@
 // @refresh reset
-// v9 — simplified public navigation for JA Plan Studio
+// v10 — simplified public navigation for JA Plan Studio
 import { Link } from 'react-router-dom';
 import { Menu, X, LayoutDashboard, LogOut, User, ChevronDown } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
@@ -15,12 +15,11 @@ export default function SiteNavHeader() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const directNavLinks = [
-    { href: '/getyourguide', label: 'Get Your Guide' },
-    { href: '/headout', label: 'Headout' },
-  ];
-
   const navGroups = [
+    { label: 'Get Your Guide & Headout', links: [
+      { href: '/getyourguide', label: 'Get Your Guide' },
+      { href: '/headout', label: 'Headout' },
+    ]},
     { label: 'Plan', links: [
       { href: '/builders', label: 'Experience Builders' }, { href: '/#features', label: 'How it works' }, { href: '/pricing', label: 'Pricing' },
     ]},
@@ -63,15 +62,6 @@ export default function SiteNavHeader() {
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-1" aria-label="Main navigation">
-            {directNavLinks.map(link => (
-              <Link
-                key={link.href}
-                to={link.href}
-                className="px-3.5 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
-              >
-                {link.label}
-              </Link>
-            ))}
             {navGroups.map(group => <div key={group.label} className="relative group/nav">
               <button className="px-3.5 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all inline-flex items-center gap-1">{group.label}<ChevronDown className="w-3.5 h-3.5" /></button>
               <div className="absolute left-0 top-full pt-2 w-56 hidden group-hover/nav:block group-focus-within/nav:block">
@@ -169,18 +159,6 @@ export default function SiteNavHeader() {
       {open && (
         <div id="mobile-menu" className="md:hidden border-t border-border bg-card px-4 py-4 space-y-1"
           style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
-          <div className="py-1">
-            {directNavLinks.map(link => (
-              <Link
-                key={link.href}
-                to={link.href}
-                className="flex items-center px-4 py-2.5 rounded-xl text-sm font-medium text-foreground hover:bg-muted"
-                onClick={() => setOpen(false)}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </div>
           {navGroups.map(group => <div key={group.label} className="py-1"><p className="px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{group.label}</p>{group.links.map(link => <Link key={link.href} to={link.href} className="flex items-center px-4 py-2.5 rounded-xl text-sm font-medium text-foreground hover:bg-muted" onClick={() => setOpen(false)}>{link.label}</Link>)}</div>)}
 
           {!loading && (
