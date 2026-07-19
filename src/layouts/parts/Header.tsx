@@ -1,5 +1,5 @@
 // @refresh reset
-// v8 — paired with RootLayout v8; imported directly as SiteNavHeader
+// v10 — simplified public navigation for JA Plan Studio
 import { Link } from 'react-router-dom';
 import { Menu, X, LayoutDashboard, LogOut, User, ChevronDown } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
@@ -16,9 +16,9 @@ export default function SiteNavHeader() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const navGroups = [
-    { label: 'Discover', links: [
-      { href: '/activities', label: 'Activities' }, { href: '/experiences', label: 'Experiences' },
-      { href: '/headout', label: 'Headout' }, { href: '/getyourguide', label: 'GetYourGuide' },
+    { label: 'Get Your Guide & Headout', links: [
+      { href: '/getyourguide', label: 'Get Your Guide' },
+      { href: '/headout', label: 'Headout' },
     ]},
     { label: 'Plan', links: [
       { href: '/builders', label: 'Experience Builders' }, { href: '/#features', label: 'How it works' }, { href: '/pricing', label: 'Pricing' },
