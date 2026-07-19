@@ -19,7 +19,7 @@ test('starts account triage after unresolved sign-in help', () => {
   assert.equal(result.source, 'guided_triage');
   assert.equal(result.category, 'Technical Support');
   assert.match(result.reply, /Escalation check 1 of 4/);
-  assert.match(result.reply, /customer account or the Admin Centre/);
+  assert.match(result.reply, /sign-in method.*JA Plan Studio customer account/);
   assert.equal(result.escalate, false);
 });
 
