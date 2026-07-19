@@ -67,6 +67,16 @@ const FLOWS = {
   }
 };
 
+const SUPPORT_CONFIRMATION = "Would you like me to send this conversation to the support team?";
+
+function confirmsSupport(message) {
+  return /^(?:yes\b|please do\b|send\b|go ahead\b|contact\b|submit\b)/i.test(message);
+}
+
+function declinesSupport(message) {
+  return /^(?:no\b|not yet\b|keep helping\b|try again\b|do not send\b|don't send\b)/i.test(message);
+}
+
 function text(value) {
   return String(value || "").trim();
 }
@@ -125,11 +135,48 @@ function urgentPriority(flowKey, message, history) {
 export function guidedEscalation(config, message, rawHistory) {
   if (!config?.escalationEnabled) return null;
   const history = normaliseHistory(rawHistory);
-  const started = triageStarted(history);
-  if (!started && !escalationRequested(message)) return null;
-
   const flowKey = detectFlow(message, history);
   const flow = FLOWS[flowKey];
+  const confirmationAsked = history.some((item) => item.role === "assistant" && item.content.includes(SUPPORT_CONFIRMATION));
+
+  if (confirmationAsked) {
+    if (declinesSupport(message)) {
+      return {
+        reply: "No problem — I haven’t sent anything. Tell me what you would like to try next, or ask me another question.",
+        suggestions: ["Try another question"],
+        category: flow.category,
+        suggestedSubject: `${flow.label} support request`,
+        escalate: false,
+        resolved: false,
+        source: "guided_triage"
+      };
+    }
+    if (confirmsSupport(message)) {
+      const priority = urgentPriority(flowKey, message, history);
+      return {
+        reply: "Thanks — I’m sending the conversation to the support team now. I’ll show your enquiry reference as soon as it has been submitted.",
+        suggestions: [],
+        category: flow.category,
+        suggestedSubject: `[${priority}] ${flow.label} support request`,
+        escalate: true,
+        resolved: false,
+        priority,
+        source: "guided_triage"
+      };
+    }
+    return {
+      reply: `I haven’t sent anything yet. ${SUPPORT_CONFIRMATION}`,
+      suggestions: ["Yes, send it to the support team", "No, keep helping me"],
+      category: flow.category,
+      suggestedSubject: `${flow.label} support request`,
+      escalate: false,
+      resolved: false,
+      source: "guided_triage"
+    };
+  }
+
+  const started = triageStarted(history);
+  if (!started && !escalationRequested(message)) return null;
   const answered = answeredQuestionCount(history);
 
   if (answered < flow.questions.length) {
@@ -146,15 +193,13 @@ export function guidedEscalation(config, message, rawHistory) {
     };
   }
 
-  const priority = urgentPriority(flowKey, message, history);
   return {
-    reply: `Thanks — I’ve got the information the support team needs. I’ll send this conversation to them now, including the answers you have given. You’ll receive an enquiry reference once it has been submitted.`,
-    suggestions: ["Continue escalation", "Try another question"],
+    reply: `Thanks — I’ve got the information the support team would need. ${SUPPORT_CONFIRMATION}`,
+    suggestions: ["Yes, send it to the support team", "No, keep helping me"],
     category: flow.category,
-    suggestedSubject: `[${priority}] ${flow.label} support request`,
-    escalate: true,
+    suggestedSubject: `${flow.label} support request`,
+    escalate: false,
     resolved: false,
-    priority,
     source: "guided_triage"
   };
 }

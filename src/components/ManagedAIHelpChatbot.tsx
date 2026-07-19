@@ -114,6 +114,7 @@ export default function ManagedAIHelpChatbot() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [thinking, setThinking] = useState(false);
+  const [thinkingLabel, setThinkingLabel] = useState('Searching the Help Centre…');
   const [chatError, setChatError] = useState('');
   const [reference, setReference] = useState('');
   const [submitError, setSubmitError] = useState('');
@@ -172,7 +173,7 @@ export default function ManagedAIHelpChatbot() {
 
   function initialiseConversation() {
     if (messages.length) return;
-    setMessages([{ id: id('assistant'), role: 'assistant', text: config.maintenanceEnabled ? [config.maintenanceMessage, formatMaintenanceWindow(config.maintenanceStart, config.maintenanceEnd)].filter(Boolean).join('\n\n') : `Hello 👋 Welcome to JA Plan Studio. I’m ${config.assistantName}. Before we look at the issue, what is your full name?`, suggestions: [] }]);
+    setMessages([{ id: id('assistant'), role: 'assistant', text: config.maintenanceEnabled ? [config.maintenanceMessage, formatMaintenanceWindow(config.maintenanceStart, config.maintenanceEnd)].filter(Boolean).join('\n\n') : `${config.welcomeMessage}\n\nBefore we look at the issue, what is your full name?`, suggestions: [] }]);
   }
 
   function openWidget() {
@@ -307,6 +308,10 @@ export default function ManagedAIHelpChatbot() {
     const userMessage: ChatMessage = { id: id('user'), role: 'user', text: value };
     const next = [...messages, userMessage];
     const supportHistory = issueOnlyHistory(next);
+    const lastAssistantText = [...messages].reverse().find(message => message.role === 'assistant')?.text || '';
+    const answeringHandover = /Would you like me to send this conversation to the support team\?/i.test(lastAssistantText);
+    const confirmingHandover = answeringHandover && /^(?:yes\b|please do\b|send\b|go ahead\b|contact\b|submit\b)/i.test(value);
+    setThinkingLabel(confirmingHandover ? 'Sending your enquiry…' : answeringHandover ? 'Continuing the conversation…' : 'Searching the Help Centre…');
     setMessages(next); setInput(''); setThinking(true); setChatError('');
     try {
       const response = await fetch('/api/support-assistant', {
@@ -394,7 +399,7 @@ export default function ManagedAIHelpChatbot() {
     sessionIdRef.current = id('support-session'); openedAtRef.current = Date.now(); setReference(''); setInput(''); setSuggestedSubject(''); setSuggestedCategory('Technical Support');
     setForm({ name: '', email: '', telephone: '', subject: '', message: '', category: 'Technical Support', consent: false });
     setIntakeStep('name');
-    setMessages([{ id: id('assistant'), role: 'assistant', text: `Hello 👋 Welcome to JA Plan Studio. I’m ${config.assistantName}. Before we look at the issue, what is your full name?`, suggestions: [] }]); setMode('chat'); void sendEvent('open');
+    setMessages([{ id: id('assistant'), role: 'assistant', text: `${config.welcomeMessage}\n\nBefore we look at the issue, what is your full name?`, suggestions: [] }]); setMode('chat'); void sendEvent('open');
   }
 
   if (hiddenForPortal || !ready || !config.enabled) return null;
@@ -436,7 +441,7 @@ export default function ManagedAIHelpChatbot() {
                 {message.article && <a href={message.article.href || '/help-centre'} className="mt-2 block rounded-xl border p-3 text-left transition hover:brightness-95" style={{ borderColor: config.accentColor, backgroundColor: config.accentColor }}><div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: config.primaryColor }}>Help Centre · {message.article.category}</p><p className="mt-1 text-sm font-semibold text-slate-900">{message.article.title}</p><p className="mt-1 text-xs text-slate-600">{message.article.summary}</p></div><ExternalLink className="mt-1 h-4 w-4 shrink-0" style={{ color: config.primaryColor }} /></div></a>}
                 {!!message.suggestions?.length && <div className="mt-2 flex flex-wrap gap-2">{message.suggestions.map(suggestion => <button key={`${message.id}-${suggestion}`} type="button" onClick={() => void sendMessage(suggestion)} className="rounded-full border bg-white px-3 py-1.5 text-xs font-medium shadow-sm hover:bg-slate-50" style={{ borderColor: config.accentColor, color: config.primaryColor }}>{suggestion}</button>)}</div>}
               </div></div>)}
-              {thinking && <div className="flex justify-start"><div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-600"><Loader2 className="h-4 w-4 animate-spin" style={{ color: config.primaryColor }} />Searching the Help Centre…</div></div>}
+              {thinking && <div className="flex justify-start"><div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-600"><Loader2 className="h-4 w-4 animate-spin" style={{ color: config.primaryColor }} />{thinkingLabel}</div></div>}
               <div ref={bottomRef} />
             </div>
             {!config.maintenanceEnabled && <footer className="shrink-0 border-t border-slate-200 bg-white p-3">{chatError && <p className="mb-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{chatError}</p>}<div className="flex items-end gap-2"><Input ref={inputRef} value={input} onChange={event => setInput(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); void sendMessage(); } }} placeholder={config.inputPlaceholder} className="h-10 flex-1 border-slate-300 bg-white text-sm text-slate-900" /><Button type="button" onClick={() => void sendMessage()} disabled={thinking || !input.trim()} style={{ backgroundColor: config.primaryColor }} className="h-10 w-10 shrink-0 p-0 text-white"><Send className="h-4 w-4" /></Button></div><div className="mt-2 flex items-center justify-between text-[10px] text-slate-500"><span>{config.showPoweredBy ? 'Powered by JA Plan Studio Help Centre' : 'AI answers may be checked before acting.'}</span>{config.escalationEnabled && <button type="button" onClick={() => startEnquiry()} className="font-semibold hover:underline" style={{ color: config.primaryColor }}>Contact the team</button>}</div></footer>}
