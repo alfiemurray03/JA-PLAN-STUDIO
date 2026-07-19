@@ -19,7 +19,7 @@ test('starts account triage after unresolved sign-in help', () => {
   assert.equal(result.source, 'guided_triage');
   assert.equal(result.category, 'Technical Support');
   assert.match(result.reply, /Escalation check 1 of 4/);
-  assert.match(result.reply, /customer account or the Admin Centre/);
+  assert.match(result.reply, /sign-in method.*JA Plan Studio customer account/);
   assert.equal(result.escalate, false);
 });
 
@@ -46,7 +46,7 @@ test('finishes triage with priority, structured subject and enquiry action', () 
   assert.equal(result.escalate, true);
   assert.equal(result.priority, 'High');
   assert.equal(result.suggestedSubject, '[High] Account or sign-in support request');
-  assert.deepEqual(result.suggestions, ['Create an enquiry', 'Try another question']);
+  assert.deepEqual(result.suggestions, ['Continue escalation', 'Try another question']);
   assert.match(result.reply, /full conversation and your answers will be attached automatically/);
 });
 
