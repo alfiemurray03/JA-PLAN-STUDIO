@@ -31,7 +31,7 @@ interface AssistantConfig {
 
 interface ArticleLink { id: string; title: string; category: string; summary: string; href: string; }
 interface ChatMessage { id: string; role: 'assistant' | 'user'; text: string; article?: ArticleLink; suggestions?: string[]; }
-interface AssistantReply { success: boolean; error?: string; reply?: string; suggestions?: string[]; article?: ArticleLink; category?: string; suggestedSubject?: string; escalate?: boolean; maintenance?: boolean; }
+interface AssistantReply { success: boolean; error?: string; reply?: string; suggestions?: string[]; article?: ArticleLink; category?: string; suggestedSubject?: string; priority?: string; escalate?: boolean; maintenance?: boolean; }
 interface EnquiryForm { name: string; email: string; subject: string; message: string; category: string; consent: boolean; }
 
 const DEFAULT_CONFIG: AssistantConfig = {
@@ -157,6 +157,73 @@ export default function ManagedAIHelpChatbot() {
     setFieldErrors({}); setSubmitError(''); setMode('enquiry');
   }
 
+  async function submitAutomaticEscalation(reply: AssistantReply, conversation: ChatMessage[]) {
+    const name = displayName(user);
+    const email = user?.email?.trim() || '';
+    const subject = reply.suggestedSubject || suggestedSubject || 'Help with JA Plan Studio';
+    const category = reply.category || suggestedCategory || 'Technical Support';
+
+    if (!email || !name) {
+      setForm(current => ({ ...current, subject, category, message: [...conversation].reverse().find(message => message.role === 'user')?.text || '' }));
+      setFieldErrors({});
+      setSubmitError('');
+      setMode('enquiry');
+      return;
+    }
+
+    setSubmitting(true);
+    setChatError('');
+    try {
+      const transcript = conversation
+        .map(message => `${message.role === 'assistant' ? config.assistantName : 'Customer'}: ${message.text}`)
+        .join('\n\n');
+      const metadata = [
+        '--- Structured AI escalation ---',
+        `Account type: Signed-in customer`,
+        `Category: ${category}`,
+        `Priority: ${reply.priority || 'Normal'}`,
+        `Page: ${window.location.pathname}`,
+        `Session: ${sessionIdRef.current}`,
+        'Troubleshooting and triage transcript:',
+        transcript,
+      ].join('\n');
+
+      const response = await fetch('/api/support/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          sessionId: sessionIdRef.current,
+          name,
+          email,
+          subject,
+          message: metadata.slice(0, 6000),
+          category,
+          priority: reply.priority || 'Normal',
+          enquiryType: 'AI Support Assistant escalation',
+          termsAccepted: true,
+          privacyAccepted: true,
+          marketingConsent: false,
+          startedAt: openedAtRef.current,
+          website: '',
+          idempotencyKey: `${sessionIdRef.current}-automatic-escalation`.slice(0, 120),
+        }),
+      });
+      const data = await response.json().catch(() => ({})) as { success?: boolean; reference?: string; error?: string; errors?: string[] };
+      if (!response.ok || !data.success || !data.reference) {
+        throw new Error(data.error || data.errors?.[0] || 'The issue could not be escalated.');
+      }
+      setReference(data.reference);
+      setMode('sent');
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : 'The issue could not be escalated.';
+      setChatError(message);
+      appendAssistant(`I could not send the escalation automatically: ${message}`, { suggestions: ['Try escalation again', 'Contact the team'] });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function sendMessage(raw = input) {
     const value = raw.trim();
     if (!value || thinking || config.maintenanceEnabled) return;
@@ -175,7 +242,9 @@ export default function ManagedAIHelpChatbot() {
       if (!response.ok || !data.success || !data.reply) throw new Error(data.error || 'The Help Centre assistant could not answer that question.');
       if (data.suggestedSubject) setSuggestedSubject(data.suggestedSubject);
       if (data.category) setSuggestedCategory(data.category);
-      appendAssistant(data.reply, { article: data.article, suggestions: data.escalate ? Array.from(new Set(['Create an enquiry', ...(data.suggestions || [])])) : data.suggestions });
+      const assistantMessage: ChatMessage = { id: id('assistant'), role: 'assistant', text: data.reply, article: data.article, suggestions: data.escalate && user?.email ? [] : data.suggestions };
+      setMessages(current => [...current, assistantMessage]);
+      if (data.escalate) await submitAutomaticEscalation(data, [...next, assistantMessage]);
     } catch (reason) {
       const message = reason instanceof Error ? reason.message : 'The Help Centre assistant could not answer that question.';
       setChatError(message);
