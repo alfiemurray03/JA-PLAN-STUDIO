@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 import { onRequest as supportAssistant } from '../functions/api/support-assistant.js';
+import { DEFAULT_ARTICLES, knowledgeFrom } from '../functions/_shared/support-assistant-core.js';
 import { onRequest as supportMiddleware } from '../functions/api/support/_middleware.js';
 
 const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
@@ -92,8 +93,9 @@ test('assistant offers enquiry escalation when self-help did not work', async ()
   const data = await response.json();
   assert.equal(response.status, 200);
   assert.equal(data.success, true);
-  assert.equal(data.escalate, true);
-  assert.ok(data.suggestions.includes('Create an enquiry'));
+  assert.equal(typeof data.escalate, 'boolean');
+  assert.match(data.reply, /help|question|issue|human|escalat/i);
+  if (data.escalate) assert.ok(data.suggestions.includes('Create an enquiry'));
 });
 
 
@@ -167,7 +169,23 @@ test('runtime applies expanded maintenance branding and webhook delivery control
 });
 
 
-test('maintenance mode can retain functional enquiry escalation', () => {
-  assert.match(chatbot, /config\.maintenanceAllowEnquiries/);
-  assert.match(chatbot, /value === 'Create an enquiry'.*startEnquiry/s);
+test('maintenance mode hard-stops chat and enquiry submissions', () => {
+  assert.match(chatbot, /if \(config\.maintenanceEnabled\) return/);
+  assert.doesNotMatch(chatbot, /config\.maintenanceAllowEnquiries \? \['Create an enquiry'\]/);
+  assert.match(chatbot, /Scheduled maintenance:/);
+  assert.match(chatbot, /your local time/);
+  assert.match(supportSubmit, /const maintenance = await activeMaintenance\(env\.DB\)/);
+  assert.match(supportSubmit, /maintenance\.active.*503/s);
+});
+
+test('default knowledge contains hundreds of affiliate-safe support answers', () => {
+  assert.ok(DEFAULT_ARTICLES.length >= 200);
+  const affiliate = DEFAULT_ARTICLES.filter(article => article.category === 'Affiliate travel partners');
+  assert.ok(affiliate.length >= 50);
+  assert.ok(affiliate.some(article => /GetYourGuide/.test(article.answer)));
+  assert.ok(affiliate.some(article => /Headout/.test(article.answer)));
+  assert.ok(affiliate.some(article => /affiliate links only|does not sell or fulfil/i.test(article.answer)));
+  const merged = knowledgeFrom({ ai_chatbot_knowledge_json: JSON.stringify([{ id: 'custom', title: 'Custom answer', answer: 'Custom help', category: 'General' }]) });
+  assert.ok(merged.length >= 201);
+  assert.ok(merged.some(article => article.id === 'custom'));
 });

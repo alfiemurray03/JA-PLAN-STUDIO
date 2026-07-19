@@ -7,6 +7,7 @@ import {
   validateEnquiry
 } from "../../_shared/enquiries.js";
 import { markConversationEscalated } from "../../_shared/support-assistant-monitor.js";
+import { configFrom, loadAssistantSettings } from "../../_shared/support-assistant-core.js";
 
 const ALLOWED_CHAT_CATEGORIES = new Set([
   "General Enquiry", "Sales", "Billing", "Technical Support", "Partnerships",
@@ -130,6 +131,15 @@ function ticket(row) {
   };
 }
 
+async function activeMaintenance(DB) {
+  const config = configFrom(await loadAssistantSettings(DB));
+  const now = Date.now();
+  const start = config.maintenanceStart ? Date.parse(config.maintenanceStart) : 0;
+  const end = config.maintenanceEnd ? Date.parse(config.maintenanceEnd) : 0;
+  const scheduled = Boolean(start && now >= start && (!end || now <= end));
+  return { active: config.maintenanceEnabled || scheduled, message: config.maintenanceMessage };
+}
+
 async function submitChatEnquiry(context, identity) {
   const { request, env } = context;
   const body = await request.json().catch(() => ({}));
@@ -208,7 +218,11 @@ export async function onRequest(context) {
     const parts = new URL(request.url).pathname.split("/").filter(Boolean).slice(2);
     const identity = identityOf(request);
     if (request.method === "POST" && !sameOrigin(request)) return json({ success: false, error: "Request origin was rejected." }, 403);
-    if (request.method === "POST" && parts[0] === "submit") return submitChatEnquiry(context, identity);
+    if (request.method === "POST" && parts[0] === "submit") {
+      const maintenance = await activeMaintenance(env.DB);
+      if (maintenance.active) return json({ success: false, maintenance: true, error: maintenance.message }, 503);
+      return submitChatEnquiry(context, identity);
+    }
     if (!identity.email) return json({ success: false, error: "Please sign in to view support conversations." }, 401);
     await ensureSupportTables(env.DB);
     if (parts[0] !== "tickets") return json({ success: false, error: "Support route not found." }, 404);
