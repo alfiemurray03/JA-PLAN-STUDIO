@@ -101,16 +101,17 @@ export async function onRequest(context) {
   if (!sameOrigin(request)) return json({ success: false, error: "Request origin was rejected." }, 403);
 
   const body = await request.json().catch(() => ({}));
+  if (!config.enabled) return json({ success: false, error: "The support assistant is currently unavailable." }, 503);
+  if (maintenanceActive) {
+    return json({ success: false, error: config.maintenanceMessage, maintenance: true }, 503);
+  }
+
   const event = clean(body.event, 40).toLowerCase();
   if (["open", "heartbeat", "close"].includes(event)) {
     await recordAssistantEvent(env.DB, request, body, event);
     return json({ success: true, event });
   }
 
-  if (!config.enabled) return json({ success: false, error: "The support assistant is currently unavailable." }, 503);
-  if (maintenanceActive) {
-    return json({ success: false, error: config.maintenanceMessage, maintenance: true }, 503);
-  }
   if (!identityEmail && !config.allowAnonymous) {
     return json({ success: false, error: "Please sign in to use the support assistant." }, 401);
   }
