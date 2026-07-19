@@ -70,11 +70,11 @@ const FLOWS = {
 const SUPPORT_CONFIRMATION = "Would you like me to send this conversation to the support team?";
 
 function confirmsSupport(message) {
-  return /^(?:yes|yes please|please do|send it|send this|go ahead|contact them|contact the team|submit it)[.! ]*$/i.test(message);
+  return /^(?:yes\b|please do\b|send\b|go ahead\b|contact\b|submit\b)/i.test(message);
 }
 
 function declinesSupport(message) {
-  return /^(?:no|no thanks|not yet|keep helping|try again|do not send|don't send)[.! ]*$/i.test(message);
+  return /^(?:no\b|not yet\b|keep helping\b|try again\b|do not send\b|don't send\b)/i.test(message);
 }
 
 function text(value) {
