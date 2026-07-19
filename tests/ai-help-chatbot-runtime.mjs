@@ -134,3 +134,23 @@ test('complete transcript is stored, emailed and sent to Teams', () => {
   assert.match(supportSubmit, /clean\(enquiry\.message, 20000\)/);
   assert.match(chatbot, /Your enquiry has been submitted to the JA Plan Studio Support Team/);
 });
+
+
+test('chatbot collects contact details conversationally before the issue', () => {
+  assert.match(chatbot, /intakeStep/);
+  assert.match(chatbot, /what is your full name/);
+  assert.match(chatbot, /What email address should we use/);
+  assert.match(chatbot, /What telephone number should the Support Team use/);
+  assert.match(chatbot, /Now, please tell me what you need help with/);
+  assert.match(chatbot, /telephone: form\.telephone\.trim\(\)/);
+  assert.match(chatbot, /suggestions: \[\]/);
+});
+
+test('customer can download and print the complete transcript', () => {
+  assert.match(chatbot, /function transcriptText\(\)/);
+  assert.match(chatbot, /function downloadTranscript\(\)/);
+  assert.match(chatbot, /new Blob\(\[transcriptText\(\)\]/);
+  assert.match(chatbot, /function printTranscript\(\)/);
+  assert.match(chatbot, /Download transcript/);
+  assert.match(chatbot, /Print transcript/);
+});

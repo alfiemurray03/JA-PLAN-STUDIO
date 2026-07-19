@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { ArrowLeft, Bot, CheckCircle2, ChevronDown, ExternalLink, LifeBuoy, Loader2, Send, Sparkles, Wrench, X } from 'lucide-react';
+import { ArrowLeft, Bot, CheckCircle2, ChevronDown, Download, ExternalLink, LifeBuoy, Loader2, Printer, Send, Sparkles, Wrench, X } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,7 +32,7 @@ interface AssistantConfig {
 interface ArticleLink { id: string; title: string; category: string; summary: string; href: string; }
 interface ChatMessage { id: string; role: 'assistant' | 'user'; text: string; article?: ArticleLink; suggestions?: string[]; }
 interface AssistantReply { success: boolean; error?: string; reply?: string; suggestions?: string[]; article?: ArticleLink; category?: string; suggestedSubject?: string; priority?: string; escalate?: boolean; maintenance?: boolean; }
-interface EnquiryForm { name: string; email: string; subject: string; message: string; category: string; consent: boolean; }
+interface EnquiryForm { name: string; email: string; telephone: string; subject: string; message: string; category: string; consent: boolean; }
 
 const DEFAULT_CONFIG: AssistantConfig = {
   enabled: true,
@@ -87,7 +87,8 @@ export default function ManagedAIHelpChatbot() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [suggestedSubject, setSuggestedSubject] = useState('');
   const [suggestedCategory, setSuggestedCategory] = useState('Technical Support');
-  const [form, setForm] = useState<EnquiryForm>({ name: '', email: '', subject: '', message: '', category: 'Technical Support', consent: false });
+  const [form, setForm] = useState<EnquiryForm>({ name: '', email: '', telephone: '', subject: '', message: '', category: 'Technical Support', consent: false });
+  const [intakeStep, setIntakeStep] = useState<'name' | 'email' | 'telephone' | 'issue'>('name');
   const sessionIdRef = useRef(id('support-session'));
   const openedAtRef = useRef(Date.now());
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -137,7 +138,7 @@ export default function ManagedAIHelpChatbot() {
 
   function initialiseConversation() {
     if (messages.length) return;
-    setMessages([{ id: id('assistant'), role: 'assistant', text: config.maintenanceEnabled ? config.maintenanceMessage : config.welcomeMessage, suggestions: config.maintenanceEnabled ? (config.escalationEnabled ? ['Create an enquiry'] : []) : STARTER_SUGGESTIONS }]);
+    setMessages([{ id: id('assistant'), role: 'assistant', text: config.maintenanceEnabled ? config.maintenanceMessage : `Hello 👋 Welcome to JA Plan Studio. I’m ${config.assistantName}. Before we look at the issue, what is your full name?`, suggestions: config.maintenanceEnabled ? (config.escalationEnabled ? ['Create an enquiry'] : []) : [] }]);
   }
 
   function openWidget() {
@@ -158,8 +159,8 @@ export default function ManagedAIHelpChatbot() {
   }
 
   async function submitAutomaticEscalation(reply: AssistantReply, conversation: ChatMessage[]) {
-    const name = displayName(user);
-    const email = user?.email?.trim() || '';
+    const name = form.name.trim() || displayName(user);
+    const email = form.email.trim() || user?.email?.trim() || '';
     const subject = reply.suggestedSubject || suggestedSubject || 'Help with JA Plan Studio';
     const category = reply.category || suggestedCategory || 'Technical Support';
 
@@ -196,6 +197,7 @@ export default function ManagedAIHelpChatbot() {
           sessionId: sessionIdRef.current,
           name,
           email,
+          telephone: form.telephone.trim(),
           subject,
           message: metadata.slice(0, 20000),
           category,
@@ -227,6 +229,43 @@ export default function ManagedAIHelpChatbot() {
   async function sendMessage(raw = input) {
     const value = raw.trim();
     if (!value || thinking || config.maintenanceEnabled) return;
+
+    if (intakeStep !== 'issue') {
+      const intakeMessage: ChatMessage = { id: id('user'), role: 'user', text: value };
+      setMessages(current => [...current, intakeMessage]);
+      setInput('');
+      if (intakeStep === 'name') {
+        if (value.length < 2) {
+          appendAssistant('Please tell me the full name you would like the Support Team to use.');
+          return;
+        }
+        setForm(current => ({ ...current, name: value }));
+        setIntakeStep('email');
+        appendAssistant(`Thanks, ${value}. What email address should we use to contact you about this conversation?`);
+        return;
+      }
+      if (intakeStep === 'email') {
+        if (!EMAIL_PATTERN.test(value)) {
+          appendAssistant('That email address does not look quite right. Please check it and enter it again.');
+          return;
+        }
+        setForm(current => ({ ...current, email: value.toLowerCase() }));
+        setIntakeStep('telephone');
+        appendAssistant('Thank you. What telephone number should the Support Team use if a call is necessary? You can type “skip” if you do not want to provide one.');
+        return;
+      }
+      if (intakeStep === 'telephone') {
+        const telephone = /^skip$/i.test(value) ? '' : value;
+        if (telephone && !/^[+()0-9 .-]{7,30}$/.test(telephone)) {
+          appendAssistant('Please enter a valid telephone number, or type “skip”.');
+          return;
+        }
+        setForm(current => ({ ...current, telephone }));
+        setIntakeStep('issue');
+        appendAssistant('Perfect — I have your contact details. Now, please tell me what you need help with. I’ll ask relevant follow-up questions and check the Help Centre before escalating anything.');
+        return;
+      }
+    }
     if (value === 'Create an enquiry') { startEnquiry(); return; }
     if (value === 'Open the Help Centre') { window.location.assign('/help-centre'); return; }
     if (value === 'Ask another question' || value === 'Try another question') { appendAssistant('Of course. What else can I help you with?', { suggestions: STARTER_SUGGESTIONS }); setInput(''); return; }
@@ -270,7 +309,7 @@ export default function ManagedAIHelpChatbot() {
       const transcript = history.map(message => `${message.role === 'assistant' ? config.assistantName : 'Visitor'}: ${message.content}`).join('\n\n');
       const response = await fetch('/api/support/submit', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-        body: JSON.stringify({ sessionId: sessionIdRef.current, name: form.name.trim(), email: form.email.trim(), subject: form.subject.trim(), message: `${form.message.trim()}${transcript ? `\n\n--- AI Help Centre conversation ---\n${transcript}` : ''}`.slice(0, 20000), category: form.category, termsAccepted: true, privacyAccepted: true, marketingConsent: false, startedAt: openedAtRef.current, website: '', idempotencyKey: `${sessionIdRef.current}-${form.subject.trim().toLowerCase()}`.slice(0, 120) }),
+        body: JSON.stringify({ sessionId: sessionIdRef.current, name: form.name.trim(), email: form.email.trim(), telephone: form.telephone.trim(), subject: form.subject.trim(), message: `${form.message.trim()}${transcript ? `\n\n--- AI Help Centre conversation ---\n${transcript}` : ''}`.slice(0, 20000), category: form.category, termsAccepted: true, privacyAccepted: true, marketingConsent: false, startedAt: openedAtRef.current, website: '', idempotencyKey: `${sessionIdRef.current}-${form.subject.trim().toLowerCase()}`.slice(0, 120) }),
       });
       const data = await response.json().catch(() => ({})) as { success?: boolean; reference?: string; error?: string; errors?: string[] };
       if (!response.ok || !data.success || !data.reference) throw new Error(data.error || data.errors?.[0] || 'The enquiry could not be sent.');
@@ -279,10 +318,47 @@ export default function ManagedAIHelpChatbot() {
     finally { setSubmitting(false); }
   }
 
+  function transcriptText() {
+    const lines = messages.map(message => `${message.role === 'assistant' ? config.assistantName : form.name || 'Visitor'}: ${message.text}`);
+    return [
+      'JA Plan Studio Support Conversation',
+      `Name: ${form.name || 'Not provided'}`,
+      `Email: ${form.email || 'Not provided'}`,
+      `Telephone: ${form.telephone || 'Not provided'}`,
+      reference ? `Enquiry reference: ${reference}` : '',
+      '',
+      ...lines,
+    ].filter(line => line !== '').join('\n\n');
+  }
+
+  function downloadTranscript() {
+    const blob = new Blob([transcriptText()], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `JA-Plan-Studio-${reference || sessionIdRef.current}-transcript.txt`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function printTranscript() {
+    const popup = window.open('', '_blank', 'noopener,noreferrer,width=800,height=700');
+    if (!popup) {
+      setChatError('Your browser blocked the print window. Please allow pop-ups and try again.');
+      return;
+    }
+    const safe = transcriptText().replace(/[&<>]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[character] || character);
+    popup.document.write(`<!doctype html><html lang="en-GB"><head><title>JA Plan Studio support transcript</title><style>body{font-family:Segoe UI,Arial,sans-serif;margin:32px;color:#0f172a}pre{white-space:pre-wrap;line-height:1.55}h1{font-size:22px}@media print{button{display:none}}</style></head><body><h1>JA Plan Studio support transcript</h1><pre>${safe}</pre><button onclick="window.print()">Print transcript</button></body></html>`);
+    popup.document.close();
+  }
+
   function restart() {
     sessionIdRef.current = id('support-session'); openedAtRef.current = Date.now(); setReference(''); setInput(''); setSuggestedSubject(''); setSuggestedCategory('Technical Support');
-    setForm({ name: displayName(user), email: user?.email || '', subject: '', message: '', category: 'Technical Support', consent: false });
-    setMessages([{ id: id('assistant'), role: 'assistant', text: config.welcomeMessage, suggestions: STARTER_SUGGESTIONS }]); setMode('chat'); void sendEvent('open');
+    setForm({ name: '', email: '', telephone: '', subject: '', message: '', category: 'Technical Support', consent: false });
+    setIntakeStep('name');
+    setMessages([{ id: id('assistant'), role: 'assistant', text: `Hello 👋 Welcome to JA Plan Studio. I’m ${config.assistantName}. Before we look at the issue, what is your full name?`, suggestions: [] }]); setMode('chat'); void sendEvent('open');
   }
 
   if (hiddenForPortal || !ready || !config.enabled) return null;
@@ -329,14 +405,14 @@ export default function ManagedAIHelpChatbot() {
           </>}
 
           {mode === 'enquiry' && <div className="flex-1 overflow-y-auto bg-white px-4 py-4"><div className="mb-4 rounded-xl border p-3" style={{ borderColor: config.accentColor, backgroundColor: config.accentColor }}><div className="flex gap-2"><LifeBuoy className="mt-0.5 h-4 w-4 shrink-0" style={{ color: config.primaryColor }} /><div><p className="text-sm font-semibold text-slate-950">Send this to Contact Enquiries</p><p className="mt-1 text-xs text-slate-700">This creates a support case and reference for the JA Plan Studio Support Team. Signed-out visitors can submit as well.</p></div></div></div><div className="space-y-3">
-            {[['name','Name','text'],['email','Email address','email'],['subject',`Subject (${form.subject.trim().length}/180)`,'text']].map(([key,label,type]) => <div key={key}><label className="mb-1 block text-xs font-semibold text-slate-800">{label}</label><Input type={type} value={String(form[key as keyof EnquiryForm])} onChange={event => setForm(current => ({ ...current, [key]: event.target.value }))} className="border-slate-300 bg-white text-slate-900" />{fieldErrors[key] && <p className="mt-1 text-xs text-red-600">{fieldErrors[key]}</p>}</div>)}
+            {[['name','Name','text'],['email','Email address','email'],['telephone','Telephone','tel'],['subject',`Subject (${form.subject.trim().length}/180)`,'text']].map(([key,label,type]) => <div key={key}><label className="mb-1 block text-xs font-semibold text-slate-800">{label}</label><Input type={type} value={String(form[key as keyof EnquiryForm])} onChange={event => setForm(current => ({ ...current, [key]: event.target.value }))} className="border-slate-300 bg-white text-slate-900" />{fieldErrors[key] && <p className="mt-1 text-xs text-red-600">{fieldErrors[key]}</p>}</div>)}
             <div><label className="mb-1 block text-xs font-semibold text-slate-800">Message ({form.message.trim().length}/6000)</label><Textarea value={form.message} rows={6} maxLength={6000} onChange={event => setForm(current => ({ ...current, message: event.target.value }))} className="min-h-[130px] border-slate-300 bg-white text-slate-900" />{fieldErrors.message && <p className="mt-1 text-xs text-red-600">{fieldErrors.message}</p>}</div>
             <label className="flex cursor-pointer items-start gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3"><input type="checkbox" checked={form.consent} onChange={event => setForm(current => ({ ...current, consent: event.target.checked }))} className="mt-0.5 h-4 w-4" /><span className="text-xs text-slate-700">I accept the <a href="/terms" target="_blank" rel="noreferrer" className="font-semibold underline">Terms of Service</a> and have read the <a href="/privacy" target="_blank" rel="noreferrer" className="font-semibold underline">Privacy Notice</a>.</span></label>{fieldErrors.consent && <p className="text-xs text-red-600">{fieldErrors.consent}</p>}
             {submitError && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{submitError}</div>}
             <Button type="button" onClick={() => void submitEnquiry()} disabled={submitting} style={{ backgroundColor: config.primaryColor }} className="w-full text-white">{submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}{submitting ? 'Sending enquiry…' : 'Send enquiry'}</Button>
           </div></div>}
 
-          {mode === 'sent' && <div className="flex flex-1 flex-col items-center justify-center bg-white px-6 text-center"><span className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100"><CheckCircle2 className="h-8 w-8 text-green-600" /></span><h2 className="mt-4 text-lg font-bold">Enquiry received</h2><p className="mt-2 text-sm text-slate-600">Your enquiry has been submitted to the JA Plan Studio Support Team.</p><div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"><p className="text-[10px] font-bold uppercase text-slate-500">Reference</p><p className="mt-1 font-mono text-sm font-bold">{reference}</p></div><p className="mt-3 text-xs text-slate-500">The team normally replies {config.responseTime}.</p><Button type="button" size="sm" className="mt-5" onClick={restart}>Start another conversation</Button></div>}
+          {mode === 'sent' && <div className="flex flex-1 flex-col items-center justify-center bg-white px-6 text-center"><span className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100"><CheckCircle2 className="h-8 w-8 text-green-600" /></span><h2 className="mt-4 text-lg font-bold">Enquiry received</h2><p className="mt-2 text-sm text-slate-600">Your enquiry has been submitted to the JA Plan Studio Support Team.</p><div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"><p className="text-[10px] font-bold uppercase text-slate-500">Reference</p><p className="mt-1 font-mono text-sm font-bold">{reference}</p></div><p className="mt-3 text-xs text-slate-500">The team normally replies {config.responseTime}.</p><div className="mt-5 flex flex-wrap justify-center gap-2"><Button type="button" size="sm" variant="outline" onClick={downloadTranscript}><Download className="mr-2 h-4 w-4" />Download transcript</Button><Button type="button" size="sm" variant="outline" onClick={printTranscript}><Printer className="mr-2 h-4 w-4" />Print transcript</Button><Button type="button" size="sm" onClick={restart}>Start another conversation</Button></div></div>}
         </section>
       )}
     </div>
