@@ -182,7 +182,7 @@ export function normaliseEnquiry(body = {}) {
     telephone: clean(body.telephone, 40),
     subject: clean(body.subject || body.enquiryType || body.formType, 180),
     category,
-    message: clean(body.message, 6000),
+    message: clean(body.message, 20000),
     bookingReference: clean(body.bookingReference, 80),
     orderReference: clean(body.orderReference, 80),
     formType: clean(body.formType, 80),
