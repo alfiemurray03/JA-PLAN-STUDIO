@@ -18,10 +18,11 @@ import { AdminThemeProvider } from './lib/admin-theme-context';
 import { FeatureConfigProvider } from './lib/feature-config-context';
 import { SiteSettingsProvider } from './lib/site-settings-context';
 import { ResellerAuthProvider } from './lib/reseller-auth-context';
-import SupportChatbot from '@/components/SupportChatbot';
+import AIHelpChatbot from '@/components/AIHelpChatbot';
 
 const StandardBusinessHomePage = lazy(() => import('./pages/home'));
 const StandardBusinessPlansPage = lazy(() => import('./pages/plans'));
+const PublicHelpCentrePage = lazy(() => import('./pages/help-centre'));
 
 const CookieBanner = lazy(() =>
   import('@/components/CookieBanner').catch((error) => {
@@ -44,12 +45,14 @@ const rootElement = (
   </Suspense>
 );
 
-const retainedCustomerRoutes = routes.filter(route => !['/', '/pricing'].includes(String(route.path || '')));
+const retainedCustomerRoutes = routes.filter(route => !['/', '/pricing', '/support', '/help-centre'].includes(String(route.path || '')));
 const customerRoutes: RouteObject[] = [
   { path: '/', element: <StandardBusinessHomePage /> },
   { path: '/home', element: <StandardBusinessHomePage /> },
   { path: '/plans', element: <StandardBusinessPlansPage /> },
   { path: '/pricing', element: <StandardBusinessPlansPage /> },
+  { path: '/support', element: <PublicHelpCentrePage /> },
+  { path: '/help-centre', element: <PublicHelpCentrePage /> },
   ...retainedCustomerRoutes,
 ];
 
@@ -88,7 +91,7 @@ export default function App() {
                   <CookieBanner />
                 </Suspense>
               </CookieBannerErrorBoundary>
-              <SupportChatbot />
+              <AIHelpChatbot />
             </>
             </ResellerAuthProvider>
             </FeatureConfigProvider>
