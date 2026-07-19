@@ -18,7 +18,7 @@ import { AdminThemeProvider } from './lib/admin-theme-context';
 import { FeatureConfigProvider } from './lib/feature-config-context';
 import { SiteSettingsProvider } from './lib/site-settings-context';
 import { ResellerAuthProvider } from './lib/reseller-auth-context';
-import SupportChatbot from '@/components/SupportChatbot';
+import AIHelpChatbot from '@/components/AIHelpChatbot';
 
 const StandardBusinessHomePage = lazy(() => import('./pages/home'));
 const StandardBusinessPlansPage = lazy(() => import('./pages/plans'));
@@ -88,7 +88,7 @@ export default function App() {
                   <CookieBanner />
                 </Suspense>
               </CookieBannerErrorBoundary>
-              <SupportChatbot />
+              <AIHelpChatbot />
             </>
             </ResellerAuthProvider>
             </FeatureConfigProvider>
