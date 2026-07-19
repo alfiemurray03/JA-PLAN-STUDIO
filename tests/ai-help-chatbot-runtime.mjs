@@ -165,3 +165,9 @@ test('runtime applies expanded maintenance branding and webhook delivery control
   assert.match(supportSubmit, /SUPPORT_WEBHOOK_4_URL/);
   assert.match(supportSubmit, /configuredWebhooks\.map/);
 });
+
+
+test('maintenance mode can retain functional enquiry escalation', () => {
+  assert.match(chatbot, /config\.maintenanceAllowEnquiries/);
+  assert.match(chatbot, /value === 'Create an enquiry'.*startEnquiry/s);
+});
