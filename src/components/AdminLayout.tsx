@@ -95,6 +95,7 @@ function Sidebar({ onClose }: SidebarProps) {
   const { admin, logout } = useAdmin();
   const location = useLocation();
   const navigate = useNavigate();
+  const { resolvedTheme, setTheme } = useAdminTheme();
 
   async function handleLogout() {
     await logout();
@@ -182,8 +183,17 @@ function Sidebar({ onClose }: SidebarProps) {
           ))}
       </nav>
 
-      {/* Footer */}
+      {/* Sidebar utilities */}
       <div className="px-2 py-3 border-t border-slate-200 space-y-0.5">
+        <button
+          type="button"
+          onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all"
+          aria-label={resolvedTheme === 'dark' ? 'Switch Admin Portal to light mode' : 'Switch Admin Portal to dark mode'}
+        >
+          {resolvedTheme === 'dark' ? <Sun className="w-4 h-4 text-slate-400" /> : <Moon className="w-4 h-4 text-slate-400" />}
+          {resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode'}
+        </button>
         <Link to="/dashboard" onClick={onClose}
           className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all">
           <Users className="w-4 h-4 text-slate-400" />
