@@ -24,4 +24,13 @@ test('Admin landing page is branded for JA Plan Studio operations', async () => 
   assert.doesNotMatch(page, /text-6xl/);
   assert.doesNotMatch(page, /document activity/i);
   assert.doesNotMatch(page, /Document Hub/i);
+  assert.doesNotMatch(page, /Go to customer sign-in/);
+});
+
+
+test('Admin landing HTML cannot remain stale at the Cloudflare edge', async () => {
+  const headers = await read('public/_headers');
+  assert.match(headers, /\/admin\/\*/);
+  assert.match(headers, /no-store, no-cache, must-revalidate/);
+  assert.match(headers, /\/index\.html/);
 });
