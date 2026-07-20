@@ -79,7 +79,7 @@ export default function AdminSecurity() {
       const payload = await response.json().catch(() => ({}));
       if (response.ok) setDirectorPinStatus(payload);
     } catch {
-      setDirectorPinMessage('The director PIN status could not be loaded.');
+      setDirectorPinMessage('The administrator PIN status could not be loaded.');
     }
   }, []);
 
@@ -95,12 +95,12 @@ export default function AdminSecurity() {
         body: JSON.stringify({ action: directorPinStatus.configured ? 'reset' : 'setup', pin: directorPin }),
       });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok || !payload.success) throw new Error(payload.error || 'The director PIN could not be saved.');
+      if (!response.ok || !payload.success) throw new Error(payload.error || 'The administrator PIN could not be saved.');
       setDirectorPin(''); setDirectorPinConfirm('');
-      setDirectorPinMessage(directorPinStatus.configured ? 'Your director CRM override PIN has been replaced.' : 'Your director CRM override PIN has been created.');
+      setDirectorPinMessage(directorPinStatus.configured ? 'Your administrator CRM override PIN has been replaced.' : 'Your administrator CRM override PIN has been created.');
       await loadDirectorPinStatus();
     } catch (reason) {
-      setDirectorPinMessage(reason instanceof Error ? reason.message : 'The director PIN could not be saved.');
+      setDirectorPinMessage(reason instanceof Error ? reason.message : 'The administrator PIN could not be saved.');
     } finally { setSavingDirectorPin(false); }
   }
 
@@ -141,18 +141,18 @@ export default function AdminSecurity() {
             })}
           </div>
 
-          {/* Director CRM override PIN */}
+          {/* Administrator CRM override PIN */}
           <Card className={card}>
             <CardHeader className={`pb-3 pt-4 px-4 border-b ${divider}`}>
               <div className="flex items-center gap-2">
                 <Lock className="w-4 h-4 text-primary" />
-                <h3 className={`text-sm font-semibold ${text}`}>Director CRM override PIN</h3>
+                <h3 className={`text-sm font-semibold ${text}`}>Administrator CRM override PIN</h3>
               </div>
-              <p className={`mt-1 text-xs ${muted}`}>A personal four-digit PIN for each director. It is requested only inside a customer CRM when the customer Support PIN cannot be used. It never controls Admin Portal sign-in.</p>
+              <p className={`mt-1 text-xs ${muted}`}>A personal four-digit PIN for every administrator. It is requested only inside a customer CRM when the customer Support PIN cannot be used. It never controls Admin Portal sign-in.</p>
             </CardHeader>
             <CardContent className="px-4 pb-4 pt-3">
               {directorPinStatus.eligible === false ? (
-                <p className={`text-xs ${muted}`}>This control is available to directors and platform owners.</p>
+                <p className={`text-xs ${muted}`}>Every authorised administrator can create and replace their own CRM PIN.</p>
               ) : (
                 <div className="max-w-md space-y-3">
                   <div className="flex items-center gap-2">
