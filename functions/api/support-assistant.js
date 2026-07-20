@@ -11,6 +11,10 @@ import {
   recordAssistantEvent,
   recordAssistantExchange
 } from "../_shared/support-assistant-monitor.js";
+import {
+  createCustomerVerificationSession,
+  verifySupportPinRecord
+} from "../admin/api.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -114,6 +118,17 @@ export async function onRequest(context) {
 
   if (!identityEmail && !config.allowAnonymous) {
     return json({ success: false, error: "Please sign in to use the support assistant." }, 401);
+  }
+
+  if (event === "verify_support_pin") {
+    if (!identityEmail) return json({ success: false, error: "Please sign in before verifying your identity." }, 401);
+    if (!/^\d{6}$/.test(String(body.pin || "").trim())) {
+      return json({ success: false, error: "Enter the six-digit JA Plan Studio Support PIN." }, 400);
+    }
+    const result = await verifySupportPinRecord(env.DB, env, identityEmail, String(body.pin).trim(), "support-assistant");
+    if (!result.ok) return json({ success: false, error: result.error || "The Support PIN could not be verified." }, 400);
+    const expiresAt = await createCustomerVerificationSession(env.DB, { email: "support-assistant" }, identityEmail, "Support PIN · chatbot human handover");
+    return json({ success: true, verified: true, expiresAt });
   }
 
   const message = clean(body.message, 2000);
