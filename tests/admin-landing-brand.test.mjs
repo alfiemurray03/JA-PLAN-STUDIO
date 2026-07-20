@@ -15,6 +15,13 @@ test('Admin landing page is branded for JA Plan Studio operations', async () => 
   assert.match(page, /AI support assistant/);
   assert.match(page, /Continue with Microsoft/);
   assert.match(page, /four-digit Admin PIN is requested next/);
+  assert.match(page, /import SiteNavHeader/);
+  assert.match(page, /import Footer/);
+  assert.match(page, /<SiteNavHeader \/>/);
+  assert.match(page, /<Footer \/>/);
+  assert.match(page, /dark:bg/);
+  assert.match(page, /!text-black/);
+  assert.doesNotMatch(page, /text-6xl/);
   assert.doesNotMatch(page, /document activity/i);
   assert.doesNotMatch(page, /Document Hub/i);
 });
