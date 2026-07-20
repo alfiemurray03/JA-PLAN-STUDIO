@@ -22,6 +22,7 @@ export interface SiteSettings {
   tagline:     string;
   supportEmail: string;
   logoUrl:     string;
+  googleAnalyticsId: string;
 }
 
 const DEFAULTS: SiteSettings = {
@@ -31,6 +32,7 @@ const DEFAULTS: SiteSettings = {
   tagline:     'Personalised Plans, Generated in Minutes',
   supportEmail: 'japlanstudio@jagroupservices.co.uk',
   logoUrl:     '',
+  googleAnalyticsId: '',
 };
 
 const SiteSettingsContext = createContext<SiteSettings>(DEFAULTS);
@@ -51,6 +53,7 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
           tagline:     s['tagline']      || DEFAULTS.tagline,
           supportEmail: DEFAULTS.supportEmail,
           logoUrl:     s['logo_url']     || DEFAULTS.logoUrl,
+          googleAnalyticsId: s['google_analytics_id'] || DEFAULTS.googleAnalyticsId,
         });
       })
       .catch(() => { /* use defaults */ });
