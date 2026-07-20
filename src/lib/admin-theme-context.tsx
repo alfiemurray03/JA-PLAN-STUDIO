@@ -94,7 +94,17 @@ export function AdminThemeProvider({ children }: { children: React.ReactNode }) 
     const syncTheme = () => {
       const adminRouteActive = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin/');
       root.classList.toggle('dark', adminRouteActive && resolvedTheme === 'dark');
+      root.classList.toggle('light', adminRouteActive && resolvedTheme === 'light');
       root.dataset.adminTheme = adminRouteActive ? resolvedTheme : 'inactive';
+
+      // Tailwind's class strategy and the shared header tokens both resolve
+      // against the document root. Keep it in step with the Admin wrapper so
+      // every Admin surface visibly changes, including the public login page.
+      if (adminRouteActive) {
+        document.documentElement.classList.remove('light', 'dark');
+        document.documentElement.classList.add(resolvedTheme);
+        document.documentElement.setAttribute('data-theme', resolvedTheme);
+      }
     };
 
     syncTheme();
@@ -104,7 +114,7 @@ export function AdminThemeProvider({ children }: { children: React.ReactNode }) 
     return () => {
       observer.disconnect();
       window.removeEventListener('popstate', syncTheme);
-      root.classList.remove('dark');
+      root.classList.remove('light', 'dark');
       delete root.dataset.adminTheme;
     };
   }, [resolvedTheme]);
