@@ -271,7 +271,21 @@ async function adminPinStatus(DB, request, adminEmail) {
   return { configured: Boolean(record), unlocked: Boolean(session), expiresAt: session?.expires_at || null, locked, lockedUntil: locked ? record.locked_until : null, attemptsRemaining: Math.max(0, 5 - Number(record?.failed_attempts || 0)) };
 }
 
-async function handleAdminPinPost(DB, request, identity, body) {
+async function adminPinMac(env, pin, salt) {
+  const pepper = clean(env.ADMIN_PIN_PEPPER || env.ADMIN_OIDC_CLIENT_SECRET, 1000);
+  if (!pepper) throw new Error("Administrator PIN security is not configured.");
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(pepper), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${salt}:${pin}`));
+  return Array.from(new Uint8Array(signature), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function verifyAdminPin(env, pin, storedHash) {
+  const [scheme, salt, expected] = clean(storedHash, 500).split("$");
+  if (scheme === "hmac_sha256" && salt && expected) return timingSafeEqual(await adminPinMac(env, pin, salt), expected);
+  return verifySecretHash(pin, storedHash);
+}
+
+async function handleAdminPinPost(DB, env, request, identity, body) {
   await ensureAdminPinTables(DB);
   const email = cleanEmail(identity.email);
   const action = clean(body.action, 20) || "verify";
@@ -287,12 +301,12 @@ async function handleAdminPinPost(DB, request, identity, body) {
   if (action === "setup") {
     if (existing) return json({ success: false, error: "A PIN already exists. Reload and enter it instead." }, 409);
     const salt = crypto.randomUUID();
-    await DB.prepare(`INSERT INTO admin_security_pins (admin_email, pin_hash) VALUES (?, ?)`).bind(email, `pbkdf2_sha256$210000$${salt}$${await deriveVerificationHash(pin, salt)}`).run();
+    await DB.prepare(`INSERT INTO admin_security_pins (admin_email, pin_hash) VALUES (?, ?)`).bind(email, `hmac_sha256${salt}${await adminPinMac(env, pin, salt)}`).run();
     await writeAudit(DB, identity, "admin_pin_created", "admin_security_pin", email, "Created an individual administrator security PIN.", {});
   } else {
     if (!existing) return json({ success: false, error: "Create your administrator PIN first." }, 409);
     if (existing.locked_until && Date.parse(existing.locked_until) > Date.now()) return json({ success: false, error: "PIN access is temporarily locked.", lockedUntil: existing.locked_until }, 423);
-    if (!(await verifySecretHash(pin, existing.pin_hash))) {
+    if (!(await verifyAdminPin(env, pin, existing.pin_hash))) {
       const attempts = Number(existing.failed_attempts || 0) + 1;
       const lockedUntil = attempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000).toISOString() : null;
       await DB.prepare(`UPDATE admin_security_pins SET failed_attempts = ?, locked_until = ?, updated_at = CURRENT_TIMESTAMP WHERE lower(admin_email) = lower(?)`).bind(lockedUntil ? 0 : attempts, lockedUntil, email).run();
@@ -3625,7 +3639,7 @@ export async function onRequest(context) {
     if (request.method === "POST") {
       if (!isSameOriginRequest(request)) return json({ error: "This request could not be verified." }, 403);
       const body = await request.json().catch(() => ({}));
-      if (section === "adminpin") return handleAdminPinPost(env.DB, request, identity, body);
+      if (section === "adminpin") return handleAdminPinPost(env.DB, env, request, identity, body);
       if (section === "prefs") return json({ preferences: await saveAdminPreferences(env.DB, body, identity), saved: true });
       if (section === "builders") {
         if (!ownerAccess && !hasAnyPermission(adminContext.permissions, ["manage_plans", "manage_pricing", "manage_crm"])) return json({ error: "Forbidden.", section }, 403);
