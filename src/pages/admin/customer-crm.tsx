@@ -62,6 +62,7 @@ export default function AdminCustomerCrm() {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [edit, setEdit] = useState({ verified_name: '', display_name: '', contact_email: '', phone: '', communication_preference: '', support_notes: '', admin_notes: '' });
+  const [pdfSections, setPdfSections] = useState({ internalNotes: false, supportHistory: false, activityAudit: false, notifications: false });
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
@@ -99,7 +100,7 @@ export default function AdminCustomerCrm() {
   }
 
   async function downloadCustomerData() {
-    setMessage('Preparing the customer data export…');
+    setMessage('Preparing the customer SAR report…');
     try {
       const response = await fetch('/admin/api?section=customer', {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
@@ -107,11 +108,84 @@ export default function AdminCustomerCrm() {
       });
       const payload = await response.json().catch(() => ({})) as { export?: { filename?: string; content?: string }; error?: string };
       if (!response.ok || !payload.export?.content) throw new Error(payload.error || 'The export could not be prepared.');
-      const blob = new Blob([payload.export.content], { type: 'application/json;charset=utf-8' });
-      const href = URL.createObjectURL(blob);
-      const anchor = document.createElement('a'); anchor.href = href; anchor.download = payload.export.filename || `${email}-customer-data.json`; anchor.click();
-      URL.revokeObjectURL(href); setMessage('Customer data export downloaded and recorded in the audit log.');
-    } catch (reason) { setMessage(reason instanceof Error ? reason.message : 'The export could not be prepared.'); }
+      const sar = JSON.parse(payload.export.content) as { profile?: Row; dataRequests?: Row[]; systemReports?: Row[]; closureRequests?: Row[] };
+      const [{ jsPDF }, { default: autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')]);
+      const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const margin = 16;
+      const blue: [number, number, number] = [24, 78, 170];
+      const navy: [number, number, number] = [15, 23, 42];
+      const muted: [number, number, number] = [71, 85, 105];
+      const generated = new Date();
+      const reportReference = `SAR-${generated.toISOString().slice(0, 10).replaceAll('-', '')}-${email.split('@')[0].slice(0, 12).toUpperCase()}`;
+      const text = (value: unknown) => value === null || value === undefined || value === '' ? 'Not recorded' : typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value);
+      const heading = (title: string, y: number) => { pdf.setTextColor(...navy); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(13); pdf.text(title, margin, y); pdf.setDrawColor(203, 213, 225); pdf.line(margin, y + 2, pageWidth - margin, y + 2); return y + 7; };
+      const table = (rows: Array<[string, unknown]>, y: number) => {
+        autoTable(pdf, { startY: y, body: rows.map(([label, value]) => [label, text(value)]), margin: { left: margin, right: margin }, theme: 'grid', styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 2.4, textColor: navy, lineColor: [226, 232, 240], lineWidth: 0.2, overflow: 'linebreak' }, columnStyles: { 0: { cellWidth: 48, fontStyle: 'bold', fillColor: [248, 250, 252], textColor: muted }, 1: { cellWidth: 'auto' } } });
+        return (pdf as typeof pdf & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? y;
+      };
+      const listTable = (title: string, rows: Row[], columns: Array<[string, string]>, y: number) => {
+        if (y > 245) { pdf.addPage(); y = 20; }
+        y = heading(title, y);
+        if (!rows.length) { pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9); pdf.setTextColor(...muted); pdf.text('No records were found in this section.', margin, y + 3); return y + 9; }
+        autoTable(pdf, { startY: y, head: [columns.map(([, label]) => label)], body: rows.map(row => columns.map(([key]) => text(row[key]))), margin: { left: margin, right: margin }, theme: 'grid', styles: { font: 'helvetica', fontSize: 7.5, cellPadding: 2, textColor: navy, lineColor: [226, 232, 240], lineWidth: 0.2, overflow: 'linebreak' }, headStyles: { fillColor: blue, textColor: [255, 255, 255], fontStyle: 'bold' }, alternateRowStyles: { fillColor: [248, 250, 252] } });
+        return ((pdf as typeof pdf & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? y) + 6;
+      };
+
+      pdf.setFillColor(...blue); pdf.rect(0, 0, pageWidth, 46, 'F');
+      pdf.setTextColor(255, 255, 255); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(21); pdf.text('Subject Access Request', margin, 20);
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(11); pdf.text('Customer information report', margin, 29);
+      pdf.setFontSize(8); pdf.text('JA Plan Studio | JA Group Services Ltd', margin, 38);
+      let y = 58;
+      pdf.setTextColor(...navy); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(15); pdf.text('Your personal data', margin, y); y += 8;
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9.5); pdf.setTextColor(...muted);
+      const introduction = 'This report has been prepared in response to a subject access request. It summarises the personal information currently associated with the customer account and the administrative records included in the approved export.';
+      const introLines = pdf.splitTextToSize(introduction, pageWidth - (margin * 2)); pdf.text(introLines, margin, y); y += introLines.length * 4.5 + 5;
+      y = table([['Report reference', reportReference], ['Prepared for', sar.profile?.verified_name || sar.profile?.display_name || name], ['Account email', email], ['Generated', generated.toLocaleString('en-GB', { dateStyle: 'long', timeStyle: 'short' })], ['Format', 'Customer SAR disclosure report']], y) + 9;
+      y = heading('Customer account information', y);
+      const profile = sar.profile || {};
+      y = table([['Verified name', profile.verified_name], ['Display name', profile.display_name], ['Account email', profile.email || email], ['Contact email', profile.contact_email], ['Telephone', profile.phone], ['Communication preference', profile.communication_preference], ['Account status', profile.admin_customer_status], ['Account created', profile.created_at], ['Last updated', profile.updated_at]], y) + 8;
+      if (y > 238) { pdf.addPage(); y = 20; }
+      y = heading('How this information is used', y);
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9); pdf.setTextColor(...muted);
+      const useText = 'JA Plan Studio uses account and contact information to provide the service, administer membership, respond to support requests, maintain security and meet legal obligations. Payment-card numbers and Microsoft passwords are not included because JA Plan Studio does not store them in the customer profile.';
+      const useLines = pdf.splitTextToSize(useText, pageWidth - (margin * 2)); pdf.text(useLines, margin, y); y += useLines.length * 4.3 + 7;
+      y = listTable('Data protection requests', Array.isArray(sar.dataRequests) ? sar.dataRequests : [], [['reference', 'Reference'], ['request_type', 'Request type'], ['status', 'Status'], ['submitted_at', 'Submitted'], ['due_at', 'Due']], y);
+      y = listTable('Customer system reports', Array.isArray(sar.systemReports) ? sar.systemReports : [], [['reference', 'Reference'], ['category', 'Category'], ['subject', 'Subject'], ['status', 'Status'], ['created_at', 'Created']], y);
+      y = listTable('Account closure and erasure records', Array.isArray(sar.closureRequests) ? sar.closureRequests : [], [['reference', 'Reference'], ['reason', 'Reason'], ['status', 'Status'], ['created_at', 'Created'], ['completed_at', 'Completed']], y);
+      if (pdfSections.supportHistory) {
+        y = listTable('Support cases', cases, [['reference', 'Reference'], ['subject', 'Subject'], ['category', 'Category'], ['status', 'Status'], ['updated_at', 'Updated']], y);
+        y = listTable('Contact enquiries', enquiries, [['reference', 'Reference'], ['subject', 'Subject'], ['status', 'Status'], ['created_at', 'Submitted']], y);
+      }
+      if (pdfSections.internalNotes) {
+        const internalRows: Row[] = [
+          ...(customer.support_notes ? [{ category: 'Customer support notes', body: customer.support_notes, author_email: 'Customer profile', updated_at: customer.updated_at }] : []),
+          ...(customer.admin_notes ? [{ category: 'Admin notes', body: customer.admin_notes, author_email: 'Admin CRM', updated_at: customer.admin_updated_at }] : []),
+          ...notes,
+        ];
+        y = listTable('Internal notes - approved for disclosure', internalRows, [['category', 'Category'], ['body', 'Note'], ['author_email', 'Author'], ['updated_at', 'Updated']], y);
+      }
+      if (pdfSections.notifications) y = listTable('Customer notifications', notifications, [['title', 'Title'], ['category', 'Category'], ['status', 'Status'], ['created_at', 'Created']], y);
+      if (pdfSections.activityAudit) {
+        y = listTable('Customer activity timeline', timeline, [['title', 'Event'], ['detail', 'Details'], ['actor_email', 'Actor'], ['created_at', 'Date']], y);
+        y = listTable('Administrative audit history - approved for disclosure', audit, [['action', 'Action'], ['summary', 'Summary'], ['actor_email', 'Administrator'], ['created_at', 'Date']], y);
+      }
+      if (y > 230) { pdf.addPage(); y = 20; }
+      y = heading('Questions or corrections', y);
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9); pdf.setTextColor(...muted);
+      const rights = 'If any information in this report is inaccurate, or you have questions about the response, contact the JA Plan Studio Data Protection team. You may also request rectification, restriction, erasure or objection where the relevant legal conditions apply.';
+      pdf.text(pdf.splitTextToSize(rights, pageWidth - (margin * 2)), margin, y);
+
+      const pages = pdf.getNumberOfPages();
+      for (let page = 1; page <= pages; page += 1) {
+        pdf.setPage(page); pdf.setDrawColor(226, 232, 240); pdf.line(margin, 283, pageWidth - margin, 283);
+        pdf.setFont('helvetica', 'normal'); pdf.setFontSize(7.5); pdf.setTextColor(...muted);
+        pdf.text('Private and confidential - intended for the named customer', margin, 289);
+        pdf.text(`Page ${page} of ${pages}`, pageWidth - margin, 289, { align: 'right' });
+      }
+      pdf.save(`JA-Plan-Studio-SAR-${email.replace(/[^a-z0-9]+/gi, '-')}.pdf`);
+      setMessage('Formatted SAR PDF downloaded and the export has been recorded in the audit log.');
+    } catch (reason) { setMessage(reason instanceof Error ? reason.message : 'The SAR PDF could not be prepared.'); }
   }
 
   async function saveProfile() {
@@ -184,7 +258,7 @@ export default function AdminCustomerCrm() {
               <Alert><ShieldCheck className="h-4 w-4" /><AlertDescription>This record is restricted to authorised Admin roles. Protected details remain masked until identity verification, and CRM access and exports are written to the audit log.</AlertDescription></Alert>
               <div className="grid gap-4 lg:grid-cols-2">
                 <Card><CardHeader><CardTitle className="text-base">Processing and communications</CardTitle></CardHeader><CardContent className="space-y-3"><Detail label="Core account processing" value="Contract and service administration" /><Detail label="Support processing" value="Customer request and legitimate operational interests" /><Detail label="Marketing consent" value={customer.marketing_consent || 'No marketing consent recorded — do not send marketing'} /><Detail label="Communication preference" value={customer.communication_preference} /><p className="text-xs leading-relaxed text-muted-foreground">Service messages and marketing must remain separate. No recorded consent must be treated as no permission for consent-based electronic marketing.</p></CardContent></Card>
-                <Card><CardHeader><CardTitle>Individual rights</CardTitle></CardHeader><CardContent className="space-y-3"><p className="text-xs text-muted-foreground">Access and export data here. Corrections are made from Overview after PIN verification. Erasure uses a governed request so invoice, fraud-prevention or legal-hold records are reviewed before deletion.</p><div className="flex flex-wrap gap-2"><Button size="sm" onClick={() => void downloadCustomerData()}><Download className="mr-2 h-3.5 w-3.5" />Export data</Button><Button size="sm" variant="destructive" onClick={() => void startErasureRequest()}><Trash2 className="mr-2 h-3.5 w-3.5" />Start data deletion</Button><Button asChild size="sm" variant="outline"><Link to="/admin/gdpr">Rights requests</Link></Button><Button asChild size="sm" variant="outline"><Link to="/admin/closure-requests">Deletion queue</Link></Button></div>{message && <p role="status" aria-live="polite" className="text-xs text-muted-foreground">{message}</p>}</CardContent></Card>
+                <Card><CardHeader><CardTitle>Individual rights</CardTitle></CardHeader><CardContent className="space-y-3"><p className="text-xs text-muted-foreground">Download a professionally formatted customer SAR report. Internal operational information is excluded unless you explicitly approve it below.</p><fieldset className="rounded-md border border-border p-3"><legend className="px-1 text-xs font-semibold">Optional PDF sections</legend><div className="grid gap-2 sm:grid-cols-2">{([['internalNotes','Include internal notes'],['supportHistory','Include support and enquiries'],['activityAudit','Include activity and audit history'],['notifications','Include customer notifications']] as const).map(([key,label]) => <label key={key} className="flex cursor-pointer items-start gap-2 text-xs text-foreground"><input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-border" checked={pdfSections[key]} onChange={event => setPdfSections(current => ({ ...current, [key]: event.target.checked }))} /><span>{label}{key === 'internalNotes' || key === 'activityAudit' ? <span className="block text-[10px] text-amber-700">Review carefully before disclosure.</span> : null}</span></label>)}</div></fieldset><div className="flex flex-wrap gap-2"><Button size="sm" onClick={() => void downloadCustomerData()}><Download className="mr-2 h-3.5 w-3.5" />Download SAR PDF</Button><Button size="sm" variant="destructive" onClick={() => void startErasureRequest()}><Trash2 className="mr-2 h-3.5 w-3.5" />Start data deletion</Button><Button asChild size="sm" variant="outline"><Link to="/admin/gdpr">Rights requests</Link></Button><Button asChild size="sm" variant="outline"><Link to="/admin/closure-requests">Deletion queue</Link></Button></div>{message && <p role="status" aria-live="polite" className="text-xs text-muted-foreground">{message}</p>}</CardContent></Card>
               </div>
               <Card><CardHeader><CardTitle className="text-base">Data minimisation and retention review</CardTitle></CardHeader><CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><Detail label="Profile last updated" value={date(customer.updated_at)} /><Detail label="Open data requests" value={requests.filter(row => !['completed','closed'].includes(asText(row.status, '').toLowerCase())).length} /><Detail label="Stored support cases" value={cases.length} /><Detail label="Stored notifications" value={notifications.length} /></CardContent></Card>
             </TabsContent>
