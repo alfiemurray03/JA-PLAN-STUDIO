@@ -30,16 +30,15 @@ async function ensureTables(DB) {
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `).run();
-  for (const column of [
-    "pin_ciphertext TEXT",
-    "pin_iv TEXT",
-    "audit_history TEXT NOT NULL DEFAULT '[]'"
-  ]) {
-    try {
-      await DB.prepare(`ALTER TABLE customer_support_pins ADD COLUMN ${column}`).run();
-    } catch {
-      // Existing databases may already include these upgraded PIN columns.
-    }
+  const schema = await DB.prepare("PRAGMA table_info(customer_support_pins)").all();
+  const columns = new Set((schema.results || []).map((column) => String(column.name || "")));
+  const upgrades = [
+    ["pin_ciphertext", "ALTER TABLE customer_support_pins ADD COLUMN pin_ciphertext TEXT"],
+    ["pin_iv", "ALTER TABLE customer_support_pins ADD COLUMN pin_iv TEXT"],
+    ["audit_history", "ALTER TABLE customer_support_pins ADD COLUMN audit_history TEXT DEFAULT '[]'"]
+  ];
+  for (const [name, statement] of upgrades) {
+    if (!columns.has(name)) await DB.prepare(statement).run();
   }
   await DB.prepare(`
     CREATE TABLE IF NOT EXISTS customer_security_questions (
@@ -157,7 +156,8 @@ export async function onRequest(context) {
   if (!env.DB) return json({ error: "Database unavailable." }, 500);
   const identity = getAccessIdentity(request);
   if (!identity.email) return json({ error: "Not signed in." }, 401);
-  await ensureTables(env.DB);
+  try {
+    await ensureTables(env.DB);
 
   if (request.method === "GET") {
     const result = await env.DB.prepare(`SELECT id, pin_hash, pin_ciphertext, pin_iv, pin_last4, status, expires_at, used_at, revoked_at, revoked_by, last_used_at, created_at, updated_at FROM customer_support_pins WHERE lower(email) = lower(?) ORDER BY created_at DESC LIMIT 50`).bind(identity.email).all();
@@ -239,5 +239,18 @@ export async function onRequest(context) {
     return json({ error: "Unknown action." }, 400);
   }
 
-  return json({ error: "Method not allowed." }, 405);
+    return json({ error: "Method not allowed." }, 405);
+  } catch (error) {
+    const reference = crypto.randomUUID().slice(0, 8).toUpperCase();
+    console.error(JSON.stringify({
+      event: "support_pin_service_error",
+      reference,
+      email: identity.email,
+      message: error instanceof Error ? error.message : String(error || "Unknown PIN service error")
+    }));
+    return json({
+      error: `The Support PIN service could not complete the request. Reference: ${reference}`,
+      code: "SUPPORT_PIN_STORAGE_ERROR"
+    }, 500);
+  }
 }
