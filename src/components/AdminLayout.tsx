@@ -8,7 +8,9 @@ import {
   Menu, ChevronRight, Shield, Bell, Send,
   Globe, Wrench, FileEdit, Palette, Activity, FileText, HeartPulse,
   X, UserCog, Clock, Mail, AlertTriangle, CircleDollarSign, PackagePlus, MoreHorizontal,
+  Bot, Moon, Sun,
 } from 'lucide-react';
+import { useAdminTheme } from '@/lib/admin-theme-context';
 
 // ── Nav structure ─────────────────────────────────────────────────────────────
 
@@ -77,6 +79,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Site Status & Settings',
     items: [
+      { label: 'AI Chatbot Control', href: '/admin/ai-chatbot', icon: Bot, section: 'systemsettings' },
       { label: 'Site Status & Settings', href: '/admin/site-settings', icon: Settings, section: 'systemsettings' },
     ],
   },
@@ -92,6 +95,7 @@ function Sidebar({ onClose }: SidebarProps) {
   const { admin, logout } = useAdmin();
   const location = useLocation();
   const navigate = useNavigate();
+  const { resolvedTheme, setTheme } = useAdminTheme();
 
   async function handleLogout() {
     await logout();
@@ -179,8 +183,17 @@ function Sidebar({ onClose }: SidebarProps) {
           ))}
       </nav>
 
-      {/* Footer */}
+      {/* Sidebar utilities */}
       <div className="px-2 py-3 border-t border-slate-200 space-y-0.5">
+        <button
+          type="button"
+          onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all"
+          aria-label={resolvedTheme === 'dark' ? 'Switch Admin Portal to light mode' : 'Switch Admin Portal to dark mode'}
+        >
+          {resolvedTheme === 'dark' ? <Sun className="w-4 h-4 text-slate-400" /> : <Moon className="w-4 h-4 text-slate-400" />}
+          {resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode'}
+        </button>
         <Link to="/dashboard" onClick={onClose}
           className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all">
           <Users className="w-4 h-4 text-slate-400" />
@@ -209,6 +222,7 @@ function AdminLayoutInner({ children, title }: AdminLayoutInnerProps) {
   const { admin, isLoading, logout } = useAdmin();
   const location = useLocation();
   const navigate = useNavigate();
+  const { resolvedTheme, setTheme } = useAdminTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const visibleItems = NAV_GROUPS.flatMap(group => group.items)
@@ -301,7 +315,26 @@ function AdminLayoutInner({ children, title }: AdminLayoutInnerProps) {
             <span className="text-sm font-semibold text-slate-800 truncate">{currentItem?.label || title || 'Admin Portal'}</span>
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+            <Link
+              to="/admin/ai-chatbot"
+              className="inline-flex min-h-10 min-w-10 items-center justify-center gap-1.5 rounded-lg border border-slate-200 px-2.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              aria-label="Open AI Chatbot Control Centre"
+              title="AI Chatbot Control Centre"
+            >
+              <Bot className="h-4 w-4" />
+              <span className="hidden xl:inline">Chatbot</span>
+            </Link>
+            <button
+              type="button"
+              className="inline-flex min-h-10 min-w-10 items-center justify-center gap-1.5 rounded-lg border border-slate-200 px-2.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+              aria-label={resolvedTheme === 'dark' ? 'Switch Admin Portal to light mode' : 'Switch Admin Portal to dark mode'}
+              title={resolvedTheme === 'dark' ? 'Switch Admin Portal to light mode' : 'Switch Admin Portal to dark mode'}
+            >
+              {resolvedTheme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              <span className="hidden xl:inline">{resolvedTheme === 'dark' ? 'Light' : 'Dark'}</span>
+            </button>
             <Link to="/admin/support" className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors border border-slate-200">
               <Send className="w-3.5 h-3.5" /> Support
             </Link>
