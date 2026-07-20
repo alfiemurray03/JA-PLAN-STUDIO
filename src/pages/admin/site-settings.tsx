@@ -317,8 +317,13 @@ export default function AdminSiteSettings() {
       if (cfg.siteStatus === 'coming_soon' && cfg.comingSoonCountdownEnabled && !cfg.comingSoonLaunchDate) {
         throw new Error('Choose a launch date when the countdown is enabled.');
       }
+      const analyticsId = cfg.googleAnalyticsId.trim().toUpperCase();
+      if (analyticsId && !/^G-[A-Z0-9]{4,20}$/.test(analyticsId)) {
+        throw new Error('Enter a valid Google Analytics 4 Measurement ID beginning with G-.');
+      }
+      if (analyticsId !== cfg.googleAnalyticsId) setCfg(current => ({ ...current, googleAnalyticsId: analyticsId }));
       await apiSaveSiteStatus(cfg.siteStatus);
-      await apiSaveSettings(configToSettings(cfg));
+      await apiSaveSettings(configToSettings({ ...cfg, googleAnalyticsId: cfg.googleAnalyticsId.trim().toUpperCase() }));
       setDirty(false);
       setSavedMsg('Settings saved successfully.');
       setTimeout(() => setSavedMsg(''), 3000);
@@ -590,8 +595,23 @@ export default function AdminSiteSettings() {
               </div>
               <div className={sectionCls}>
                 <h3 className={`text-sm font-semibold ${'text-gray-900 dark:text-white'}`}>Analytics</h3>
-                <Field label="Google Analytics ID" hint="e.g. G-XXXXXXXXXX">
-                  <Input value={cfg.googleAnalyticsId} onChange={e => update({ googleAnalyticsId: e.target.value })} placeholder="G-XXXXXXXXXX" className={`h-9 font-mono text-sm ${inputCls}`} />
+                <Field label="Google Analytics 4 Measurement ID" hint="Enter the Measurement ID from Google Analytics → Admin → Data streams (for example G-XXXXXXXXXX). Analytics loads only after the visitor accepts analytics cookies.">
+                  <Input
+                    value={cfg.googleAnalyticsId}
+                    onChange={e => update({ googleAnalyticsId: e.target.value.toUpperCase().replace(/\\s/g, '') })}
+                    placeholder="G-XXXXXXXXXX"
+                    autoComplete="off"
+                    spellCheck={false}
+                    aria-invalid={Boolean(cfg.googleAnalyticsId && !/^G-[A-Z0-9]{4,20}$/.test(cfg.googleAnalyticsId))}
+                    className={`h-9 font-mono text-sm ${inputCls}`}
+                  />
+                  {cfg.googleAnalyticsId ? (
+                    /^G-[A-Z0-9]{4,20}$/.test(cfg.googleAnalyticsId)
+                      ? <p className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400"><CheckCircle2 className="h-3.5 w-3.5" />Valid GA4 Measurement ID. Save settings to activate it.</p>
+                      : <p className="mt-2 flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400"><AlertTriangle className="h-3.5 w-3.5" />Use a GA4 Measurement ID beginning with G-.</p>
+                  ) : (
+                    <p className={`mt-2 text-xs ${muted}`}>Google Analytics is currently disabled.</p>
+                  )}
                 </Field>
               </div>
             </TabsContent>
