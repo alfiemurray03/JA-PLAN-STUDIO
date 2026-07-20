@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import AdminLayout from '@/components/AdminLayout';
 import {
   CheckCircle2,
@@ -40,7 +40,7 @@ function statusStyle(status: string) {
   return 'border-slate-200 bg-slate-100 text-slate-600';
 }
 
-function FieldLabel({ children }: { children: React.ReactNode }) {
+function FieldLabel({ children }: { children: ReactNode }) {
   return <span className="mb-1.5 block text-xs font-semibold text-foreground">{children}</span>;
 }
 
