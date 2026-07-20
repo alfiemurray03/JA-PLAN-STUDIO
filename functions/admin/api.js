@@ -279,9 +279,25 @@ async function adminPinMac(env, pin, salt) {
   return Array.from(new Uint8Array(signature), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+function parseAdminPinHash(storedHash) {
+  const value = clean(storedHash, 500);
+  const [scheme, salt, expected] = value.split("$");
+  if (scheme === "hmac_sha256" && salt && expected) return { scheme, salt, expected, legacy: false };
+  const legacyPrefix = "hmac_sha256";
+  if (value.startsWith(legacyPrefix) && value.length === legacyPrefix.length + 36 + 64) {
+    return {
+      scheme: legacyPrefix,
+      salt: value.slice(legacyPrefix.length, legacyPrefix.length + 36),
+      expected: value.slice(legacyPrefix.length + 36),
+      legacy: true
+    };
+  }
+  return null;
+}
+
 async function verifyAdminPin(env, pin, storedHash) {
-  const [scheme, salt, expected] = clean(storedHash, 500).split("$");
-  if (scheme === "hmac_sha256" && salt && expected) return timingSafeEqual(await adminPinMac(env, pin, salt), expected);
+  const parsed = parseAdminPinHash(storedHash);
+  if (parsed) return timingSafeEqual(await adminPinMac(env, pin, parsed.salt), parsed.expected);
   return verifySecretHash(pin, storedHash);
 }
 
@@ -301,14 +317,14 @@ async function handleAdminPinPost(DB, env, request, identity, body) {
   if (action === "setup" || action === "reset") {
     if (action === "setup" && existing) return json({ success: false, error: "A PIN already exists. Use Replace PIN instead." }, 409);
     const salt = crypto.randomUUID();
-    const pinHash = `hmac_sha256${salt}${await adminPinMac(env, pin, salt)}`;
+    const pinHash = ["hmac_sha256", salt, await adminPinMac(env, pin, salt)].join("$");
     if (existing) {
       await DB.prepare(`UPDATE admin_security_pins SET pin_hash = ?, failed_attempts = 0, locked_until = NULL, updated_at = CURRENT_TIMESTAMP WHERE lower(admin_email) = lower(?)`).bind(pinHash, email).run();
       await DB.prepare(`UPDATE admin_pin_sessions SET revoked_at = CURRENT_TIMESTAMP WHERE lower(admin_email) = lower(?) AND revoked_at IS NULL`).bind(email).run();
     } else {
       await DB.prepare(`INSERT INTO admin_security_pins (admin_email, pin_hash) VALUES (?, ?)`).bind(email, pinHash).run();
     }
-    await writeAudit(DB, identity, action === "reset" ? "admin_pin_reset" : "admin_pin_created", "admin_security_pin", email, action === "reset" ? "Director replaced their CRM override PIN after Microsoft authentication." : "Created an individual director CRM override PIN.", {});
+    await writeAudit(DB, identity, action === "reset" ? "admin_pin_reset" : "admin_pin_created", "admin_security_pin", email, action === "reset" ? "Administrator replaced their CRM override PIN after Microsoft authentication." : "Created an individual administrator CRM override PIN.", {});
   } else {
     if (!existing) return json({ success: false, error: "Create your administrator PIN first." }, 409);
     if (existing.locked_until && Date.parse(existing.locked_until) > Date.now()) return json({ success: false, error: "PIN access is temporarily locked.", lockedUntil: existing.locked_until }, 423);
@@ -318,6 +334,11 @@ async function handleAdminPinPost(DB, env, request, identity, body) {
       await DB.prepare(`UPDATE admin_security_pins SET failed_attempts = ?, locked_until = ?, updated_at = CURRENT_TIMESTAMP WHERE lower(admin_email) = lower(?)`).bind(lockedUntil ? 0 : attempts, lockedUntil, email).run();
       await writeAudit(DB, identity, "admin_pin_verification_failed", "admin_security_pin", email, "Administrator PIN verification failed.", { attempts, locked: Boolean(lockedUntil) });
       return json({ success: false, error: lockedUntil ? "Too many attempts. PIN access is locked for 15 minutes." : "The administrator PIN is incorrect.", attemptsRemaining: lockedUntil ? 0 : 5 - attempts }, lockedUntil ? 423 : 401);
+    }
+    const parsedHash = parseAdminPinHash(existing.pin_hash);
+    if (parsedHash?.legacy) {
+      const normalisedHash = [parsedHash.scheme, parsedHash.salt, parsedHash.expected].join("$");
+      await DB.prepare(`UPDATE admin_security_pins SET pin_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE lower(admin_email) = lower(?)`).bind(normalisedHash, email).run();
     }
   }
   const token = `${crypto.randomUUID()}${crypto.randomUUID()}`;
@@ -3902,7 +3923,7 @@ export async function onRequest(context) {
         if (body.action === "admin_pin_override") {
           if (!(await hasActiveAdminPinSession(env.DB, request, identity.email))) {
             await writeAudit(env.DB, identity, "customer_admin_pin_override_rejected", "profiles", email, `Rejected expired or unavailable administrator PIN override for ${email}.`, {});
-            return json({ error: "Verify your director CRM override PIN and try again." }, 403);
+            return json({ error: "Verify your administrator CRM override PIN and try again." }, 403);
           }
           const reason = clean(body.reason, 500);
           if (reason.length < 4) return json({ error: "Enter a reason of at least four characters for accessing this customer record." }, 400);
