@@ -10,8 +10,6 @@ export const SHARE_PERMISSIONS = Object.freeze({
 });
 
 const LIVE_PAID_PLANS = new Set(["personal", "standard", "professional", "org_starter"]);
-const READ_ONLY_ORGANISATION_PLANS = new Set(["personal", "standard", "professional"]);
-
 export function normaliseAccountType(value) {
   const normalised = String(value || "").trim().toLowerCase().replace(/[^a-z]/g, "");
   if (["organisation", "organization", "business", "company", "corporate"].includes(normalised)) {
@@ -36,7 +34,7 @@ export function accountPlanEntitlements(accountTypeValue, planCodeValue) {
   const planCode = String(planCodeValue || "free").trim().toLowerCase().replace(/-/g, "_");
   const isOrganisation = accountType === ACCOUNT_TYPES.ORGANISATION;
   const paid = LIVE_PAID_PLANS.has(planCode);
-  const readOnlySharing = isOrganisation && READ_ONLY_ORGANISATION_PLANS.has(planCode);
+  const readOnlySharing = LIVE_PAID_PLANS.has(planCode);
   const collaborativeSharing = isOrganisation && planCode === "org_starter";
 
   return Object.freeze({
