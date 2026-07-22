@@ -100,6 +100,114 @@ async function sendTeamsSupportCard(webhookValue, request, reference, enquiry, p
   return { sent: true };
 }
 
+async function sendManualSupportCard(webhookValue, request, reference, enquiry, priority) {
+  const webhook = clean(webhookValue, 2000);
+  if (!webhook) throw new Error("The manual support webhook is not configured.");
+
+  let target;
+  try {
+    target = new URL(webhook);
+  } catch {
+    throw new Error("The manual support webhook URL is invalid.");
+  }
+  if (target.protocol !== "https:" || !target.hostname.endsWith(".environment.api.powerplatform.com")) {
+    throw new Error("The manual support webhook host is not permitted.");
+  }
+
+  const caseUrl = new URL(`/admin/enquiries?reference=${encodeURIComponent(reference)}`, request.url).toString();
+  const card = {
+    type: "message",
+    attachments: [{
+      contentType: "application/vnd.microsoft.card.adaptive",
+      contentUrl: null,
+      content: {
+        type: "AdaptiveCard",
+        version: "1.4",
+        $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
+        body: [
+          { type: "TextBlock", size: "Large", weight: "Bolder", text: "New manual support enquiry", wrap: true },
+          { type: "TextBlock", text: `Reference: ${reference}`, weight: "Bolder", wrap: true },
+          {
+            type: "FactSet",
+            facts: [
+              { title: "Source", value: "Contact Support form (manual enquiry)" },
+              { title: "Priority", value: priority },
+              { title: "Category", value: clean(enquiry.category, 80) || "General Enquiry" },
+              { title: "Customer", value: clean(enquiry.name, 120) || "Customer" },
+              { title: "Email", value: clean(enquiry.email, 254) },
+              { title: "Subject", value: clean(enquiry.subject, 180) }
+            ]
+          },
+          { type: "TextBlock", text: "This enquiry was submitted manually. The AI chatbot has not spoken with the customer.", wrap: true, spacing: "Medium" },
+          { type: "TextBlock", text: "Customer message", weight: "Bolder", wrap: true, spacing: "Medium" },
+          { type: "TextBlock", text: clean(enquiry.message, 20000), wrap: true, size: "Small" }
+        ],
+        actions: [
+          { type: "Action.OpenUrl", title: "Open support enquiry", url: caseUrl }
+        ]
+      }
+    }]
+  };
+
+  const response = await fetch(target.toString(), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(card)
+  });
+  if (!response.ok) {
+    const detail = clean(await response.text().catch(() => ""), 240);
+    throw new Error(`Manual support workflow returned ${response.status}${detail ? `: ${detail}` : ""}`);
+  }
+}
+
+async function submitManualEnquiry(context, identity) {
+  const { request, env } = context;
+  const body = await request.json().catch(() => ({}));
+  const requestedCategory = clean(body.category, 80);
+  const category = ALLOWED_CHAT_CATEGORIES.has(requestedCategory) ? requestedCategory : "General Enquiry";
+  const enquiry = normaliseEnquiry({
+    ...body,
+    name: clean(body.name || identity.name || identity.email, 120),
+    email: clean(identity.email || body.email, 254).toLowerCase(),
+    subject: clean(body.subject, 180),
+    category,
+    message: clean(body.message, 20000),
+    formType: "Contact Support form",
+    enquiryType: "Manual support enquiry",
+    termsAccepted: false,
+    privacyAccepted: false,
+    marketingConsent: false,
+    startedAt: 0
+  });
+
+  const supportOnlyErrors = new Set([
+    "Confirm the Terms of Service and Privacy Notice.",
+    "Please wait a moment before sending the form.",
+    "This form has expired. Refresh the page and try again."
+  ]);
+  const errors = validateEnquiry(enquiry).filter((error) => !supportOnlyErrors.has(error));
+  if (enquiry.subject.length < 3) errors.unshift("Enter a subject of at least 3 characters.");
+  if (errors.length) return json({ success: false, error: errors[0], errors }, 400);
+
+  await ensureEnquiryTables(env.DB);
+  const result = await storeEnquiry(env.DB, enquiry, request);
+  if (!result.duplicate) {
+    const requestedPriority = clean(body.priority, 20);
+    const priority = ["Urgent", "High", "Normal", "Low"].includes(requestedPriority) ? requestedPriority : "Normal";
+    await sendManualSupportCard(env.MANUAL_SUPPORT_WEBHOOK_URL, request, result.reference, enquiry, priority);
+  }
+
+  return json({
+    success: true,
+    reference: result.reference,
+    duplicate: result.duplicate,
+    category,
+    source: "Manual support enquiry",
+    adminPath: `/admin/enquiries?reference=${encodeURIComponent(result.reference)}`,
+    message: result.duplicate ? "This enquiry has already been received." : "Your manual support enquiry has been sent to the JA Plan Studio team."
+  }, result.duplicate ? 200 : 201);
+}
+
 async function ensureSupportTables(DB) {
   await DB.prepare(`CREATE TABLE IF NOT EXISTS support_tickets (
     id TEXT PRIMARY KEY, reference TEXT UNIQUE, customer_email TEXT, customer_name TEXT,
@@ -229,9 +337,10 @@ export async function onRequest(context) {
     const parts = new URL(request.url).pathname.split("/").filter(Boolean).slice(2);
     const identity = identityOf(request);
     if (request.method === "POST" && !sameOrigin(request)) return json({ success: false, error: "Request origin was rejected." }, 403);
-    if (request.method === "POST" && parts[0] === "submit") {
+    if (request.method === "POST" && (parts[0] === "submit" || parts[0] === "manual-submit")) {
       const maintenance = await activeMaintenance(env.DB);
       if (maintenance.active) return json({ success: false, maintenance: true, error: maintenance.message }, 503);
+      if (parts[0] === "manual-submit") return submitManualEnquiry(context, identity);
       return submitChatEnquiry(context, identity, maintenance.config);
     }
     if (!identity.email) return json({ success: false, error: "Please sign in to view support conversations." }, 401);
