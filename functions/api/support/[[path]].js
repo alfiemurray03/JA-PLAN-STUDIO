@@ -164,7 +164,17 @@ async function submitManualEnquiry(context, identity) {
   const { request, env } = context;
   const body = await request.json().catch(() => ({}));
   const requestedCategory = clean(body.category, 80);
-  const category = ALLOWED_CHAT_CATEGORIES.has(requestedCategory) ? requestedCategory : "General Enquiry";
+  const manualCategories = {
+    general: "General Enquiry",
+    billing: "Billing",
+    technical: "Technical Support",
+    templates: "Technical Support",
+    account: "Technical Support",
+    feedback: "Feedback",
+    other: "Other"
+  };
+  const category = manualCategories[requestedCategory.toLowerCase()]
+    || (ALLOWED_CHAT_CATEGORIES.has(requestedCategory) ? requestedCategory : "General Enquiry");
   const enquiry = normaliseEnquiry({
     ...body,
     name: clean(body.name || identity.name || identity.email, 120),
@@ -193,7 +203,8 @@ async function submitManualEnquiry(context, identity) {
   const result = await storeEnquiry(env.DB, enquiry, request);
   if (!result.duplicate) {
     const requestedPriority = clean(body.priority, 20);
-    const priority = ["Urgent", "High", "Normal", "Low"].includes(requestedPriority) ? requestedPriority : "Normal";
+    const priorityMap = { urgent: "Urgent", high: "High", normal: "Normal", low: "Low" };
+    const priority = priorityMap[requestedPriority.toLowerCase()] || "Normal";
     await sendManualSupportCard(env.MANUAL_SUPPORT_WEBHOOK_URL, request, result.reference, enquiry, priority);
   }
 
