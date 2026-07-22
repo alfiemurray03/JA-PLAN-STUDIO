@@ -164,7 +164,16 @@ async function submitChatEnquiry(context, identity, assistantConfig) {
   });
 
   if (enquiry.website) return json({ success: true, reference: "ENQ-RECEIVED" }, 201);
-  const errors = validateEnquiry(enquiry);
+  // Signed-in support tickets do not require a separate acceptance of the
+  // site's general Terms/Privacy documents, and this form has no anti-bot
+  // dwell-time control. Keep the shared field validation while excluding
+  // checks that only apply to public enquiry forms.
+  const supportOnlyErrors = new Set([
+    "Confirm the Terms of Service and Privacy Notice.",
+    "Please wait a moment before sending the form.",
+    "This form has expired. Refresh the page and try again."
+  ]);
+  const errors = validateEnquiry(enquiry).filter((error) => !supportOnlyErrors.has(error));
   if (enquiry.subject.length < 3) errors.unshift("Enter a subject of at least 3 characters.");
   if (errors.length) return json({ success: false, error: errors[0], errors }, 400);
 
