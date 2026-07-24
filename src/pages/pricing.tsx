@@ -23,7 +23,7 @@ const FAQS = [
   { q: 'Does Planyx make bookings?', a: 'No. Planyx provides discovery and planning guidance. Third-party bookings, prices, availability, refunds and provider terms remain between you and the relevant provider.' },
 ];
 
-function PlanCard({ plan, paymentsEnabled, audience }: { plan: ServicePlan; paymentsEnabled: boolean; audience: AccountType }) {
+function PlanCard({ plan, paymentsEnabled, audience, signedIn }: { plan: ServicePlan; paymentsEnabled: boolean; audience: AccountType; signedIn: boolean }) {
   const featured = Boolean(plan.is_featured);
   const href = `/create-checkout-session?plan=${encodeURIComponent(plan.id)}&accountType=${encodeURIComponent(audience)}`;
   const features = audience === 'organisation' ? plan.organisation_features : plan.individual_features;
@@ -42,7 +42,7 @@ function PlanCard({ plan, paymentsEnabled, audience }: { plan: ServicePlan; paym
       </ul>
       {paymentsEnabled ? (
         <a href={href} className="mt-auto block">
-          <Button className="w-full gap-2 whitespace-normal">{plan.button_label || 'Choose this subscription'} <ArrowRight className="h-4 w-4 shrink-0" /></Button>
+          <Button className="w-full gap-2 whitespace-normal">{signedIn ? (plan.button_label || 'Choose this subscription') : 'Create account to subscribe'} <ArrowRight className="h-4 w-4 shrink-0" /></Button>
         </a>
       ) : (
         <Button className="mt-auto w-full whitespace-normal" variant="secondary" disabled aria-disabled="true">Payments coming soon</Button>
@@ -124,7 +124,7 @@ export default function PricingPage() {
 
           <section aria-labelledby="subscription-plans" className="mb-20">
             <div className="mb-9 text-center"><h2 id="subscription-plans" className="text-3xl font-bold text-foreground">{audience === 'organisation' ? 'Organisation subscriptions' : 'Individual subscriptions'}</h2><p className="mt-2 text-muted-foreground">Four clear options, billed monthly through secure Stripe checkout.</p></div>
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">{plans.map(plan => <PlanCard key={plan.id} plan={plan} paymentsEnabled={paymentsEnabled} audience={audience} />)}</div>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">{plans.map(plan => <PlanCard key={plan.id} plan={plan} paymentsEnabled={paymentsEnabled} audience={audience} signedIn={Boolean(user)} />)}</div>
           </section>
 
           <section aria-labelledby="feature-comparison" className="mb-20">
