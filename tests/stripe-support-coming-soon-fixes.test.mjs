@@ -85,7 +85,7 @@ test("Stripe verifier rejects a Price ID mapped to the wrong amount", async () =
   assert.match(result.error, /wrong amount/i);
 });
 
-test("Coming Soon page follows the JA Profile Studio launch-page structure", async () => {
+test("Coming Soon page follows the Planyx launch-page structure", async () => {
   const html = await readFile(new URL("public/coming-soon/index.html", root), "utf8");
   const script = await readFile(new URL("public/assets/js/coming-soon.js", root), "utf8");
   assert.match(html, /class="hero-icon"/);

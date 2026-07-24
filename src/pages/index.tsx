@@ -70,7 +70,7 @@ function DemoPlanCard() {
         <div className="px-5 py-5">
           <div className="flex flex-col items-center mb-4">
             <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-400 to-blue-700 flex items-center justify-center text-white text-lg font-bold mb-2.5 ring-4 ring-blue-500/20 shadow-lg shadow-blue-500/25">
-              JA
+              P
             </div>
             <h3 className="text-foreground font-bold text-sm">Brighton Day Trip</h3>
             <p className="text-primary text-xs mt-0.5 font-medium">Day Trip Builder</p>
@@ -109,7 +109,7 @@ function DemoChecklistCard() {
       <div className="absolute inset-0 bg-gradient-to-br from-blue-600/8 via-transparent to-purple-600/6 pointer-events-none" />
       <div className="relative p-5">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-600/80 flex items-center justify-center text-white font-bold text-sm shadow-sm flex-shrink-0">JA</div>
+          <div className="w-12 h-12 rounded-xl bg-blue-600/80 flex items-center justify-center text-white font-bold text-sm shadow-sm flex-shrink-0">P</div>
           <div>
             <p className="text-foreground font-bold text-sm leading-tight">Travel Checklist</p>
             <p className="text-primary text-[10px] mt-0.5">6 of 8 complete</p>
