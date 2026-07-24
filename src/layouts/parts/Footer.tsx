@@ -3,6 +3,7 @@ import { ExternalLink } from 'lucide-react';
 import { useBranding } from '@/lib/branding';
 import { openInstallModal } from '@/components/InstallAppModal';
 import { GROUP_CONTACT_EMAIL, GROUP_PHONE_DISPLAY, GROUP_PHONE_HREF, PLANYX_EMAIL } from '@/lib/contact-details';
+import { useSiteSettings } from '@/lib/site-settings-context';
 
 export interface FooterLink {
   label: string;
@@ -52,6 +53,7 @@ export const DEFAULT_FOOTER_COLUMNS: FooterColumn[] = [
       { label: 'Cookie Policy',       href: '/cookies' },
       { label: 'Complaints Policy',   href: '/complaints' },
       { label: 'Acceptable Use',      href: '/acceptable-use' },
+      { label: 'Refund Policy',       href: '/refund-policy' },
     ],
   },
 ];
@@ -92,11 +94,18 @@ function FooterLinkItem({ link }: { link: FooterLink }) {
 
 export default function Footer() {
   const branding = useBranding();
+  const { footerLinks } = useSiteSettings();
   const year = new Date().getFullYear();
 
-  // Keep the public footer concise and consistent. Older database-managed
-  // footer menus contained duplicated links and an oversized legal column.
-  const columns: FooterColumn[] = DEFAULT_FOOTER_COLUMNS;
+  const managedColumns = footerLinks.reduce<FooterColumn[]>((columns, link) => {
+    if (!link.label || !link.href) return columns;
+    const heading = link.group || 'Links';
+    const existing = columns.find(column => column.heading === heading);
+    if (existing) existing.links.push({ label: link.label, href: link.href });
+    else columns.push({ heading, links: [{ label: link.label, href: link.href }] });
+    return columns;
+  }, []);
+  const columns: FooterColumn[] = managedColumns.length ? managedColumns : DEFAULT_FOOTER_COLUMNS;
 
   return (
     <footer className="border-t border-border bg-card" role="contentinfo">
