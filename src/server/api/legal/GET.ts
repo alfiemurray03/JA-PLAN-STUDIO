@@ -10,6 +10,11 @@ import { ja_system_config } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
 
 export default async function handler(req: Request, res: Response) {
+  // Legal publications must reflect the latest explicitly published version.
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+
   const slug = req.query.slug as string | undefined;
   if (!slug) return res.status(400).json({ success: false, error: 'slug is required.' });
 

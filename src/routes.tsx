@@ -28,6 +28,7 @@ const PrivacyPage = lazy(() => import('./pages/privacy'));
 const CookiesPage = lazy(() => import('./pages/cookies'));
 const ComplaintsPage = lazy(() => import('./pages/complaints'));
 const AcceptableUsePage = lazy(() => import('./pages/acceptable-use'));
+const RefundPolicyPage = lazy(() => import('./pages/refund-policy'));
 const ContactPage = lazy(() => import('./pages/contact'));
 const DiscoveryPage = lazy(() => import('./pages/discovery'));
 const DestinationsPage = lazy(() => import('./pages/destinations'));
@@ -312,7 +313,7 @@ export const routes: RouteObject[] = [
   },
   {
     path: '/refund-policy',
-    element: <Navigate to="/policies/refund-policy" replace />,
+    element: wrap(<RefundPolicyPage />),
   },
   {
     path: '/contact',

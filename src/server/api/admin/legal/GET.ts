@@ -9,7 +9,14 @@ import { ja_system_config } from '../../../db/schema.js';
 import { like } from 'drizzle-orm';
 import { requireAdminRole } from '../_require-role.js';
 
-const LEGAL_SLUGS = ['privacy-policy', 'terms-of-service', 'cookie-policy', 'acceptable-use'];
+const LEGAL_SLUGS = [
+  'privacy-policy',
+  'terms-of-service',
+  'cookie-policy',
+  'acceptable-use',
+  'complaints-policy',
+  'refund-policy',
+];
 
 export default async function handler(req: Request, res: Response) {
   const identity = await requireAdminRole(req, res, []);
