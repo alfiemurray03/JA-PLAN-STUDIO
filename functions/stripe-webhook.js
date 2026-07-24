@@ -1,4 +1,5 @@
 import { normalisePlanCode } from "./_shared/subscription-entitlements.js";
+import { claimPaidStripeSubscription } from "./_shared/stripe-subscription-claim.js";
 
 const SUPPORTED_EVENTS = new Set([
   "checkout.session.completed",
@@ -50,7 +51,7 @@ export async function onRequestPost({ request, env }) {
       ON CONFLICT(event_id) DO UPDATE SET status = 'processing', payload = excluded.payload, error = NULL
     `).bind(event.id, event.type, event.data.object.id || null, payload).run();
 
-    if (SUPPORTED_EVENTS.has(event.type)) await processEvent(env.DB, event);
+    if (SUPPORTED_EVENTS.has(event.type)) await processEvent(env.DB, event, env);
 
     await env.DB.prepare(`
       UPDATE stripe_webhook_events
@@ -135,10 +136,10 @@ async function safeAlter(DB, sql) {
   }
 }
 
-async function processEvent(DB, event) {
+async function processEvent(DB, event, env) {
   const object = event.data.object;
   if (event.type === "checkout.session.completed") return saveCheckoutSession(DB, object);
-  if (event.type.startsWith("customer.subscription.")) return saveSubscription(DB, object, event.type);
+  if (event.type.startsWith("customer.subscription.")) return saveSubscription(DB, object, event.type, env);
   if (event.type.startsWith("invoice.")) return saveInvoice(DB, object, event.type);
 }
 
@@ -172,16 +173,31 @@ async function saveCheckoutSession(DB, session) {
   await updateProfile(DB, customerId, email, session.metadata?.plan_name || null, null);
 }
 
-async function saveSubscription(DB, subscription, eventType) {
+async function saveSubscription(DB, subscription, eventType, env) {
   const customerId = idValue(subscription.customer);
   const checkout = customerId ? await DB.prepare(`
     SELECT customer_email, plan_code, plan_name FROM stripe_checkout_sessions
     WHERE customer_id = ? ORDER BY updated_at DESC LIMIT 1
   `).bind(customerId).first().catch(() => null) : null;
-  const email = subscription.customer_details?.email || subscription.metadata?.customer_email || checkout?.customer_email || null;
+  const stripeCustomer = customerId && !subscription.metadata?.customer_email && !checkout?.customer_email
+    ? await retrieveStripeCustomer(env, customerId)
+    : null;
+  const email = normaliseEmail(
+    subscription.customer_details?.email ||
+    subscription.metadata?.customer_email ||
+    checkout?.customer_email ||
+    stripeCustomer?.email
+  );
   const item = subscription.items?.data?.[0] || null;
-  const planCode = normalisePlanCode(subscription.metadata?.plan_code || item?.price?.metadata?.plan_code || checkout?.plan_code || checkout?.plan_name) || null;
-  const planName = subscription.metadata?.plan_name || checkout?.plan_name || item?.price?.product?.name || item?.price?.nickname || planCode;
+  const cataloguePlan = await resolveCataloguePlan(DB, idValue(item?.price));
+  const planCode = normalisePlanCode(
+    subscription.metadata?.plan_code ||
+    item?.price?.metadata?.plan_code ||
+    checkout?.plan_code ||
+    checkout?.plan_name ||
+    cataloguePlan?.id
+  ) || null;
+  const planName = subscription.metadata?.plan_name || checkout?.plan_name || cataloguePlan?.plan_name || item?.price?.product?.name || item?.price?.nickname || planCode;
   const paymentMethod = subscription.default_payment_method?.card || null;
   const latestInvoice = typeof subscription.latest_invoice === "object" ? subscription.latest_invoice : null;
   const status = eventType === "customer.subscription.deleted" ? "canceled" : (subscription.status || null);
@@ -217,7 +233,7 @@ async function saveSubscription(DB, subscription, eventType) {
 
 async function saveInvoice(DB, invoice, eventType) {
   const customerId = idValue(invoice.customer);
-  const email = invoice.customer_email || null;
+  const email = normaliseEmail(invoice.customer_email);
   const status = eventType === "invoice.payment_failed" ? "payment_failed" : (invoice.status || null);
   await DB.prepare(`
     INSERT INTO stripe_invoices (
@@ -236,16 +252,65 @@ async function saveInvoice(DB, invoice, eventType) {
     invoice.hosted_invoice_url || null, invoice.invoice_pdf || null,
     stripeTime(invoice.period_start), stripeTime(invoice.period_end)
   ).run();
-  const subscriptionId = idValue(invoice.subscription);
+  const subscriptionId = invoiceSubscriptionId(invoice);
   if (subscriptionId) {
     await DB.prepare(`
       UPDATE stripe_subscriptions
       SET billing_status = ?, latest_invoice_id = ?,
+        customer_email = COALESCE(NULLIF(?, ''), customer_email),
         next_payment_at = COALESCE(?, next_payment_at), updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).bind(status, invoice.id, stripeTime(invoice.period_end), subscriptionId).run();
+    `).bind(status, invoice.id, email, stripeTime(invoice.period_end), subscriptionId).run();
   }
-  if (eventType === "invoice.payment_failed") await updateProfile(DB, customerId, email, "Past due", null);
+  if (eventType === "invoice.paid") {
+    await updateProfile(DB, customerId, email, null, stripeTime(invoice.period_end));
+    await claimPaidStripeSubscription(DB, email);
+  } else if (eventType === "invoice.payment_failed") {
+    await updateProfile(DB, customerId, email, "Past due", null);
+  }
+}
+
+async function retrieveStripeCustomer(env, customerId) {
+  const secret = String(env?.STRIPE_SECRET_KEY || "").trim();
+  if (!secret || !customerId) return null;
+  const result = await fetch(`https://api.stripe.com/v1/customers/${encodeURIComponent(customerId)}`, {
+    headers: { Authorization: `Bearer ${secret}` }
+  }).catch(() => null);
+  if (!result?.ok) return null;
+  return result.json().catch(() => null);
+}
+
+async function resolveCataloguePlan(DB, priceId) {
+  if (!priceId) return null;
+  const direct = await DB.prepare(`
+    SELECT id, plan_name FROM service_plans WHERE stripe_price_id = ? LIMIT 1
+  `).bind(priceId).first().catch(() => null);
+  if (direct?.id) return direct;
+
+  const override = await DB.prepare(`
+    SELECT CASE key
+      WHEN 'stripe_price_personal_override' THEN 'personal'
+      WHEN 'stripe_price_standard_override' THEN 'standard'
+      WHEN 'stripe_price_professional_override' THEN 'professional'
+      WHEN 'stripe_price_org_starter_override' THEN 'org_starter'
+    END AS id
+    FROM site_settings
+    WHERE value = ? AND key IN (
+      'stripe_price_personal_override',
+      'stripe_price_standard_override',
+      'stripe_price_professional_override',
+      'stripe_price_org_starter_override'
+    )
+    LIMIT 1
+  `).bind(priceId).first().catch(() => null);
+  if (!override?.id) return null;
+  return DB.prepare(`SELECT id, plan_name FROM service_plans WHERE id = ? LIMIT 1`)
+    .bind(override.id).first().catch(() => ({ id: override.id, plan_name: null }));
+}
+
+function normaliseEmail(value) {
+  const email = String(value || "").trim().toLowerCase();
+  return email && email.includes("@") ? email : null;
 }
 
 async function updateProfile(DB, customerId, email, membershipStatus, renewalAt) {
@@ -265,6 +330,13 @@ async function updateProfile(DB, customerId, email, membershipStatus, renewalAt)
 function idValue(value) {
   if (!value) return null;
   return typeof value === "string" ? value : value.id || null;
+}
+
+function invoiceSubscriptionId(invoice) {
+  return idValue(invoice?.subscription)
+    || idValue(invoice?.parent?.subscription_details?.subscription)
+    || idValue(invoice?.lines?.data?.find((line) => line?.subscription)?.subscription)
+    || null;
 }
 
 function stripeTime(value) {
