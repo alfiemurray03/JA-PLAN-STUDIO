@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ja-plan-studio-shell-v7';
+const CACHE_NAME = 'planyx-shell-v7';
 const PUBLIC_LAUNCH = '/?source=pwa&launch=public-v7';
 const SHELL = ['/', PUBLIC_LAUNCH, '/manifest.webmanifest?v=7', '/pwa-icon.svg', '/favicon.svg'];
 

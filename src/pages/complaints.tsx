@@ -8,7 +8,7 @@ export default function ComplaintsPolicyPage() {
     <Helmet>
       <title>Complaints Policy — Planyx</title>
       <meta name="description" content="How to make, escalate and resolve a complaint about Planyx." />
-      <link rel="canonical" href="https://japlanstudio.jagroupservices.co.uk/complaints" />
+      <link rel="canonical" href="https://planyx.jagroupservices.co.uk/complaints" />
     </Helmet>
     <main className="min-h-screen bg-background">
       <article className="mx-auto max-w-3xl px-6 py-12 text-foreground">

@@ -10,7 +10,7 @@ import { getAccountClassification } from '@/lib/account-type-client';
 import type { AccountType } from '@/lib/account-entitlements';
 import {
   INDIVIDUAL_PLAN_FEATURE_COMPARISON,
-  JA_PLAN_STUDIO_SUBSCRIPTIONS,
+  PLANYX_SUBSCRIPTIONS,
   ORGANISATION_PLAN_FEATURE_COMPARISON,
   type ServicePlan,
 } from '@/lib/service-plans';
@@ -52,7 +52,7 @@ function PlanCard({ plan, paymentsEnabled, audience }: { plan: ServicePlan; paym
 }
 
 export default function PricingPage() {
-  const [plans, setPlans] = useState<ServicePlan[]>(JA_PLAN_STUDIO_SUBSCRIPTIONS);
+  const [plans, setPlans] = useState<ServicePlan[]>(PLANYX_SUBSCRIPTIONS);
   const [audience, setAudience] = useState<AccountType>('individual');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [searchParams] = useSearchParams();
@@ -74,9 +74,9 @@ export default function PricingPage() {
       .then(response => response.ok ? response.json() : Promise.reject(new Error('Plan catalogue unavailable')))
       .then(data => {
         if (!Array.isArray(data.plans)) return;
-        const recognised = new Set(JA_PLAN_STUDIO_SUBSCRIPTIONS.map(plan => plan.id));
+        const recognised = new Set(PLANYX_SUBSCRIPTIONS.map(plan => plan.id));
         const current = data.plans.filter((plan: ServicePlan) => recognised.has(plan.id)).map((plan: ServicePlan) => {
-          const defaults = JA_PLAN_STUDIO_SUBSCRIPTIONS.find(item => item.id === plan.id)!;
+          const defaults = PLANYX_SUBSCRIPTIONS.find(item => item.id === plan.id)!;
           return {
             ...defaults,
             ...plan,
@@ -95,7 +95,7 @@ export default function PricingPage() {
       <Helmet>
         <title>Plans & Pricing | Planyx</title>
         <meta name="description" content="Compare individual and organisation Planyx subscriptions, including read-only and collaborative itinerary sharing." />
-        <link rel="canonical" href="https://japlanstudio.jagroupservices.co.uk/pricing" />
+        <link rel="canonical" href="https://planyx.jagroupservices.co.uk/pricing" />
       </Helmet>
 
       <main className="min-h-screen overflow-x-clip bg-background">

@@ -1,4 +1,4 @@
-export const SITE_URL = "https://japlanstudio.jagroupservices.co.uk";
+export const SITE_URL = "https://planyx.jagroupservices.co.uk";
 export const WEBSITE_ID = `${SITE_URL}/#website`;
 export const ORGANIZATION_ID = `${SITE_URL}/#organization`;
 
@@ -10,7 +10,7 @@ export const organization = {
   legalName: "JA Group Services Ltd",
   url: `${SITE_URL}/`,
   description: "Planyx is the experience planning platform operated by JA Group Services Ltd.",
-  email: "japlanstudio@jagroupservices.co.uk",
+  email: "planyx@jagroupservices.co.uk",
   identifier: {
     "@type": "PropertyValue",
     propertyID: "Companies House company number",

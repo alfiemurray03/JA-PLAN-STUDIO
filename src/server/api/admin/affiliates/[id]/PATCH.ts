@@ -61,7 +61,7 @@ export default async function handler(req: Request, res: Response) {
             <h2>Congratulations, ${aff.full_name}!</h2>
             <p>Your affiliate application for Planyx has been <strong>approved</strong>.</p>
             <p><strong>Your referral code:</strong> <code>${code}</code></p>
-            <p><strong>Your referral link:</strong> <a href="https://japlanstudio.jagroupservices.co.uk/?ref=${code}">https://japlanstudio.jagroupservices.co.uk/?ref=${code}</a></p>
+            <p><strong>Your referral link:</strong> <a href="https://planyx.jagroupservices.co.uk/?ref=${code}">https://planyx.jagroupservices.co.uk/?ref=${code}</a></p>
             <p>Log in to your affiliate dashboard to track your clicks, signups, and commissions.</p>
             <p>If you have any questions, contact us at <a href="mailto:hello@jagroupservices.co.uk">hello@jagroupservices.co.uk</a>.</p>
             <br/><p>Kind regards,<br/>JA Group Services</p>

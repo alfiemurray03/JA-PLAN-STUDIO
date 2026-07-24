@@ -132,7 +132,7 @@ export default async function handler(req: Request, res: Response) {
       .where(eq(ja_password_reset_requests.id, resetReq.id));
 
     // Send reset email to customer
-    const resetUrl = `${process.env.APP_URL ?? 'https://japlanstudio.co.uk'}/reset-password?token=${token}`;
+    const resetUrl = `${process.env.APP_URL ?? 'https://planyx.co.uk'}/reset-password?token=${token}`;
 
     try {
       if (deliveryMethod === 'link') {
@@ -181,7 +181,7 @@ export default async function handler(req: Request, res: Response) {
                 <div style="text-align:center;margin:32px 0;">
                   <div style="background:#1B4F8A;color:#fff;padding:20px 40px;border-radius:8px;display:inline-block;font-size:36px;font-weight:bold;letter-spacing:8px;font-family:monospace;">${pin}</div>
                 </div>
-                <p style="text-align:center;color:#6b7280;">Enter this PIN at <a href="${process.env.APP_URL ?? 'https://japlanstudio.co.uk'}/reset-password" style="color:#1B4F8A;">/reset-password</a> along with your email address.</p>
+                <p style="text-align:center;color:#6b7280;">Enter this PIN at <a href="${process.env.APP_URL ?? 'https://planyx.co.uk'}/reset-password" style="color:#1B4F8A;">/reset-password</a> along with your email address.</p>
                 <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:4px;padding:16px;margin-top:16px;">
                   <strong>Important:</strong> This PIN is single-use and expires in <strong>24 hours</strong>. Do not share it with anyone.
                 </div>

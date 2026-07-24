@@ -5,7 +5,7 @@ import path from "node:path";
 
 const root = process.cwd();
 const retiredHost = ["experiences", "jagroupservices", "co", "uk"].join(".");
-const primaryOrigin = "https://japlanstudio.jagroupservices.co.uk";
+const primaryOrigin = "https://planyx.jagroupservices.co.uk";
 const ignoredDirectories = new Set([".git", "node_modules", ".wrangler", "dist"]);
 
 async function filesBelow(directory) {
@@ -28,7 +28,7 @@ test("the retired Experiences hostname is absent from the entire repository", as
   }
 });
 
-test("generated sitemap, robots and page metadata use the JA Plan Studio domain", async () => {
+test("generated sitemap, robots and page metadata use the Planyx domain", async () => {
   const sitemap = await readFile(path.join(root, "public/sitemap.xml"), "utf8");
   const robots = await readFile(path.join(root, "public/robots.txt"), "utf8");
   const homepage = await readFile(path.join(root, "public/index.html"), "utf8");

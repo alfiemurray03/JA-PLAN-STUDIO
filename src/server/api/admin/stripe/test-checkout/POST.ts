@@ -67,9 +67,9 @@ export default async function handler(req: Request, res: Response) {
   }
 
   const successUrl = await getConfigValue('stripe_success_url', null)
-    ?? 'https://japlanstudio.jagroupservices.co.uk/dashboard?checkout=success';
+    ?? 'https://planyx.jagroupservices.co.uk/dashboard?checkout=success';
   const cancelUrl  = await getConfigValue('stripe_cancel_url', null)
-    ?? 'https://japlanstudio.jagroupservices.co.uk/pricing?checkout=cancelled';
+    ?? 'https://planyx.jagroupservices.co.uk/pricing?checkout=cancelled';
 
   try {
     const stripe = new Stripe(secretKey, { apiVersion: '2026-05-27.dahlia' });

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useFeatureConfig } from '@/lib/feature-config-context';
 import {
   INDIVIDUAL_PLAN_FEATURE_COMPARISON,
-  JA_PLAN_STUDIO_SUBSCRIPTIONS,
+  PLANYX_SUBSCRIPTIONS,
   ORGANISATION_PLAN_FEATURE_COMPARISON,
   type PlanFeatureRow,
   type ServicePlan,
@@ -30,7 +30,7 @@ function PlanCard({ plan, audience, payments }: { plan: ServicePlan; audience: A
 }
 
 function Comparison({ title, rows }: { title: string; rows: PlanFeatureRow[] }) {
-  const plans = JA_PLAN_STUDIO_SUBSCRIPTIONS;
+  const plans = PLANYX_SUBSCRIPTIONS;
   return (
     <div className="mt-8">
       <h3 className="mb-4 text-xl font-bold text-foreground">{title} comparison</h3>
@@ -54,7 +54,7 @@ function Family({ audience, compare }: { audience: Audience; compare: boolean })
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Icon className="h-5 w-5" /></div>
         <div><h2 className="text-2xl font-bold text-foreground">{business ? 'Business Plans' : 'Standard Plans'}</h2><p className="mt-1 text-sm leading-relaxed text-muted-foreground">{business ? 'For businesses and organisations. Explore, Plan and Complete allow read-only itinerary sharing. Together also allows invited editing and the organisation member workspace.' : 'For individual customers. These plans use a private personal workspace without business sharing or organisation member controls.'}</p><p className="mt-2 text-xs font-semibold text-primary">The plan names and monthly prices are currently the same across both ranges.</p></div>
       </div>
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">{JA_PLAN_STUDIO_SUBSCRIPTIONS.map(plan => <PlanCard key={`${audience}-${plan.id}`} plan={plan} audience={audience} payments={!isLoading && config.payments} />)}</div>
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">{PLANYX_SUBSCRIPTIONS.map(plan => <PlanCard key={`${audience}-${plan.id}`} plan={plan} audience={audience} payments={!isLoading && config.payments} />)}</div>
       {compare ? <Comparison title={business ? 'Business Plans' : 'Standard Plans'} rows={business ? ORGANISATION_PLAN_FEATURE_COMPARISON : INDIVIDUAL_PLAN_FEATURE_COMPARISON} /> : null}
     </section>
   );

@@ -69,7 +69,7 @@ export default async function handler(req: Request, res: Response) {
     // Send email to customer (only for non-internal messages)
     if (!isInternal) {
       try {
-        const appUrl = process.env.APP_URL ?? 'https://japlanstudio.jagroupservices.co.uk';
+        const appUrl = process.env.APP_URL ?? 'https://planyx.jagroupservices.co.uk';
         await sendEmail({
           to:      ticket.email,
           replyTo: adminEmail,

@@ -57,7 +57,7 @@ export const ORGANISATION_PLAN_FEATURE_COMPARISON: PlanFeatureRow[] = [
 
 export const PLAN_FEATURE_COMPARISON = INDIVIDUAL_PLAN_FEATURE_COMPARISON;
 
-export const JA_PLAN_STUDIO_SUBSCRIPTIONS: ServicePlan[] = [
+export const PLANYX_SUBSCRIPTIONS: ServicePlan[] = [
   {
     id: 'personal', plan_name: 'Explore Plan', plan_type: 'Monthly subscription', price_label: '£5.99', price_pence: 599,
     delivery_time: 'Essential planning builders', revisions: 'Save and revisit your plans',

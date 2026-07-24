@@ -12,7 +12,7 @@ test('shared catalogue renders distinct Standard and Business ranges from one pl
   const catalogue = await source('src/components/StandardBusinessPlans.tsx');
   assert.match(catalogue, /Standard Plans/);
   assert.match(catalogue, /Business Plans/);
-  assert.match(catalogue, /JA_PLAN_STUDIO_SUBSCRIPTIONS\.map/);
+  assert.match(catalogue, /PLANYX_SUBSCRIPTIONS\.map/);
   assert.match(catalogue, /individual_features/);
   assert.match(catalogue, /organisation_features/);
   assert.match(catalogue, /INDIVIDUAL_PLAN_FEATURE_COMPARISON/);

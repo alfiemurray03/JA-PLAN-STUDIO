@@ -6,7 +6,7 @@
  * session is also terminated.
  *
  * After Entra completes logout it redirects to OIDC_POST_LOGOUT_REDIRECT_URI
- * (configured as https://japlanstudio.jagroupservices.co.uk/sign-in).
+ * (configured as https://planyx.jagroupservices.co.uk/sign-in).
  */
 import type { Request, Response } from 'express';
 import { getOidcClient } from '../_client.js';

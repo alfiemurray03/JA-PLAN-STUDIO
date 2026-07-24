@@ -38,7 +38,7 @@ test('admin Stripe price override is used by the live Explore checkout', async (
   };
   try {
     const response = await onRequestGet({
-      request: new Request('https://japlanstudio.example/create-checkout-session?plan=personal'),
+      request: new Request('https://planyx.example/create-checkout-session?plan=personal'),
       env: {
         DB: database({ toggle_payments: 'true', stripe_price_personal_override: 'price_admin_explore' }),
         STRIPE_SECRET_KEY: 'sk_test',
@@ -62,7 +62,7 @@ for (const plan of Object.keys(PLAN_DETAILS)) {
     };
     try {
       const response = await onRequestGet({
-        request: new Request(`https://japlanstudio.example/create-checkout-session?plan=${plan}`),
+        request: new Request(`https://planyx.example/create-checkout-session?plan=${plan}`),
         env: {
           DB: database({ toggle_payments: 'true' }),
           STRIPE_SECRET_KEY: 'sk_test',

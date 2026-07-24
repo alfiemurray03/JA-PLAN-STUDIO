@@ -47,7 +47,7 @@ test('Admin Contact Enquiries explains and highlights support assistant records'
 test('legacy Admin enquiry links redirect to the actual Contact Enquiries route', async () => {
   let nextCalled = false;
   const response = await redirectLegacyAdminEnquiry({
-    request: new Request('https://japlanstudio.jagroupservices.co.uk/admin/?section=enquiries&reference=ENQ-20260718-000001'),
+    request: new Request('https://planyx.jagroupservices.co.uk/admin/?section=enquiries&reference=ENQ-20260718-000001'),
     next() {
       nextCalled = true;
       return new Response('next');
@@ -59,7 +59,7 @@ test('legacy Admin enquiry links redirect to the actual Contact Enquiries route'
   assert.equal(nextCalled, false);
 
   const passthrough = await redirectLegacyAdminEnquiry({
-    request: new Request('https://japlanstudio.jagroupservices.co.uk/admin/'),
+    request: new Request('https://planyx.jagroupservices.co.uk/admin/'),
     next() {
       nextCalled = true;
       return new Response('next');

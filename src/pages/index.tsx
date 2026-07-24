@@ -3,7 +3,7 @@ import { Helmet } from '@dr.pogodin/react-helmet';
 import { motion } from 'motion/react';
 import { useState, useEffect, useLayoutEffect } from 'react';
 import InstallAppBanner from '@/components/InstallAppBanner';
-import { JA_PLAN_STUDIO_SUBSCRIPTIONS, type ServicePlan as ApiPlan } from '@/lib/service-plans';
+import { PLANYX_SUBSCRIPTIONS, type ServicePlan as ApiPlan } from '@/lib/service-plans';
 
 /**
  * When the app is running as an installed PWA (standalone display mode),
@@ -64,7 +64,7 @@ function DemoPlanCard() {
             <div className="w-2.5 h-2.5 rounded-full bg-green-400/70" />
           </div>
           <div className="flex-1 mx-2 bg-black/6 dark:bg-white/10 rounded-md px-2.5 py-1 text-[10px] text-muted-foreground font-mono truncate">
-            japlanstudio.jagroupservices.co.uk/plans/<span className="text-primary">day-trip</span>
+            planyx.jagroupservices.co.uk/plans/<span className="text-primary">day-trip</span>
           </div>
         </div>
         <div className="px-5 py-5">
@@ -229,7 +229,7 @@ const HOMEPAGE_DEFAULTS: HomepageContent = {
 ═══════════════════════════════════════════════════════════════════════════ */
 export default function HomePage() {
   usePwaRedirect();
-  const [plans, setPlans] = useState<ApiPlan[]>(JA_PLAN_STUDIO_SUBSCRIPTIONS);
+  const [plans, setPlans] = useState<ApiPlan[]>(PLANYX_SUBSCRIPTIONS);
   const [plansLoading, setPlansLoading] = useState(true);
   const [hpContent, setHpContent] = useState<HomepageContent>(HOMEPAGE_DEFAULTS);
 
@@ -253,9 +253,9 @@ export default function HomePage() {
       .then(r => r.ok ? r.json() : Promise.reject(new Error('Plans unavailable')))
       .then(data => {
         if (!Array.isArray(data.plans)) return;
-        const recognised = new Set(JA_PLAN_STUDIO_SUBSCRIPTIONS.map(plan => plan.id));
+        const recognised = new Set(PLANYX_SUBSCRIPTIONS.map(plan => plan.id));
         const currentPlans = data.plans.filter((plan: ApiPlan) => recognised.has(plan.id)).map((plan: ApiPlan) => {
-          const defaults = JA_PLAN_STUDIO_SUBSCRIPTIONS.find(item => item.id === plan.id)!;
+          const defaults = PLANYX_SUBSCRIPTIONS.find(item => item.id === plan.id)!;
           return { ...defaults, ...plan, included_features: defaults.included_features };
         });
         if (currentPlans.length) setPlans(currentPlans);
@@ -264,7 +264,7 @@ export default function HomePage() {
       .finally(() => setPlansLoading(false));
   }, []);
 
-  const site = 'https://japlanstudio.jagroupservices.co.uk';
+  const site = 'https://planyx.jagroupservices.co.uk';
   const jsonLd = {
     '@context': 'https://schema.org',
     '@graph': [

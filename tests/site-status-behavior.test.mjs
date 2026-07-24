@@ -68,12 +68,12 @@ test("Coming Soon redirects browser navigation without looping or blocking requi
 
   const comingSoon = await publicRequest(database, "/coming-soon/", {
     headers: { Accept: "text/html", "Sec-Fetch-Dest": "document" },
-    next: async () => new Response("<!doctype html><title>Coming Soon — JA Plan Studio</title>", { headers: { "Content-Type": "text/html; charset=utf-8" } })
+    next: async () => new Response("<!doctype html><title>Coming Soon — Planyx</title>", { headers: { "Content-Type": "text/html; charset=utf-8" } })
   });
   assert.equal(comingSoon.status, 200);
   assert.equal(comingSoon.headers.get("location"), null);
   assert.match(comingSoon.headers.get("content-type"), /text\/html/);
-  assert.match(await comingSoon.text(), /Coming Soon — JA Plan Studio/);
+  assert.match(await comingSoon.text(), /Coming Soon — Planyx/);
 
   for (const path of ["/assets/js/coming-soon.js", "/android-chrome-192x192.png", "/robots.txt", "/sitemap.xml", "/api/site-status", "/api/example", "/health/"]) {
     const response = await publicRequest(database, path, { headers: { Accept: "*/*" } });

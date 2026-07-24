@@ -1,4 +1,4 @@
-const recoveryKey = 'ja-plan-studio:analytics-compat-refresh';
+const recoveryKey = 'planyx:analytics-compat-refresh';
 const now = Date.now();
 let previousAttempt = 0;
 

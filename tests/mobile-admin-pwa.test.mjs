@@ -41,7 +41,7 @@ test('service worker intercepts cold protected launches before Microsoft redirec
   assert.match(main, /installPwaSupport\(\)/);
   assert.match(pwa, /serviceWorker\.register\('\/sw\.js\?v=5'/);
   assert.match(pwa, /updateViaCache: 'none'/);
-  assert.match(serviceWorker, /ja-plan-studio-shell-v5/);
+  assert.match(serviceWorker, /planyx-shell-v5/);
   assert.match(serviceWorker, /isColdProtectedLaunch/);
   assert.match(serviceWorker, /request\.referrer/);
   assert.match(serviceWorker, /publicLaunchResponse/);

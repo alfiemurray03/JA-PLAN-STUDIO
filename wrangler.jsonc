@@ -1,5 +1,5 @@
 {
-  "name": "ja-plan-studio",
+  "name": "planyx",
   "main": "src/worker.js",
   "compatibility_date": "2026-06-06",
 
@@ -10,6 +10,6 @@
   },
 
   "vars": {
-    "ENQUIRY_TO_EMAIL": "japlanstudio@jagroupservices.co.uk"
+    "ENQUIRY_TO_EMAIL": "planyx@jagroupservices.co.uk"
   }
 }

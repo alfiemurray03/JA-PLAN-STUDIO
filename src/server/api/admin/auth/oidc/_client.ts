@@ -31,13 +31,13 @@ export function getAdminOidcRedirectUri(req?: { headers: Record<string, string |
   if (req) {
     const host = (req.headers['x-forwarded-host'] as string | undefined)
       ?? (req.headers['host'] as string | undefined)
-      ?? 'japlanstudio.jagroupservices.co.uk';
+      ?? 'planyx.jagroupservices.co.uk';
     const proto = (req.headers['x-forwarded-proto'] as string | undefined)
       ?? req.protocol
       ?? 'https';
     return `${proto}://${host}/auth/admin/oidc/callback`;
   }
-  return `https://japlanstudio.jagroupservices.co.uk/auth/admin/oidc/callback`;
+  return `https://planyx.jagroupservices.co.uk/auth/admin/oidc/callback`;
 }
 
 let _client: Client | null = null;

@@ -30,7 +30,7 @@ const DEFAULTS: SiteSettings = {
   brandName:   'JA Group Services',
   companyName: 'JA Group Services Ltd',
   tagline:     'Personalised Plans, Generated in Minutes',
-  supportEmail: 'japlanstudio@jagroupservices.co.uk',
+  supportEmail: 'planyx@jagroupservices.co.uk',
   logoUrl:     '',
   googleAnalyticsId: 'G-50QJHHL7H7',
 };

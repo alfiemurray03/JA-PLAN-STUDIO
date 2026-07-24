@@ -36,8 +36,8 @@ test("shared wordmarks use the approved accessible near-black-and-blue treatment
     readFile(path.join(root, "public/assets/includes/footer.html"), "utf8"),
     readFile(path.join(root, "src/styles/tailwind.css"), "utf8"),
   ]);
-  assert.match(header, /aria-label="JA Plan Studio home"/);
-  assert.match(footer, /aria-label="JA Plan Studio"/);
+  assert.match(header, /aria-label="Planyx home"/);
+  assert.match(footer, /aria-label="Planyx"/);
   assert.match(styles, /\.brand-wordmark \.brand-ja \{ color: #0b0f19; \}/);
   assert.match(styles, /\.brand-wordmark \.brand-name \{ color: var\(--ja-blue-700, #1d4ed8\); \}/);
 });

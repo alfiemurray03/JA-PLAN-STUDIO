@@ -12,7 +12,7 @@ const assistantCore = await readFile(new URL('../functions/_shared/support-assis
 const supportBoundary = await readFile(new URL('../functions/api/support/_middleware.js', import.meta.url), 'utf8');
 const supportSubmit = await readFile(new URL('../functions/api/support/[[path]].js', import.meta.url), 'utf8');
 
-const request = (path, options = {}) => new Request(`https://japlanstudio.jagroupservices.co.uk${path}`, options);
+const request = (path, options = {}) => new Request(`https://planyx.jagroupservices.co.uk${path}`, options);
 
 test('managed AI Help Centre chatbot replaces the old support widget', () => {
   assert.match(app, /import AIHelpChatbot from '@\/components\/AIHelpChatbot'/);
@@ -42,7 +42,7 @@ test('anonymous enquiry submission bypasses only the submit middleware route', a
   const publicResponse = await supportMiddleware({
     request: request('/api/support/submit', {
       method: 'POST',
-      headers: { Origin: 'https://japlanstudio.jagroupservices.co.uk' },
+      headers: { Origin: 'https://planyx.jagroupservices.co.uk' },
     }),
     env: {},
     next: async () => new Response(JSON.stringify({ success: true }), { status: 200 }),

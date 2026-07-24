@@ -7,7 +7,7 @@ import { db } from '../../db/client.js';
 import { ja_signing_audit, ja_site_settings } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
 
-const APP_URL = process.env.APP_URL || 'https://japlanstudio.jagroupservices.co.uk';
+const APP_URL = process.env.APP_URL || 'https://planyx.jagroupservices.co.uk';
 
 async function getSiteName(): Promise<string> {
   try {

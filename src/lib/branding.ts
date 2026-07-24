@@ -27,7 +27,7 @@ const DEFAULTS: Branding = {
   platform_name: 'Planyx',
   platform_tagline: 'Personalised plans, built step by step.',
   platform_description: 'Build destination, itinerary, experience, accessibility and practical travel plans with guided Planyx tools and planning support.',
-  platform_url: 'https://japlanstudio.jagroupservices.co.uk',
+  platform_url: 'https://planyx.jagroupservices.co.uk',
   platform_logo_url: '',
   platform_favicon_url: '',
   master_brand_name: 'JA Group Services Ltd',

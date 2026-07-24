@@ -16,7 +16,7 @@ export function installPwaSupport() {
       .catch(() => {});
     if ('caches' in window) {
       void caches.keys()
-        .then(keys => Promise.all(keys.filter(key => key.startsWith('ja-plan-studio-shell-')).map(key => caches.delete(key))))
+        .then(keys => Promise.all(keys.filter(key => key.startsWith('planyx-shell-')).map(key => caches.delete(key))))
         .catch(() => {});
     }
     return;

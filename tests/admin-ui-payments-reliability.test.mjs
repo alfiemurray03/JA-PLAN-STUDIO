@@ -53,11 +53,11 @@ test('feature flags fail closed for payments and retain safe defaults', async ()
 
 test('Cloudflare checkout creates no Stripe request while Payments is disabled', async () => {
   const response = await checkoutGet({
-    request: new Request('https://japlanstudio.example/create-checkout-session?plan=personal'),
-    env: { DB: new FeatureDB({ toggle_payments: 'false' }), SITE_URL: 'https://japlanstudio.example' },
+    request: new Request('https://planyx.example/create-checkout-session?plan=personal'),
+    env: { DB: new FeatureDB({ toggle_payments: 'false' }), SITE_URL: 'https://planyx.example' },
   });
   assert.equal(response.status, 303);
-  assert.equal(response.headers.get('location'), 'https://japlanstudio.example/pricing/?payments=disabled');
+  assert.equal(response.headers.get('location'), 'https://planyx.example/pricing/?payments=disabled');
 });
 
 test('pricing renders disabled controls and a clear coming-soon message when Payments is off', async () => {

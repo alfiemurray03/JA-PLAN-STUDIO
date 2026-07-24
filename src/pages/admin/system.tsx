@@ -37,19 +37,19 @@ const DEFAULT_TOGGLES: FeatureToggle[] = [
 
 const DEFAULT_GENERAL: Record<string, string> = {
   platform_name:  'Planyx',
-  platform_url:   'https://japlanstudio.com',
-  support_email:  'japlanstudio@jagroupservices.co.uk',
+  platform_url:   'https://planyx.com',
+  support_email:  'planyx@jagroupservices.co.uk',
   company_name:   'JA Group Services',
   timezone:       'Europe/London',
   currency:       'GBP (£)',
 };
 
 const DEFAULT_EMAIL: Record<string, string> = {
-  smtp_host:   'smtp.japlanstudio.com',
+  smtp_host:   'smtp.planyx.com',
   smtp_port:   '587',
-  smtp_user:   'noreply@japlanstudio.com',
+  smtp_user:   'noreply@planyx.com',
   from_name:   'Planyx',
-  from_email:  'noreply@japlanstudio.com',
+  from_email:  'noreply@planyx.com',
 };
 
 const DEFAULT_SECURITY: Record<string, string> = {

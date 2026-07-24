@@ -126,7 +126,7 @@ export default async function handler(req: Request, res: Response) {
         used:           false,
       });
 
-      const appUrl = process.env.APP_URL ?? 'https://japlanstudio.jagroupservices.co.uk';
+      const appUrl = process.env.APP_URL ?? 'https://planyx.jagroupservices.co.uk';
       const result = await sendEmail({
         to:      normalised,
         subject: '[TEST] Your Planyx Password Reset PIN',
@@ -241,7 +241,7 @@ export default async function handler(req: Request, res: Response) {
       if (!tickets[0]) return res.status(404).json({ success: false, error: `Ticket #${ticketId} not found.` });
 
       const ticket = tickets[0];
-      const appUrl = process.env.APP_URL ?? 'https://japlanstudio.jagroupservices.co.uk';
+      const appUrl = process.env.APP_URL ?? 'https://planyx.jagroupservices.co.uk';
 
       const result = await sendEmail({
         to:      ticket.email,

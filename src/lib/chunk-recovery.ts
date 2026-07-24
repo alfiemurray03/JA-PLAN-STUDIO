@@ -1,4 +1,4 @@
-const RECOVERY_KEY = 'ja-plan-studio:chunk-recovery';
+const RECOVERY_KEY = 'planyx:chunk-recovery';
 const REFRESH_MARKER = '_japs_refresh';
 const RECOVERY_WINDOW_MS = 60_000;
 
@@ -129,7 +129,7 @@ function renderEmergencyPage(message: string) {
 
   const support = document.createElement('p');
   support.style.cssText = 'margin:25px 0 0;padding-top:20px;border-top:1px solid rgba(255,255,255,.1);color:#94a3b8;font-size:13px;line-height:1.6';
-  support.textContent = 'If this continues, contact japlanstudio@jagroupservices.co.uk and include the reference above.';
+  support.textContent = 'If this continues, contact planyx@jagroupservices.co.uk and include the reference above.';
 
   content.append(eyebrow, title, explanation, errorBox, meta, actions, support);
   card.append(header, content);

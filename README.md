@@ -1,8 +1,8 @@
-# JA Plan Studio Website
+# Planyx Website
 
-Public website for **JA Plan Studio**, a trading division and service line of JA Group Services Ltd.
+Public website for **Planyx**, a trading division and service line of JA Group Services Ltd.
 
-Production domain: `japlanstudio.jagroupservices.co.uk`
+Production domain: `planyx.jagroupservices.co.uk`
 
 Administrator authentication now uses native Microsoft Entra ID directly through the application.
 
@@ -29,7 +29,7 @@ The enquiry system reuses the email provider configured in the Administrator Con
 `ENQUIRY_FROM_EMAIL` should use the verified domain, for example:
 
 ```text
-JA Plan Studio <japlanstudio@jagroupservices.co.uk>
+Planyx <planyx@jagroupservices.co.uk>
 ```
 
 The Administrator Control Centre email settings take precedence over environment-variable fallbacks.

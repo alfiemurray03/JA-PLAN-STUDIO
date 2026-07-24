@@ -7,7 +7,7 @@ test("protected builder document continues to the static asset without an ASSETS
   let nextCalls = 0;
   let assetCalls = 0;
   const response = await accountOnRequest({
-    request: new Request("https://japlanstudio.jagroupservices.co.uk/account/builders/", {
+    request: new Request("https://planyx.jagroupservices.co.uk/account/builders/", {
       headers: { Accept: "text/html" }
     }),
     env: {

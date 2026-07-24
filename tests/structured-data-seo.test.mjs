@@ -5,7 +5,7 @@ import path from "node:path";
 
 const root = process.cwd();
 const publicDir = path.join(root, "public");
-const productionUrl = "https://japlanstudio.jagroupservices.co.uk";
+const productionUrl = "https://planyx.jagroupservices.co.uk";
 const formerBrand = new RegExp(["JA", "Experiences", "(?:\\s*&(?:amp;)?\\s*Discovery)?"].join(" "), "i");
 
 const readPublic = route => readFile(path.join(publicDir, route === "/" ? "index.html" : route.slice(1), route === "/" ? "" : "index.html"), "utf8");
@@ -25,7 +25,7 @@ test("homepage exposes one canonical WebSite and Organization", async () => {
   assert.equal(organizations[0].name, "Planyx");
   assert.equal(organizations[0].legalName, "JA Group Services Ltd");
   assert.equal(organizations[0].identifier.value, "16314179");
-  assert.equal(organizations[0].email, "japlanstudio@jagroupservices.co.uk");
+  assert.equal(organizations[0].email, "planyx@jagroupservices.co.uk");
   assert.deepEqual(organizations[0].address, {
     "@type": "PostalAddress",
     streetAddress: "167-169 Great Portland Street, 5th Floor",
@@ -34,7 +34,7 @@ test("homepage exposes one canonical WebSite and Organization", async () => {
     postalCode: "W1W 5PF",
     addressCountry: "GB"
   });
-  assert.match(html, /<link rel="canonical" href="https:\/\/japlanstudio\.jagroupservices\.co\.uk\/">/);
+  assert.match(html, /<link rel="canonical" href="https:\/\/planyx\.jagroupservices\.co\.uk\/">/);
   assert.match(html, /<meta property="og:site_name" content="Planyx">/);
 });
 

@@ -41,8 +41,8 @@ export default function MaintenanceGate({ children }: { children: React.ReactNod
         </div>
         <p className="text-xs text-muted-foreground">
           Need urgent help?{' '}
-          <a href="mailto:japlanstudio@jagroupservices.co.uk" className="text-primary hover:underline">
-            japlanstudio@jagroupservices.co.uk
+          <a href="mailto:planyx@jagroupservices.co.uk" className="text-primary hover:underline">
+            planyx@jagroupservices.co.uk
           </a>
         </p>
       </div>

@@ -157,9 +157,9 @@ You retain ownership of all content you create using Planyx.
 These Terms are governed by the laws of England and Wales.
 
 8. Contact
-If you have questions about these Terms, contact japlanstudio@jagroupservices.co.uk.`,
+If you have questions about these Terms, contact planyx@jagroupservices.co.uk.`,
 
-  'complaints-policy': `Planyx is operated by JA Group Services Ltd. Complaints may be submitted through the Support Centre or to japlanstudio@jagroupservices.co.uk.
+  'complaints-policy': `Planyx is operated by JA Group Services Ltd. Complaints may be submitted through the Support Centre or to planyx@jagroupservices.co.uk.
 
 1. Acknowledgement
 We normally acknowledge a complaint within two working days.
@@ -209,7 +209,7 @@ You must not use Planyx to:
 We reserve the right to suspend or terminate accounts that violate this policy.
 
 4. Contact
-To report a violation, contact japlanstudio@jagroupservices.co.uk.`,
+To report a violation, contact planyx@jagroupservices.co.uk.`,
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

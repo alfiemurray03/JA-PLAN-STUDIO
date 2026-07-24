@@ -53,7 +53,7 @@ try {
   previousReleaseAssets = await listFiles(path.join(destination, 'assets'), 'assets');
 }
 
-const preservedRoot = await mkdtemp(path.join(os.tmpdir(), 'ja-plan-studio-static-'));
+const preservedRoot = await mkdtemp(path.join(os.tmpdir(), 'planyx-static-'));
 const preservationMap = new Map([
   ['coming-soon', 'coming-soon'],
   [path.join('assets', 'js', 'coming-soon.js'), path.join('assets', 'js', 'coming-soon.js')],

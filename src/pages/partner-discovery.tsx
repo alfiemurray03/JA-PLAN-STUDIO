@@ -50,7 +50,7 @@ function ProviderWidget({ provider, slug }: { provider: Provider; slug: string }
   const href = `https://www.getyourguide.com/s/?q=${encodeURIComponent(query)}&partner_id=${GYG_PARTNER_ID}&locale=en-GB&currency=GBP`;
   return (
     <div className="min-h-80 rounded-2xl border border-border bg-background p-4">
-      <div data-gyg-href="https://widget.getyourguide.com/default/activities.frame" data-gyg-widget="activities" data-gyg-partner-id={GYG_PARTNER_ID} {...(destination.gyg ? { 'data-gyg-location-id': destination.gyg } : { 'data-gyg-q': query })} data-gyg-locale-code="en-GB" data-gyg-currency="GBP" data-gyg-number-of-items="5" data-gyg-cmp="ja-plan-studio-discovery">
+      <div data-gyg-href="https://widget.getyourguide.com/default/activities.frame" data-gyg-widget="activities" data-gyg-partner-id={GYG_PARTNER_ID} {...(destination.gyg ? { 'data-gyg-location-id': destination.gyg } : { 'data-gyg-q': query })} data-gyg-locale-code="en-GB" data-gyg-currency="GBP" data-gyg-number-of-items="5" data-gyg-cmp="planyx-discovery">
         <span>Powered by <a href={href} target="_blank" rel="sponsored noopener noreferrer">GetYourGuide</a></span>
       </div>
     </div>

@@ -157,8 +157,8 @@ export default function RouteErrorPage() {
 
             <p className="border-t border-white/10 pt-5 text-sm leading-relaxed text-slate-400">
               If the problem continues, contact{' '}
-              <a className="font-semibold text-blue-300 hover:underline" href="mailto:japlanstudio@jagroupservices.co.uk">
-                japlanstudio@jagroupservices.co.uk
+              <a className="font-semibold text-blue-300 hover:underline" href="mailto:planyx@jagroupservices.co.uk">
+                planyx@jagroupservices.co.uk
               </a>{' '}
               and include the reference shown above.
             </p>

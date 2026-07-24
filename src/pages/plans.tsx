@@ -7,7 +7,7 @@ export default function PlansPage() {
       <Helmet>
         <title>Standard & Business Plans | Planyx</title>
         <meta name="description" content="Compare Planyx Standard Plans for individuals and Business Plans for organisations." />
-        <link rel="canonical" href="https://japlanstudio.jagroupservices.co.uk/plans" />
+        <link rel="canonical" href="https://planyx.jagroupservices.co.uk/plans" />
       </Helmet>
       <main className="min-h-screen bg-background">
         <section className="border-b border-border bg-gradient-to-b from-primary/10 to-background px-4 py-20 text-center">

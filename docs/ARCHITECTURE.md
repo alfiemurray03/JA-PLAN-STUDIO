@@ -1,8 +1,8 @@
-# JA Plan Studio Architecture
+# Planyx Architecture
 
 ## Overview
 
-JA Plan Studio is split into two production-facing applications:
+Planyx is split into two production-facing applications:
 
 - Customer Portal
 - Administrator Centre

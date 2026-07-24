@@ -11,7 +11,7 @@ const DEFAULTS: Record<string, string> = {
   site_name:    'Planyx',
   brand_name:   'JA Group Services',
   tagline:      'Personalised Plans, Generated in Minutes',
-  support_email: 'japlanstudio@jagroupservices.co.uk',
+  support_email: 'planyx@jagroupservices.co.uk',
   company_name: 'JA Group Services Ltd',
   primary_color: '#1B4F8A',
   accent_color:  '#8a561b',

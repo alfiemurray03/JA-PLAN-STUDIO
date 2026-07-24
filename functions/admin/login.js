@@ -8,7 +8,7 @@ export async function onRequestGet(context) {
     const url = new URL(context.request.url);
     const returnTo = url.searchParams.get("return_to") || "";
     if (!returnTo || returnTo === "/admin" || returnTo === "/admin/" || returnTo.startsWith("/admin/dashboard")) {
-      url.searchParams.set("return_to", "/admin/dashboard/?portal=ja-plan-studio&release=20260716-profile-admin-v2");
+      url.searchParams.set("return_to", "/admin/dashboard/?portal=planyx&release=20260716-profile-admin-v2");
     }
     const request = new Request(url.toString(), context.request);
     return await beginLogin({ ...context, request }, "admin");

@@ -61,7 +61,7 @@ export default async function handler(req: Request, res: Response) {
           ${company ? `<p><strong>Company:</strong> ${company}</p>` : ''}
           ${website ? `<p><strong>Website:</strong> ${website}</p>` : ''}
           ${referralMethod ? `<p><strong>Referral method:</strong> ${referralMethod}</p>` : ''}
-          <p>Review this application in the <a href="https://japlanstudio.jagroupservices.co.uk/admin/affiliate">Admin Portal</a>.</p>
+          <p>Review this application in the <a href="https://planyx.jagroupservices.co.uk/admin/affiliate">Admin Portal</a>.</p>
         `,
       });
     } catch { /* non-fatal */ }

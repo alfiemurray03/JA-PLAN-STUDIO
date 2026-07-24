@@ -33,7 +33,7 @@ export default function CookiePolicyPage() {
       <Helmet>
         <title>Cookie Policy — {siteName}</title>
         <meta name="description" content={`How ${siteName} uses cookies and similar technologies on our platform.`} />
-        <link rel="canonical" href="https://japlanstudio.jagroupservices.co.uk/cookies" />
+        <link rel="canonical" href="https://planyx.jagroupservices.co.uk/cookies" />
       </Helmet>
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

@@ -75,7 +75,7 @@ const DEFAULT_CONFIG: SiteConfig = {
   siteName:    'Planyx',
   brandName:   'JA Group Services',
   tagline:     'Personalised Plans, Built Step by Step',
-  supportEmail: 'japlanstudio@jagroupservices.co.uk',
+  supportEmail: 'planyx@jagroupservices.co.uk',
   supportPhone: '020 3834 2790',
   companyName: 'JA Group Services Ltd',
   companyAddress: 'United Kingdom',
