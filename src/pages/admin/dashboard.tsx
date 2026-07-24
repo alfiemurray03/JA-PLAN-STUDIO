@@ -1,5 +1,5 @@
 /**
- * Planyx admin dashboard with live Plan Studio data.
+ * Planyx admin dashboard with live Planyx data.
  */
 import { useState, useEffect, useCallback } from 'react';
 import { Helmet } from '@dr.pogodin/react-helmet';

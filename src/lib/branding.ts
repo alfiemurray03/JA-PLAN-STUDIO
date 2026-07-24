@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { PLAN_STUDIO_EMAIL } from './contact-details';
+import { PLANYX_EMAIL } from './contact-details';
 
 export interface Branding {
   platform_name: string;
@@ -37,8 +37,8 @@ const DEFAULTS: Branding = {
   footer_tagline: 'Part of JA Group Services Ltd',
   footer_show_legal_name: '1',
   footer_links: '',
-  support_email: PLAN_STUDIO_EMAIL,
-  contact_email: PLAN_STUDIO_EMAIL,
+  support_email: PLANYX_EMAIL,
+  contact_email: PLANYX_EMAIL,
   social_twitter: '',
   social_linkedin: '',
   social_instagram: '',
@@ -59,8 +59,8 @@ function fetchBranding(): Promise<void> {
         next.platform_name = DEFAULTS.platform_name;
         next.platform_logo_url = DEFAULTS.platform_logo_url;
         next.platform_favicon_url = DEFAULTS.platform_favicon_url;
-        next.support_email = PLAN_STUDIO_EMAIL;
-        next.contact_email = PLAN_STUDIO_EMAIL;
+        next.support_email = PLANYX_EMAIL;
+        next.contact_email = PLANYX_EMAIL;
         if (/document|profile/i.test(next.platform_tagline)) next.platform_tagline = DEFAULTS.platform_tagline;
         if (/document|letter|contract|invoice|profile/i.test(next.platform_description)) next.platform_description = DEFAULTS.platform_description;
         cached = next;

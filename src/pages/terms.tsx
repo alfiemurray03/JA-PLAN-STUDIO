@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom';
 import { Helmet } from '@dr.pogodin/react-helmet';
 import { FileText, RefreshCw } from 'lucide-react';
 import { useSiteSettings } from '@/lib/site-settings-context';
-import { PLAN_STUDIO_EMAIL, normaliseContactDetails } from '@/lib/contact-details';
+import { PLANYX_EMAIL, normaliseContactDetails } from '@/lib/contact-details';
 
 const EFFECTIVE_DATE = '18 July 2026';
-const CONTACT_EMAIL = PLAN_STUDIO_EMAIL;
+const CONTACT_EMAIL = PLANYX_EMAIL;
 
 interface LegalContent {
   body: string;

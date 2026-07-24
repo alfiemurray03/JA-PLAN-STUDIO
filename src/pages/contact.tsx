@@ -16,7 +16,7 @@ import {
   ShieldCheck, Sparkles, AlertTriangle
 } from 'lucide-react';
 import {
-  DATA_PROTECTION_EMAIL, GROUP_CONTACT_EMAIL, GROUP_PHONE_DISPLAY, GROUP_PHONE_HREF, PLAN_STUDIO_EMAIL
+  DATA_PROTECTION_EMAIL, GROUP_CONTACT_EMAIL, GROUP_PHONE_DISPLAY, GROUP_PHONE_HREF, PLANYX_EMAIL
 } from '@/lib/contact-details';
 
 const CATEGORIES = [
@@ -43,7 +43,7 @@ const DEFAULT_CONTACT_SETTINGS = {
   contactIntroduction: 'Describe what you need and our AI-assisted contact box will organise your enquiry before you send it.',
   contactAiTitle: 'AI-assisted contact',
   contactAiDescription: 'Tell us what you need in plain English. Planyx will organise the enquiry, suggest what information to include and prepare it for the correct support route.',
-  contactSupportEmail: PLAN_STUDIO_EMAIL,
+  contactSupportEmail: PLANYX_EMAIL,
   contactGeneralEmail: GROUP_CONTACT_EMAIL,
   contactDpoEmail: DATA_PROTECTION_EMAIL,
   contactPhoneDisplay: GROUP_PHONE_DISPLAY,

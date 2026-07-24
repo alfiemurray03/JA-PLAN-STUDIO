@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { ExternalLink } from 'lucide-react';
 import { useBranding } from '@/lib/branding';
 import { openInstallModal } from '@/components/InstallAppModal';
-import { GROUP_CONTACT_EMAIL, GROUP_PHONE_DISPLAY, GROUP_PHONE_HREF, PLAN_STUDIO_EMAIL } from '@/lib/contact-details';
+import { GROUP_CONTACT_EMAIL, GROUP_PHONE_DISPLAY, GROUP_PHONE_HREF, PLANYX_EMAIL } from '@/lib/contact-details';
 
 export interface FooterLink {
   label: string;
@@ -122,10 +122,10 @@ export default function Footer() {
             </p>
             {branding.support_email && (
               <a
-                href={`mailto:${PLAN_STUDIO_EMAIL}`}
+                href={`mailto:${PLANYX_EMAIL}`}
                 className="text-sm text-primary hover:underline transition-colors font-medium leading-relaxed inline-block max-w-full break-words"
               >
-                {PLAN_STUDIO_EMAIL}
+                {PLANYX_EMAIL}
               </a>
             )}
             <div className="mt-3 space-y-1.5 text-sm text-muted-foreground">
