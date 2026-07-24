@@ -62,6 +62,7 @@ export default function AdminLoginPage() {
         <main className="flex-1">
           <section className="mx-auto grid max-w-6xl gap-7 px-5 py-8 sm:px-7 lg:grid-cols-[1.12fr_.88fr] lg:items-center lg:py-11">
             <div>
+              <img src="/assets/brand/planyx-logo.svg?v=1" alt="Planyx" className="mb-7 h-11 w-auto object-contain" />
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white px-3 py-1.5 !text-xs !font-medium !text-blue-800 dark:border-blue-800 dark:bg-blue-950/50 dark:!text-blue-200">
                 <MapPinned className="h-3.5 w-3.5" />Planning platform operations
               </div>
@@ -92,7 +93,8 @@ export default function AdminLoginPage() {
               </div>
             </div>
 
-            <section aria-labelledby="admin-sign-in-title" className="mx-auto w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,.09)] dark:border-slate-700 dark:bg-[#111b2d] dark:shadow-2xl dark:shadow-black/20">
+            <section aria-labelledby="admin-sign-in-title" className="relative mx-auto w-full max-w-sm overflow-hidden rounded-2xl border border-blue-200 bg-white p-6 shadow-[0_24px_70px_rgba(37,99,235,.12)] dark:border-blue-900/70 dark:bg-[#0d182a] dark:shadow-2xl dark:shadow-black/25">
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-600 via-cyan-400 to-blue-500" />
               <div className="mb-5 grid h-10 w-10 place-items-center rounded-xl bg-slate-950 !text-white dark:bg-white dark:!text-black"><ShieldCheck className="h-5 w-5" /></div>
               <p className="!text-xs !font-semibold uppercase tracking-[.12em] !text-blue-700 dark:!text-blue-300">Secure staff access</p>
               <h2 id="admin-sign-in-title" className="mt-2 !text-xl !font-semibold tracking-tight !text-black dark:!text-white">Sign in to the Admin Centre</h2>
