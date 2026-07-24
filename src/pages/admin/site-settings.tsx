@@ -544,9 +544,19 @@ export default function AdminSiteSettings() {
 
               {cfg.siteStatus === 'maintenance' && (
                 <div className={sectionCls}>
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Dedicated Maintenance Page</h3>
-                    <p className={`mt-1 text-xs ${muted}`}>Explain why Planyx is unavailable and when customers should expect it to return.</p>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Dedicated Maintenance Page</h3>
+                      <p className={`mt-1 text-xs ${muted}`}>Explain why Planyx is unavailable and when customers should expect it to return.</p>
+                    </div>
+                    <a
+                      href="/maintenance/"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex h-9 items-center rounded-lg border border-blue-300 bg-blue-50 px-3 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-950/40 dark:text-blue-200 dark:hover:bg-blue-900/50"
+                    >
+                      Preview maintenance page
+                    </a>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
                     <Field label="Page heading">
