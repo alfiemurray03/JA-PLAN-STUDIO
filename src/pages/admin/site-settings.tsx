@@ -542,8 +542,7 @@ export default function AdminSiteSettings() {
                 </div>
               )}
 
-              {cfg.siteStatus === 'maintenance' && (
-                <div className={sectionCls}>
+              <div className={sectionCls}>
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Dedicated Maintenance Page</h3>
@@ -583,8 +582,7 @@ export default function AdminSiteSettings() {
                   <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-xs leading-5 text-blue-800 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-200">
                     The page uses the approved Planyx logo, permanent dark styling, service-status indicator and legal links. Admin and authentication routes remain available.
                   </div>
-                </div>
-              )}
+              </div>
             </TabsContent>
 
             {/* ── Branding ── */}
