@@ -95,11 +95,11 @@ export default function AdminDashboard() {
 
   const statCards = [
     { label: 'Total Customers', value: overview?.customers ?? stats?.totalUsers ?? 0, note: 'All customer profiles', icon: Users, color: 'text-blue-600', bg: 'bg-blue-100' },
-    { label: 'Lifetime Members', value: overview?.lifetimeUsers ?? 0, note: 'Lifetime access enabled', icon: ShieldCheck, color: 'text-violet-600', bg: 'bg-violet-100' },
-    { label: 'Active Plans', value: overview?.activePlans ?? 0, note: 'Configured subscription plans', icon: CreditCard, color: 'text-indigo-600', bg: 'bg-indigo-100' },
+    { label: 'Lifetime Members', value: overview?.lifetimeUsers ?? 0, note: 'Lifetime access enabled', icon: ShieldCheck, color: 'text-blue-700', bg: 'bg-blue-100' },
+    { label: 'Active Plans', value: overview?.activePlans ?? 0, note: 'Configured subscription plans', icon: CreditCard, color: 'text-blue-600', bg: 'bg-blue-100' },
     { label: 'Revenue', value: 'Not connected', note: 'No revenue API is connected', icon: Activity, color: 'text-slate-600', bg: 'bg-slate-100' },
     { label: 'Pending Data Requests', value: overview?.dataProtectionRequests ?? 0, note: 'Requests needing attention', icon: ClipboardList, color: 'text-amber-600', bg: 'bg-amber-100' },
-    { label: 'Support Tickets', value: overview?.supportTickets ?? ticketStats.total, note: 'Customer support records', icon: MessageSquare, color: 'text-pink-600', bg: 'bg-pink-100' },
+    { label: 'Support Tickets', value: overview?.supportTickets ?? ticketStats.total, note: 'Customer support records', icon: MessageSquare, color: 'text-blue-600', bg: 'bg-blue-100' },
     { label: 'Website Status', value: websiteStatus, note: 'Saved public website mode', icon: HeartPulse, color: 'text-green-600', bg: 'bg-green-100' },
     { label: 'Worker Status', value: 'Online', note: 'Admin API responded successfully', icon: Settings, color: 'text-cyan-600', bg: 'bg-cyan-100' },
   ];
@@ -127,8 +127,8 @@ export default function AdminDashboard() {
           <div className="mb-8">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
-                  <ShieldCheck className="w-5 h-5 text-red-600" />
+                <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+                  <ShieldCheck className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold leading-tight text-foreground sm:text-3xl">{greeting}, {(admin?.name || 'Admin').split(' ')[0]}</h1>
@@ -179,16 +179,16 @@ export default function AdminDashboard() {
                   const Icon = link.icon;
                   return (
                     <Link key={link.to} to={link.to} className="block h-full">
-                      <Card className="group h-full min-h-[104px] cursor-pointer border-border bg-card transition-all hover:border-red-300 hover:bg-red-50/50 dark:hover:bg-red-950/20">
+                      <Card className="group h-full min-h-[104px] cursor-pointer border-border bg-card transition-all hover:border-blue-300 hover:bg-blue-50/60 dark:hover:bg-blue-950/20">
                         <CardContent className="flex h-full items-start gap-4 p-5">
-                          <div className="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0 group-hover:bg-red-200 transition-colors">
-                            <Icon className="w-4 h-4 text-red-600" />
+                          <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-200 transition-colors">
+                            <Icon className="w-4 h-4 text-blue-600" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-base font-semibold leading-snug text-foreground">{link.label}</p>
                             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{link.desc}</p>
                           </div>
-                          <ArrowRight className="mt-1 h-4 w-4 flex-shrink-0 text-muted-foreground transition-colors group-hover:text-red-600" />
+                          <ArrowRight className="mt-1 h-4 w-4 flex-shrink-0 text-muted-foreground transition-colors group-hover:text-blue-600" />
                         </CardContent>
                       </Card>
                     </Link>

@@ -246,7 +246,7 @@ function AdminLayoutInner({ children, title }: AdminLayoutInnerProps) {
               alt="Planyx"
               className="h-9 w-auto max-w-[148px] object-contain sm:h-10 sm:max-w-[176px]"
             />
-            <span className="hidden rounded-full border border-blue-400/25 bg-blue-500/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-blue-300 sm:inline">
+            <span className="hidden rounded-full border border-blue-300 bg-blue-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-blue-700 shadow-sm sm:inline dark:border-blue-400/35 dark:bg-blue-500/20 dark:text-blue-200">
               Admin Centre
             </span>
           </Link>

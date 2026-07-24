@@ -123,7 +123,7 @@ const PLAN_COLORS: Record<string, string> = {
   professional:     'bg-primary/10 text-primary border-primary/20',
   org_starter:      'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800',
   org_growth:       'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/40 dark:text-orange-300 dark:border-orange-800',
-  org_professional: 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/40 dark:text-rose-300 dark:border-rose-800',
+  org_professional: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800',
 };
 
 const PLAN_LABELS: Record<string, string> = {
