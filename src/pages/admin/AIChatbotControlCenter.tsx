@@ -493,27 +493,36 @@ export default function AIChatbotControlCenter() {
     <>
       <Helmet><title>AI Chatbot Control Centre — Admin Portal</title><meta name="robots" content="noindex,nofollow" /></Helmet>
       <AdminLayout title="AI Chatbot" subtitle="Manage the Planyx support assistant">
-        <div className="mx-auto max-w-[1480px] space-y-5 pb-20 lg:pb-0">
-          <section className="overflow-hidden rounded-2xl border border-blue-200/70 bg-gradient-to-br from-blue-50 via-background to-cyan-50/60 p-5 dark:border-blue-900/70 dark:from-blue-950/35 dark:via-background dark:to-cyan-950/20 sm:p-6">
-            <div className="flex flex-wrap items-center justify-between gap-5">
-              <div className="flex min-w-0 items-start gap-4">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm"><Bot className="h-5 w-5" /></div>
+        <div className="mx-auto max-w-[1800px] space-y-6 pb-20 lg:pb-0">
+          <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border px-5 py-4 sm:px-6">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white"><Bot className="h-4 w-4" /></span>
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2"><h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">AI Chatbot Settings</h1><Badge className={liveState === 'Live' ? 'border border-blue-200 bg-blue-100 text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200' : liveState === 'Maintenance' ? 'border border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200' : 'border border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'}>{liveState}</Badge></div>
-                  <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">Configure availability, responses, appearance, Help Centre knowledge, integrations and live support activity.</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h1 className="text-lg font-semibold text-foreground">AI Chatbot Control</h1>
+                    <Badge className={liveState === 'Live' ? 'border border-blue-300 bg-blue-100 text-blue-900 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200' : liveState === 'Maintenance' ? 'border border-amber-300 bg-amber-100 text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200' : 'border border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'}>{liveState}</Badge>
+                  </div>
+                  <p className="mt-0.5 text-sm text-muted-foreground">Manage the assistant, published content and customer conversations.</p>
                 </div>
               </div>
-              <div className="flex w-full gap-2 sm:w-auto"><Button className="flex-1 sm:flex-none" variant="outline" onClick={() => void Promise.all([loadSettings(), loadMonitor()])}><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button><Button className="flex-1 bg-blue-600 text-white hover:bg-blue-700 sm:flex-none" onClick={() => void saveSettings()} disabled={saving || loading}>{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}Save & publish</Button></div>
+              <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-end">
+                <span className="text-sm text-muted-foreground">{saving ? 'Publishing changes…' : notice || 'Settings are ready to edit.'}</span>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => void Promise.all([loadSettings(), loadMonitor()])}><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button>
+                  <Button size="sm" className="bg-blue-600 text-white hover:bg-blue-700" onClick={() => void saveSettings()} disabled={saving || loading}>{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}Save settings</Button>
+                </div>
+              </div>
             </div>
+            <nav aria-label="Chatbot settings sections" className="flex gap-1.5 overflow-x-auto bg-slate-100 p-2 dark:bg-slate-800/80">
+              {nav.map(([value, label, Icon]) => <button key={value} type="button" onClick={() => setTab(value)} aria-current={tab === value ? 'page' : undefined} className={`flex shrink-0 items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-medium transition ${tab === value ? 'border-blue-600 bg-blue-600 text-white shadow-sm' : 'border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-blue-700 dark:hover:text-blue-300'}`}><Icon className="h-4 w-4" />{label}</button>)}
+            </nav>
           </section>
 
           {notice && <Alert role="status" aria-live="polite" className="border-green-200 bg-green-50 text-green-800 dark:border-green-900 dark:bg-green-950/30 dark:text-green-200"><CheckCircle2 className="h-4 w-4" /><AlertDescription>{notice}</AlertDescription></Alert>}
           {error && <Alert role="alert" aria-live="assertive" variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertDescription>{error}</AlertDescription></Alert>}
 
-          <nav aria-label="Chatbot settings sections" className="flex gap-1 overflow-x-auto rounded-xl border border-border bg-card/80 p-1.5 shadow-sm">
-            {nav.map(([value, label, Icon]) => <button key={value} type="button" onClick={() => setTab(value)} aria-current={tab === value ? 'page' : undefined} className={`flex shrink-0 items-center gap-2 rounded-lg px-3.5 py-2.5 text-sm font-medium transition ${tab === value ? 'bg-blue-600 text-white shadow-sm' : 'text-muted-foreground hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-950/40 dark:hover:text-blue-300'}`}><Icon className="h-4 w-4" />{label}</button>)}
-          </nav>
-
+          <div className="rounded-2xl border border-border bg-muted/25 p-4 shadow-sm sm:p-5 [&_.bg-card]:bg-background [&_.rounded-xl]:rounded-xl">
           {loading ? <Card><CardContent className="flex h-56 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin" /></CardContent></Card> : <>
             {tab === 'overview' && <div className="space-y-6">
               <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">{statCards.map(([label, value, Icon]) => <Card key={label}><CardContent className="p-4"><Icon className="h-4 w-4 text-blue-600" /><p className="mt-3 text-2xl font-semibold text-foreground">{value}</p><p className="text-xs text-muted-foreground">{label}</p></CardContent></Card>)}</div>
@@ -603,6 +612,7 @@ export default function AIChatbotControlCenter() {
               <Card><CardHeader><CardTitle className="text-base">Live runtime test</CardTitle></CardHeader><CardContent className="space-y-4"><p className="text-sm text-muted-foreground">Send a test question through the same production assistant endpoint used by visitors.</p><Textarea rows={4} value={testQuestion} onChange={event => setTestQuestion(event.target.value)} placeholder="For example: I cannot sign in with Microsoft" /><Button onClick={() => void runTest()} disabled={testing || testQuestion.trim().length < 2}>{testing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}Run test</Button>{testReply && <div className="whitespace-pre-wrap rounded-xl border border-border bg-muted/40 p-4 text-sm">{testReply}</div>}<Alert><CircleOff className="h-4 w-4" /><AlertDescription>Tests are recorded as Admin test conversations so provider failures and answer quality can be audited.</AlertDescription></Alert></CardContent></Card>
             </div>}
           </>}
+          </div>
         </div>
       </AdminLayout>
     </>
