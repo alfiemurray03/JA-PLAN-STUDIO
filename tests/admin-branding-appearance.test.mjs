@@ -59,6 +59,9 @@ test('Saved browser branding is available in public, Admin and Coming Soon runti
   assert.match(browserBranding, /link\[rel~="icon"\]/);
   assert.match(browserBranding, /new MutationObserver/);
   assert.match(browserBranding, /characterData: true/);
+  assert.match(browserBranding, /browserTabName: cleanName\(value\.browserTabName, DEFAULTS\.browserTabName\)/);
+  assert.match(browserBranding, /adminTabName: cleanName\(value\.adminTabName, DEFAULTS\.adminTabName\)/);
+  assert.match(browserBranding, /document\.title = configuredName/);
   assert.match(browserBranding, /\/api\/site-settings\/public/);
   assert.match(browserBranding, /\/site-settings/);
   assert.match(comingSoon, /loadBrowserBranding/);

@@ -200,7 +200,7 @@ export default function AdminBrandingPage() {
                 <div className="space-y-2">
                   <Label htmlFor="admin-tab-name">Admin Portal tab name</Label>
                   <Input id="admin-tab-name" value={form.adminTabName} maxLength={90} onChange={event => update('adminTabName', event.target.value)} disabled={loading} />
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Admin pages may prefix the section, for example “Analytics — Planyx Admin Portal”.</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Used exactly as entered for every Admin Centre browser tab.</p>
                 </div>
               </CardContent>
             </Card>

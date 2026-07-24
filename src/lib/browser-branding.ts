@@ -29,14 +29,10 @@ function cleanFavicon(value: unknown): string {
   return DEFAULTS.faviconUrl;
 }
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 export function normaliseBrowserBranding(value: Partial<BrowserBrandingSettings> = {}): BrowserBrandingSettings {
   return {
-    browserTabName: DEFAULTS.browserTabName,
-    adminTabName: DEFAULTS.adminTabName,
+    browserTabName: cleanName(value.browserTabName, DEFAULTS.browserTabName),
+    adminTabName: cleanName(value.adminTabName, DEFAULTS.adminTabName),
     faviconUrl: cleanFavicon(value.faviconUrl),
   };
 }
@@ -68,38 +64,21 @@ function updateIconLinks(url: string) {
   }
 }
 
-function updateTitle(settings: BrowserBrandingSettings, previous: BrowserBrandingSettings) {
+function updateTitle(settings: BrowserBrandingSettings) {
   const admin = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin/');
   const configuredName = admin ? settings.adminTabName : settings.browserTabName;
   const current = String(document.title || '').trim();
-  let next = current;
-
-  if (!current || current === window.location.hostname || current === window.location.href) {
-    next = configuredName;
-  } else {
-    const knownNames = Array.from(new Set([
-      DEFAULTS.browserTabName,
-      DEFAULTS.adminTabName,
-      previous.browserTabName,
-      previous.adminTabName,
-      activeSettings.browserTabName,
-      activeSettings.adminTabName,
-    ].filter(Boolean))).sort((a, b) => b.length - a.length);
-    const pattern = new RegExp(knownNames.map(escapeRegExp).join('|'), 'gi');
-    next = pattern.test(current) ? current.replace(pattern, configuredName) : current;
-  }
 
   // Reassigning the same title triggers the head MutationObserver again in
   // some browsers. Only mutate the DOM when the visible value really changes.
-  if (next !== current) document.title = next;
+  if (configuredName !== current) document.title = configuredName;
 }
 
 export function applyBrowserBranding(value: Partial<BrowserBrandingSettings>) {
   if (typeof window === 'undefined') return;
-  const previous = getCachedBrowserBranding();
   const settings = normaliseBrowserBranding(value);
   updateIconLinks(settings.faviconUrl);
-  updateTitle(settings, previous);
+  updateTitle(settings);
   activeSettings = settings;
   try { window.localStorage.setItem(CACHE_KEY, JSON.stringify(settings)); } catch { /* cache is optional */ }
   window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: settings }));
@@ -152,7 +131,7 @@ function installHeadObserver() {
     queueMicrotask(() => {
       queued = false;
       updateIconLinks(activeSettings.faviconUrl);
-      updateTitle(activeSettings, activeSettings);
+      updateTitle(activeSettings);
     });
   });
   headObserver.observe(document.head, { childList: true, subtree: true, characterData: true });
