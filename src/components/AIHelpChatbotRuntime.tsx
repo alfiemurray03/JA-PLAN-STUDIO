@@ -21,7 +21,7 @@ const DEFAULT_CONFIG: RuntimeConfig = {
   maintenanceEnabled: false,
   maintenanceMessage: 'The Help Centre assistant is undergoing maintenance. You can still send a Contact Enquiry.',
   escalationEnabled: true,
-  assistantName: 'JA Support Assistant',
+  assistantName: 'Planyx Support Assistant',
   position: 'bottom-right',
   primaryColor: '#2563eb',
   panelWidth: 430,

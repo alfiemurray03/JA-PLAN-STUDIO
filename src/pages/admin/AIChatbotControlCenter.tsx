@@ -3,7 +3,7 @@ import { Helmet } from '@dr.pogodin/react-helmet';
 import {
   Activity, AlertTriangle, Bot, CheckCircle2, CircleOff, Database,
   Eye, Loader2, MessageCircle, Paintbrush, Plus, RefreshCw, Save,
-  Search, Settings2, ShieldCheck, Sparkles, Trash2, UserRound, Webhook, Wrench,
+  Search, Settings2, ShieldCheck, Sparkles, Trash2, UserRound, Webhook, Wrench, Contact,
 } from 'lucide-react';
 import AdminLayout from '@/components/AdminLayout';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -32,6 +32,12 @@ interface ChatbotSettings {
   panelWidth: number; panelHeight: number; borderRadius: number; launcherSize: number;
   launcherLabel: string; inputPlaceholder: string; showPoweredBy: boolean;
   autoOpenDelaySeconds: number; knowledge: Article[];
+  contactPageEnabled: boolean; contactEyebrow: string; contactTitle: string; contactIntroduction: string;
+  contactAiTitle: string; contactAiDescription: string; contactSupportEmail: string;
+  contactGeneralEmail: string; contactDpoEmail: string; contactPhoneDisplay: string;
+  contactPhoneHref: string; contactRegisteredOffice: string; contactCompanyDetails: string;
+  contactResponseStandard: string; contactResponseTechnical: string; contactResponseData: string;
+  contactResponseNote: string; contactEmailEnabled: boolean; contactTelephoneEnabled: boolean;
 }
 
 interface Conversation {
@@ -58,7 +64,7 @@ interface Diagnostics {
   webhooks?: Array<{ id: string; label: string; configured: boolean }>;
 }
 
-type Tab = 'overview' | 'behaviour' | 'design' | 'knowledge' | 'conversations' | 'integrations' | 'diagnostics';
+type Tab = 'overview' | 'behaviour' | 'design' | 'contact' | 'knowledge' | 'conversations' | 'integrations' | 'diagnostics';
 
 const BASE_ARTICLES: Article[] = [
   {
@@ -96,7 +102,7 @@ const DEFAULT_SETTINGS: ChatbotSettings = {
   escalationEnabled: true,
   webhookDeliveryEnabled: true,
   debugEnabled: false,
-  assistantName: 'JA Support Assistant',
+  assistantName: 'Planyx Support Assistant',
   logoUrl: '',
   avatarUrl: '',
   fontFamily: 'inherit',
@@ -119,6 +125,25 @@ const DEFAULT_SETTINGS: ChatbotSettings = {
   showPoweredBy: true,
   autoOpenDelaySeconds: 0,
   knowledge: BASE_ARTICLES,
+  contactPageEnabled: true,
+  contactEyebrow: 'Planyx intelligent support',
+  contactTitle: 'How can we help?',
+  contactIntroduction: 'Describe what you need and our AI-assisted contact box will organise your enquiry before you send it.',
+  contactAiTitle: 'AI-assisted contact',
+  contactAiDescription: 'Tell us what you need in plain English. Planyx will organise the enquiry, suggest what information to include and prepare it for the correct support route.',
+  contactSupportEmail: 'planyx@jagroupservices.co.uk',
+  contactGeneralEmail: 'hello@jagroupservices.co.uk',
+  contactDpoEmail: 'dpo@jagroupservices.co.uk',
+  contactPhoneDisplay: '020 3834 2790',
+  contactPhoneHref: 'tel:+442038342790',
+  contactRegisteredOffice: '167–169 Great Portland Street, 5th Floor, London, W1W 5PF',
+  contactCompanyDetails: 'Company number 16314179 · ICO registration ZB877370',
+  contactResponseStandard: 'Usually within 2 working days',
+  contactResponseTechnical: 'Prioritised by impact',
+  contactResponseData: 'Handled under applicable legal timescales',
+  contactResponseNote: 'Times are estimates, not guaranteed service levels. Complex enquiries may take longer. Please avoid submitting the same enquiry more than once, as duplicates can delay handling.',
+  contactEmailEnabled: true,
+  contactTelephoneEnabled: true,
 };
 
 const EMPTY_STATS: ChatbotStats = {
@@ -176,6 +201,25 @@ function fromRecord(record: Record<string, string>): ChatbotSettings {
     showPoweredBy: bool(record.ai_chatbot_show_powered_by, true),
     autoOpenDelaySeconds: Number(record.ai_chatbot_auto_open_delay_seconds || 0),
     knowledge: parseKnowledge(record.ai_chatbot_knowledge_json),
+    contactPageEnabled: bool(record.contact_page_enabled, true),
+    contactEyebrow: record.contact_page_eyebrow || DEFAULT_SETTINGS.contactEyebrow,
+    contactTitle: record.contact_page_title || DEFAULT_SETTINGS.contactTitle,
+    contactIntroduction: record.contact_page_introduction || DEFAULT_SETTINGS.contactIntroduction,
+    contactAiTitle: record.contact_ai_title || DEFAULT_SETTINGS.contactAiTitle,
+    contactAiDescription: record.contact_ai_description || DEFAULT_SETTINGS.contactAiDescription,
+    contactSupportEmail: record.contact_support_email || DEFAULT_SETTINGS.contactSupportEmail,
+    contactGeneralEmail: record.contact_general_email || DEFAULT_SETTINGS.contactGeneralEmail,
+    contactDpoEmail: record.contact_dpo_email || DEFAULT_SETTINGS.contactDpoEmail,
+    contactPhoneDisplay: record.contact_phone_display || DEFAULT_SETTINGS.contactPhoneDisplay,
+    contactPhoneHref: record.contact_phone_href || DEFAULT_SETTINGS.contactPhoneHref,
+    contactRegisteredOffice: record.contact_registered_office || DEFAULT_SETTINGS.contactRegisteredOffice,
+    contactCompanyDetails: record.contact_company_details || DEFAULT_SETTINGS.contactCompanyDetails,
+    contactResponseStandard: record.contact_response_standard || DEFAULT_SETTINGS.contactResponseStandard,
+    contactResponseTechnical: record.contact_response_technical || DEFAULT_SETTINGS.contactResponseTechnical,
+    contactResponseData: record.contact_response_data || DEFAULT_SETTINGS.contactResponseData,
+    contactResponseNote: record.contact_response_note || DEFAULT_SETTINGS.contactResponseNote,
+    contactEmailEnabled: bool(record.contact_email_enabled, true),
+    contactTelephoneEnabled: bool(record.contact_telephone_enabled, true),
   };
 }
 
@@ -215,6 +259,25 @@ function toRecord(settings: ChatbotSettings): Record<string, string> {
     ai_chatbot_show_powered_by: String(settings.showPoweredBy),
     ai_chatbot_auto_open_delay_seconds: String(settings.autoOpenDelaySeconds),
     ai_chatbot_knowledge_json: JSON.stringify(settings.knowledge),
+    contact_page_enabled: String(settings.contactPageEnabled),
+    contact_page_eyebrow: settings.contactEyebrow,
+    contact_page_title: settings.contactTitle,
+    contact_page_introduction: settings.contactIntroduction,
+    contact_ai_title: settings.contactAiTitle,
+    contact_ai_description: settings.contactAiDescription,
+    contact_support_email: settings.contactSupportEmail,
+    contact_general_email: settings.contactGeneralEmail,
+    contact_dpo_email: settings.contactDpoEmail,
+    contact_phone_display: settings.contactPhoneDisplay,
+    contact_phone_href: settings.contactPhoneHref,
+    contact_registered_office: settings.contactRegisteredOffice,
+    contact_company_details: settings.contactCompanyDetails,
+    contact_response_standard: settings.contactResponseStandard,
+    contact_response_technical: settings.contactResponseTechnical,
+    contact_response_data: settings.contactResponseData,
+    contact_response_note: settings.contactResponseNote,
+    contact_email_enabled: String(settings.contactEmailEnabled),
+    contact_telephone_enabled: String(settings.contactTelephoneEnabled),
   };
 }
 
@@ -416,7 +479,7 @@ export default function AIChatbotControlCenter() {
 
   const nav = useMemo(() => [
     ['overview', 'Overview', Activity], ['behaviour', 'Behaviour', Settings2],
-    ['design', 'Design', Paintbrush], ['knowledge', 'Knowledge', Sparkles],
+    ['design', 'Design', Paintbrush], ['contact', 'Contact page', Contact], ['knowledge', 'Knowledge', Sparkles],
     ['conversations', 'Conversations', MessageCircle], ['integrations', 'Integrations', Webhook], ['diagnostics', 'Diagnostics', Wrench],
   ] as const, []);
 
@@ -464,6 +527,41 @@ export default function AIChatbotControlCenter() {
             {tab === 'design' && <div className="grid gap-5 lg:grid-cols-[1fr_420px]">
               <Card><CardHeader><CardTitle className="text-base">Widget appearance</CardTitle></CardHeader><CardContent className="space-y-4"><div className="grid grid-cols-2 gap-3"><div><Label>Primary colour</Label><div className="flex gap-2"><Input type="color" value={settings.primaryColor} onChange={event => patch('primaryColor', event.target.value)} className="w-14 p-1" /><Input value={settings.primaryColor} onChange={event => patch('primaryColor', event.target.value)} /></div></div><div><Label>Accent colour</Label><div className="flex gap-2"><Input type="color" value={settings.accentColor} onChange={event => patch('accentColor', event.target.value)} className="w-14 p-1" /><Input value={settings.accentColor} onChange={event => patch('accentColor', event.target.value)} /></div></div></div><div className="grid grid-cols-2 gap-3"><div><Label>Screen position</Label><Select value={settings.position} onValueChange={value => patch('position', value as ChatbotSettings['position'])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="bottom-right">Bottom right</SelectItem><SelectItem value="bottom-left">Bottom left</SelectItem></SelectContent></Select></div><div><Label>Launcher label</Label><Input value={settings.launcherLabel} onChange={event => patch('launcherLabel', event.target.value)} /></div></div><div><Label>Input placeholder</Label><Input value={settings.inputPlaceholder} onChange={event => patch('inputPlaceholder', event.target.value)} /></div><div className="grid grid-cols-2 gap-3"><div><Label>Launcher logo URL</Label><Input value={settings.logoUrl} onChange={event => patch('logoUrl', event.target.value)} placeholder="/images/support-logo.svg or https://…" /></div><div><Label>Assistant avatar URL</Label><Input value={settings.avatarUrl} onChange={event => patch('avatarUrl', event.target.value)} placeholder="/images/assistant-avatar.png or https://…" /></div></div><div><Label>Chatbot font</Label><Select value={settings.fontFamily} onValueChange={value => patch('fontFamily', value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="inherit">Website default</SelectItem><SelectItem value="system-ui">System UI</SelectItem><SelectItem value="Segoe UI">Segoe UI</SelectItem><SelectItem value="Arial">Arial</SelectItem><SelectItem value="Helvetica">Helvetica</SelectItem><SelectItem value="Verdana">Verdana</SelectItem><SelectItem value="Tahoma">Tahoma</SelectItem><SelectItem value="Trebuchet MS">Trebuchet MS</SelectItem><SelectItem value="Calibri">Calibri</SelectItem><SelectItem value="Open Sans">Open Sans</SelectItem><SelectItem value="Roboto">Roboto</SelectItem><SelectItem value="Lato">Lato</SelectItem><SelectItem value="Poppins">Poppins</SelectItem><SelectItem value="Montserrat">Montserrat</SelectItem><SelectItem value="Nunito">Nunito</SelectItem><SelectItem value="Atkinson Hyperlegible">Atkinson Hyperlegible</SelectItem><SelectItem value="Georgia">Georgia</SelectItem><SelectItem value="Garamond">Garamond</SelectItem><SelectItem value="Cambria">Cambria</SelectItem><SelectItem value="Times New Roman">Times New Roman</SelectItem><SelectItem value="Courier New">Courier New</SelectItem></SelectContent></Select></div><div className="grid grid-cols-2 gap-3 lg:grid-cols-4"><div><Label>Panel width</Label><Input type="number" min={340} max={560} value={settings.panelWidth} onChange={event => patch('panelWidth', Number(event.target.value))} /></div><div><Label>Panel height</Label><Input type="number" min={480} max={820} value={settings.panelHeight} onChange={event => patch('panelHeight', Number(event.target.value))} /></div><div><Label>Corner radius</Label><Input type="number" min={0} max={32} value={settings.borderRadius} onChange={event => patch('borderRadius', Number(event.target.value))} /></div><div><Label>Button size</Label><Input type="number" min={44} max={72} value={settings.launcherSize} onChange={event => patch('launcherSize', Number(event.target.value))} /></div></div><div><Label>Auto-open delay in seconds</Label><Input type="number" min={0} max={120} value={settings.autoOpenDelaySeconds} onChange={event => patch('autoOpenDelaySeconds', Number(event.target.value))} /><p className="mt-1 text-xs text-muted-foreground">Use 0 to disable automatic opening.</p></div><Toggle checked={settings.showPoweredBy} onChange={value => patch('showPoweredBy', value)} label="Show service attribution" description="Show the Planyx Help Centre attribution under the input." /></CardContent></Card>
               <Card><CardHeader><div className="flex flex-wrap items-center justify-between gap-3"><div><CardTitle className="text-base">Current chatbot preview</CardTitle><p className="mt-1 text-xs text-muted-foreground">Uses the same branding, wording and conversation states as the customer widget.</p></div><Select value={previewStage} onValueChange={value => setPreviewStage(value as typeof previewStage)}><SelectTrigger className="w-44"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="welcome">Welcome and intake</SelectItem><SelectItem value="self-help">Self-help answer</SelectItem><SelectItem value="handover">Support handover</SelectItem><SelectItem value="maintenance">Maintenance</SelectItem></SelectContent></Select></div></CardHeader><CardContent><div className="overflow-hidden border bg-white text-slate-950 shadow-xl" style={{ borderRadius: settings.borderRadius, fontFamily: settings.fontFamily }}><div className="flex items-center gap-3 px-4 py-3 text-white" style={{ backgroundColor: settings.primaryColor }}><span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-white/15">{previewStage === 'maintenance' ? <Wrench className="h-5 w-5" /> : settings.avatarUrl ? <img src={settings.avatarUrl} alt="" className="h-full w-full object-cover" /> : <Bot className="h-5 w-5" />}</span><div className="min-w-0"><p className="truncate text-sm font-bold">{settings.assistantName}</p><p className="truncate text-[11px] text-white/80">{previewStage === 'maintenance' ? 'Maintenance mode' : `AI-assisted Help Centre · Team replies ${settings.responseTime}`}</p></div></div>{previewStage === 'maintenance' && (settings.maintenanceStart || settings.maintenanceEnd) && <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-950">Scheduled maintenance: {settings.maintenanceStart || 'Not set'} to {settings.maintenanceEnd || 'Not set'}</div>}<div className="min-h-72 space-y-3 bg-slate-50 p-4">{previewStage === 'welcome' && <div className="max-w-[88%] whitespace-pre-wrap rounded-2xl rounded-bl-md border border-slate-200 bg-white px-3.5 py-2.5 text-sm">{settings.welcomeMessage}{'\n\n'}Before we look at the issue, what is your full name?</div>}{previewStage === 'self-help' && <><div className="ml-auto max-w-[75%] rounded-2xl rounded-br-md px-3.5 py-2.5 text-sm text-white" style={{ backgroundColor: settings.primaryColor }}>My builder will not save.</div><div className="max-w-[88%] rounded-2xl rounded-bl-md border border-slate-200 bg-white px-3.5 py-2.5 text-sm">Refresh the page once, confirm that you are still signed in and try again in one browser tab. Did this solve the problem?</div><div className="flex flex-wrap gap-2"><span className="rounded-full border bg-white px-3 py-1.5 text-xs" style={{ color: settings.primaryColor, borderColor: settings.accentColor }}>Yes, that solved it</span><span className="rounded-full border bg-white px-3 py-1.5 text-xs" style={{ color: settings.primaryColor, borderColor: settings.accentColor }}>No, I still need help</span></div></>}{previewStage === 'handover' && <><div className="max-w-[88%] rounded-2xl rounded-bl-md border border-slate-200 bg-white px-3.5 py-2.5 text-sm">Thanks — I’ve got the information the support team would need. Would you like me to send this conversation to the support team?</div><div className="flex flex-wrap gap-2"><span className="rounded-full border bg-white px-3 py-1.5 text-xs" style={{ color: settings.primaryColor, borderColor: settings.accentColor }}>Yes, send it to the support team</span><span className="rounded-full border bg-white px-3 py-1.5 text-xs" style={{ color: settings.primaryColor, borderColor: settings.accentColor }}>No, keep helping me</span></div></>}{previewStage === 'maintenance' && <div className="flex min-h-64 flex-col items-center justify-center px-6 text-center"><span className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-amber-800"><Wrench className="h-6 w-6" /></span><p className="mt-3 text-sm font-bold text-slate-950">Chat temporarily unavailable</p><p className="mt-2 max-w-sm whitespace-pre-wrap text-xs leading-relaxed text-slate-700">{settings.maintenanceMessage}</p><p className="mt-3 text-[11px] text-slate-500">Conversations and enquiries are disabled until maintenance has ended.</p></div>}</div>{previewStage !== 'maintenance' && <div className="border-t border-slate-200 p-3"><div className="rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-400">{settings.inputPlaceholder}</div><div className="mt-2 flex justify-between text-[10px] text-slate-500"><span>{settings.showPoweredBy ? 'Powered by Planyx Help Centre' : 'AI answers may be checked before acting.'}</span><span style={{ color: settings.primaryColor }}>Contact the team</span></div></div>}</div></CardContent></Card>
+            </div>}
+
+            {tab === 'contact' && <div className="space-y-5">
+              <Alert><ShieldCheck className="h-4 w-4" /><AlertDescription>Changes made here control the live Contact Us page and its AI-assisted enquiry box. Email and Teams delivery controls remain under Integrations so secret webhook addresses are never exposed.</AlertDescription></Alert>
+              <div className="grid gap-5 lg:grid-cols-2">
+                <Card><CardHeader><CardTitle className="text-base">Page availability and channels</CardTitle></CardHeader><CardContent className="space-y-3">
+                  <Toggle checked={settings.contactPageEnabled} onChange={value => patch('contactPageEnabled', value)} label="Accept Contact Us enquiries" description="Switch the public enquiry form on or off without removing the contact-information page." />
+                  <Toggle checked={settings.contactEmailEnabled} onChange={value => patch('contactEmailEnabled', value)} label="Show Planyx support email" description="Display the support email card and full contact entry." />
+                  <Toggle checked={settings.contactTelephoneEnabled} onChange={value => patch('contactTelephoneEnabled', value)} label="Show telephone contact" description="Display the JA Group Services switchboard and ticket-number calling guidance." />
+                </CardContent></Card>
+                <Card><CardHeader><CardTitle className="text-base">Page heading</CardTitle></CardHeader><CardContent className="space-y-4">
+                  <div><Label>Eyebrow</Label><Input value={settings.contactEyebrow} onChange={event => patch('contactEyebrow', event.target.value)} /></div>
+                  <div><Label>Page title</Label><Input value={settings.contactTitle} onChange={event => patch('contactTitle', event.target.value)} /></div>
+                  <div><Label>Introduction</Label><Textarea rows={3} value={settings.contactIntroduction} onChange={event => patch('contactIntroduction', event.target.value)} /></div>
+                </CardContent></Card>
+                <Card><CardHeader><CardTitle className="text-base">AI-assisted contact box</CardTitle></CardHeader><CardContent className="space-y-4">
+                  <div><Label>Box title</Label><Input value={settings.contactAiTitle} onChange={event => patch('contactAiTitle', event.target.value)} /></div>
+                  <div><Label>Description</Label><Textarea rows={4} value={settings.contactAiDescription} onChange={event => patch('contactAiDescription', event.target.value)} /></div>
+                  <p className="text-xs text-muted-foreground">The enquiry classifier, ticket creation, Reply-To handling and secure submission validation remain enforced by the platform.</p>
+                </CardContent></Card>
+                <Card><CardHeader><CardTitle className="text-base">Contact information</CardTitle></CardHeader><CardContent className="space-y-4">
+                  <div><Label>Planyx support email</Label><Input type="email" value={settings.contactSupportEmail} onChange={event => patch('contactSupportEmail', event.target.value)} /></div>
+                  <div><Label>General company email</Label><Input type="email" value={settings.contactGeneralEmail} onChange={event => patch('contactGeneralEmail', event.target.value)} /></div>
+                  <div><Label>Data Protection Officer email</Label><Input type="email" value={settings.contactDpoEmail} onChange={event => patch('contactDpoEmail', event.target.value)} /></div>
+                  <div className="grid gap-3 sm:grid-cols-2"><div><Label>Telephone shown</Label><Input value={settings.contactPhoneDisplay} onChange={event => patch('contactPhoneDisplay', event.target.value)} /></div><div><Label>Telephone link</Label><Input value={settings.contactPhoneHref} onChange={event => patch('contactPhoneHref', event.target.value)} placeholder="tel:+4420…" /></div></div>
+                  <div><Label>Registered office</Label><Textarea rows={2} value={settings.contactRegisteredOffice} onChange={event => patch('contactRegisteredOffice', event.target.value)} /></div>
+                  <div><Label>Company details</Label><Input value={settings.contactCompanyDetails} onChange={event => patch('contactCompanyDetails', event.target.value)} /></div>
+                </CardContent></Card>
+                <Card className="lg:col-span-2"><CardHeader><CardTitle className="text-base">Published response information</CardTitle></CardHeader><CardContent className="grid gap-4 lg:grid-cols-3">
+                  <div><Label>Online requests</Label><Input value={settings.contactResponseStandard} onChange={event => patch('contactResponseStandard', event.target.value)} /></div>
+                  <div><Label>Account and technical issues</Label><Input value={settings.contactResponseTechnical} onChange={event => patch('contactResponseTechnical', event.target.value)} /></div>
+                  <div><Label>Data protection requests</Label><Input value={settings.contactResponseData} onChange={event => patch('contactResponseData', event.target.value)} /></div>
+                  <div className="lg:col-span-3"><Label>Response-times note</Label><Textarea rows={3} value={settings.contactResponseNote} onChange={event => patch('contactResponseNote', event.target.value)} /></div>
+                </CardContent></Card>
+              </div>
             </div>}
 
             {tab === 'knowledge' && <div className="grid min-h-0 gap-5 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from '@dr.pogodin/react-helmet';
 import { useAuth } from '@/lib/auth-context';
@@ -36,8 +36,31 @@ const PRIORITIES = [
   { value: 'urgent', label: 'Urgent — I cannot use Planyx' }
 ];
 
+const DEFAULT_CONTACT_SETTINGS = {
+  contactPageEnabled: true,
+  contactEyebrow: 'Planyx intelligent support',
+  contactTitle: 'How can we help?',
+  contactIntroduction: 'Describe what you need and our AI-assisted contact box will organise your enquiry before you send it.',
+  contactAiTitle: 'AI-assisted contact',
+  contactAiDescription: 'Tell us what you need in plain English. Planyx will organise the enquiry, suggest what information to include and prepare it for the correct support route.',
+  contactSupportEmail: PLAN_STUDIO_EMAIL,
+  contactGeneralEmail: GROUP_CONTACT_EMAIL,
+  contactDpoEmail: DATA_PROTECTION_EMAIL,
+  contactPhoneDisplay: GROUP_PHONE_DISPLAY,
+  contactPhoneHref: GROUP_PHONE_HREF,
+  contactRegisteredOffice: '167–169 Great Portland Street, 5th Floor, London, W1W 5PF',
+  contactCompanyDetails: 'Company number 16314179 · ICO registration ZB877370',
+  contactResponseStandard: 'Usually within 2 working days',
+  contactResponseTechnical: 'Prioritised by impact',
+  contactResponseData: 'Handled under applicable legal timescales',
+  contactResponseNote: 'Times are estimates, not guaranteed service levels. Complex enquiries may take longer. Please avoid submitting the same enquiry more than once, as duplicates can delay handling.',
+  contactEmailEnabled: true,
+  contactTelephoneEnabled: true
+};
+
 export default function ContactPage() {
   const { user } = useAuth();
+  const [contactSettings, setContactSettings] = useState(DEFAULT_CONTACT_SETTINGS);
   const [showForm, setShowForm] = useState(false);
   const [aiEnquiry, setAiEnquiry] = useState('');
   const [aiGuidance, setAiGuidance] = useState<null | {
@@ -58,6 +81,17 @@ export default function ContactPage() {
   const [success, setSuccess] = useState(false);
   const [ticketReference, setTicketReference] = useState('');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetch('/api/support-assistant', { credentials: 'include' })
+      .then((response) => response.json())
+      .then((data: { success?: boolean; config?: Partial<typeof DEFAULT_CONTACT_SETTINGS> }) => {
+        if (data.success && data.config) setContactSettings((current) => ({ ...current, ...data.config }));
+      })
+      .catch(() => {
+        // Safe published defaults keep the contact page available if settings cannot be loaded.
+      });
+  }, []);
 
   function update(field: string, value: string) {
     setForm((previous) => ({ ...previous, [field]: value }));
@@ -95,7 +129,7 @@ export default function ContactPage() {
       advice = 'Tell us which builder or itinerary you are using and what you are trying to create.';
     } else if (/data|privacy|personal information|subject access|delete my data/.test(text)) {
       heading = 'Data protection enquiry';
-      advice = 'For privacy rights or personal-data matters, contact our Data Protection Officer directly at ' + DATA_PROTECTION_EMAIL + '.';
+      advice = 'For privacy rights or personal-data matters, contact our Data Protection Officer directly at ' + contactSettings.contactDpoEmail + '.';
     }
 
     if (/urgent|cannot use|can't use|locked out|charged twice|duplicate charge/.test(text)) {
@@ -164,14 +198,13 @@ export default function ContactPage() {
             <div className="max-w-3xl mx-auto text-center">
               <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary mb-5">
                 <Sparkles className="w-3.5 h-3.5" />
-                Planyx intelligent support
+                {contactSettings.contactEyebrow}
               </div>
               <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-foreground">
-                How can we help?
+                {contactSettings.contactTitle}
               </h1>
               <p className="mt-4 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
-                Start with Planyx AI for a quick answer. If it cannot sort the issue,
-                it can guide you towards the right support option.
+                {contactSettings.contactIntroduction}
               </p>
             </div>
 
@@ -181,10 +214,9 @@ export default function ContactPage() {
                   <div className="w-14 h-14 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center">
                     <Bot className="w-7 h-7" />
                   </div>
-                  <h2 className="mt-5 text-2xl font-bold">AI-assisted contact</h2>
+                  <h2 className="mt-5 text-2xl font-bold">{contactSettings.contactAiTitle}</h2>
                   <p className="mt-3 text-sm text-blue-50 leading-relaxed">
-                    Tell us what you need in plain English. Planyx will organise the enquiry,
-                    suggest what information to include and prepare it for the correct support route.
+                    {contactSettings.contactAiDescription}
                   </p>
                   <div className="mt-6 rounded-xl border border-white/20 bg-white/10 p-4 text-xs text-blue-50">
                     This does not open the chatbot or send anything automatically. You stay in control
@@ -239,7 +271,7 @@ export default function ContactPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-4">
-            <button
+            {contactSettings.contactPageEnabled && <button
               type="button"
               onClick={() => setShowForm(true)}
               className="rounded-2xl border border-border bg-card p-6 text-left hover:border-primary/40 hover:-translate-y-0.5 hover:shadow-lg transition-all"
@@ -252,10 +284,10 @@ export default function ContactPage() {
               <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary">
                 Open form <ChevronRight className="w-4 h-4" />
               </span>
-            </button>
+            </button>}
 
-            <a
-              href={`mailto:${PLAN_STUDIO_EMAIL}`}
+            {contactSettings.contactEmailEnabled && <a
+              href={`mailto:${contactSettings.contactSupportEmail}`}
               className="rounded-2xl border border-border bg-card p-6 hover:border-primary/40 hover:-translate-y-0.5 hover:shadow-lg transition-all"
             >
               <div className="w-11 h-11 rounded-xl bg-violet-500/10 flex items-center justify-center text-violet-500">
@@ -263,11 +295,11 @@ export default function ContactPage() {
               </div>
               <h3 className="mt-4 font-bold text-foreground">Email Planyx</h3>
               <p className="mt-1 text-sm text-muted-foreground">Accounts, subscriptions, technical help and account deletion.</p>
-              <span className="mt-4 block text-sm font-semibold text-primary break-all">{PLAN_STUDIO_EMAIL}</span>
-            </a>
+              <span className="mt-4 block text-sm font-semibold text-primary break-all">{contactSettings.contactSupportEmail}</span>
+            </a>}
 
-            <a
-              href={GROUP_PHONE_HREF}
+            {contactSettings.contactTelephoneEnabled && <a
+              href={contactSettings.contactPhoneHref}
               className="rounded-2xl border border-border bg-card p-6 hover:border-primary/40 hover:-translate-y-0.5 hover:shadow-lg transition-all"
             >
               <div className="w-11 h-11 rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-500">
@@ -275,11 +307,11 @@ export default function ContactPage() {
               </div>
               <h3 className="mt-4 font-bold text-foreground">Call JA Group Services</h3>
               <p className="mt-1 text-sm text-muted-foreground">For general company enquiries and telephone assistance.</p>
-              <span className="mt-4 block text-sm font-semibold text-primary">{GROUP_PHONE_DISPLAY}</span>
-            </a>
+              <span className="mt-4 block text-sm font-semibold text-primary">{contactSettings.contactPhoneDisplay}</span>
+            </a>}
           </div>
 
-          {showForm && (
+          {showForm && contactSettings.contactPageEnabled && (
             <div className="mt-8 max-w-4xl mx-auto">
               {success ? (
                 <div className="rounded-3xl border border-emerald-500/20 bg-card p-10 text-center shadow-lg">
@@ -294,7 +326,7 @@ export default function ContactPage() {
                     <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">Your ticket number</p>
                     <p className="mt-2 text-2xl font-black tracking-wide text-foreground" aria-live="polite">{ticketReference}</p>
                     <p className="mt-2 text-xs text-muted-foreground">
-                      Keep this number. If you call us on {GROUP_PHONE_DISPLAY}, quote it so we can identify your enquiry.
+                      Keep this number. If you call us on {contactSettings.contactPhoneDisplay}, quote it so we can identify your enquiry.
                     </p>
                   </div>
                   <p className="mt-4 text-xs text-muted-foreground">
@@ -425,21 +457,19 @@ export default function ContactPage() {
               <div className="mt-6 space-y-4 text-sm">
                 <div className="flex justify-between gap-4 border-b border-border pb-3">
                   <span className="font-medium text-foreground">Online support requests</span>
-                  <span className="text-right text-muted-foreground">Usually within 2 working days</span>
+                  <span className="text-right text-muted-foreground">{contactSettings.contactResponseStandard}</span>
                 </div>
                 <div className="flex justify-between gap-4 border-b border-border pb-3">
                   <span className="font-medium text-foreground">Account or technical issues</span>
-                  <span className="text-right text-muted-foreground">Prioritised by impact</span>
+                  <span className="text-right text-muted-foreground">{contactSettings.contactResponseTechnical}</span>
                 </div>
                 <div className="flex justify-between gap-4">
                   <span className="font-medium text-foreground">Data protection requests</span>
-                  <span className="text-right text-muted-foreground">Handled under applicable legal timescales</span>
+                  <span className="text-right text-muted-foreground">{contactSettings.contactResponseData}</span>
                 </div>
               </div>
               <p className="mt-5 text-xs leading-relaxed text-muted-foreground">
-                Times are estimates, not guaranteed service levels. Complex enquiries may take longer.
-                Please avoid submitting the same enquiry more than once, as duplicates can delay handling.
-                If your issue prevents you using Planyx, mark the request as urgent and explain the impact.
+                {contactSettings.contactResponseNote}
               </p>
             </div>
 
@@ -450,25 +480,25 @@ export default function ContactPage() {
                 Planyx is operated by JA Group Services Ltd, registered in England and Wales.
               </p>
               <div className="mt-6 space-y-4 text-sm">
-                <a href={GROUP_PHONE_HREF} className="flex gap-3 hover:text-primary">
+                {contactSettings.contactTelephoneEnabled && <a href={contactSettings.contactPhoneHref} className="flex gap-3 hover:text-primary">
                   <Phone className="w-4 h-4 mt-0.5 text-primary shrink-0" />
-                  <span><strong className="block text-foreground">Telephone</strong>{GROUP_PHONE_DISPLAY}</span>
-                </a>
-                <a href={'mailto:' + PLAN_STUDIO_EMAIL} className="flex gap-3 hover:text-primary">
+                  <span><strong className="block text-foreground">Telephone</strong>{contactSettings.contactPhoneDisplay}</span>
+                </a>}
+                {contactSettings.contactEmailEnabled && <a href={'mailto:' + contactSettings.contactSupportEmail} className="flex gap-3 hover:text-primary">
                   <Mail className="w-4 h-4 mt-0.5 text-primary shrink-0" />
-                  <span className="min-w-0"><strong className="block text-foreground">Planyx support</strong><span className="break-all">{PLAN_STUDIO_EMAIL}</span></span>
-                </a>
-                <a href={'mailto:' + DATA_PROTECTION_EMAIL} className="flex gap-3 hover:text-primary">
+                  <span className="min-w-0"><strong className="block text-foreground">Planyx support</strong><span className="break-all">{contactSettings.contactSupportEmail}</span></span>
+                </a>}
+                <a href={'mailto:' + contactSettings.contactDpoEmail} className="flex gap-3 hover:text-primary">
                   <ShieldCheck className="w-4 h-4 mt-0.5 text-primary shrink-0" />
-                  <span className="min-w-0"><strong className="block text-foreground">Data Protection Officer</strong><span className="break-all">{DATA_PROTECTION_EMAIL}</span></span>
+                  <span className="min-w-0"><strong className="block text-foreground">Data Protection Officer</strong><span className="break-all">{contactSettings.contactDpoEmail}</span></span>
                 </a>
                 <div className="flex gap-3">
                   <MapPin className="w-4 h-4 mt-0.5 text-primary shrink-0" />
-                  <span><strong className="block text-foreground">Registered office</strong>167–169 Great Portland Street, 5th Floor, London, W1W 5PF</span>
+                  <span><strong className="block text-foreground">Registered office</strong>{contactSettings.contactRegisteredOffice}</span>
                 </div>
                 <div className="flex gap-3">
                   <Building2 className="w-4 h-4 mt-0.5 text-primary shrink-0" />
-                  <span><strong className="block text-foreground">Company details</strong>Company number 16314179 · ICO registration ZB877370</span>
+                  <span><strong className="block text-foreground">Company details</strong>{contactSettings.contactCompanyDetails}</span>
                 </div>
               </div>
               <p className="mt-5 text-xs text-muted-foreground">
@@ -483,8 +513,8 @@ export default function ContactPage() {
               <LifeBuoy className="w-4 h-4" />
               General JA Group Services enquiries:
             </div>
-            <a href={`mailto:${GROUP_CONTACT_EMAIL}`} className="font-semibold text-primary hover:underline">
-              {GROUP_CONTACT_EMAIL}
+            <a href={`mailto:${contactSettings.contactGeneralEmail}`} className="font-semibold text-primary hover:underline">
+              {contactSettings.contactGeneralEmail}
             </a>
             <span className="hidden sm:inline">•</span>
             <Link to="/privacy" className="hover:text-foreground hover:underline">Privacy</Link>

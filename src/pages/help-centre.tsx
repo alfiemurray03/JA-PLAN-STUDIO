@@ -30,7 +30,7 @@ interface AssistantConfig {
 }
 
 const DEFAULT_CONFIG: AssistantConfig = {
-  assistantName: 'JA Support Assistant',
+  assistantName: 'Planyx Support Assistant',
   responseTime: 'within 2 working days',
 };
 

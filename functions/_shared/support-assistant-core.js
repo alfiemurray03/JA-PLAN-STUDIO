@@ -12,7 +12,7 @@ export const DEFAULT_CONFIG = {
   escalationEnabled: true,
   webhookDeliveryEnabled: true,
   debugEnabled: false,
-  assistantName: "JA Support Assistant",
+  assistantName: "Planyx Support Assistant",
   logoUrl: "",
   avatarUrl: "",
   fontFamily: "inherit",
@@ -33,7 +33,26 @@ export const DEFAULT_CONFIG = {
   launcherLabel: "Help",
   inputPlaceholder: "Ask a Help Centre question…",
   showPoweredBy: true,
-  autoOpenDelaySeconds: 0
+  autoOpenDelaySeconds: 0,
+  contactPageEnabled: true,
+  contactEyebrow: "Planyx intelligent support",
+  contactTitle: "How can we help?",
+  contactIntroduction: "Describe what you need and our AI-assisted contact box will organise your enquiry before you send it.",
+  contactAiTitle: "AI-assisted contact",
+  contactAiDescription: "Tell us what you need in plain English. Planyx will organise the enquiry, suggest what information to include and prepare it for the correct support route.",
+  contactSupportEmail: "planyx@jagroupservices.co.uk",
+  contactGeneralEmail: "hello@jagroupservices.co.uk",
+  contactDpoEmail: "dpo@jagroupservices.co.uk",
+  contactPhoneDisplay: "020 3834 2790",
+  contactPhoneHref: "tel:+442038342790",
+  contactRegisteredOffice: "167–169 Great Portland Street, 5th Floor, London, W1W 5PF",
+  contactCompanyDetails: "Company number 16314179 · ICO registration ZB877370",
+  contactResponseStandard: "Usually within 2 working days",
+  contactResponseTechnical: "Prioritised by impact",
+  contactResponseData: "Handled under applicable legal timescales",
+  contactResponseNote: "Times are estimates, not guaranteed service levels. Complex enquiries may take longer. Please avoid submitting the same enquiry more than once, as duplicates can delay handling.",
+  contactEmailEnabled: true,
+  contactTelephoneEnabled: true
 };
 
 export const DEFAULT_ARTICLES = EXPANDED_DEFAULT_ARTICLES;
@@ -86,7 +105,7 @@ function dateTime(value) {
 export async function loadAssistantSettings(DB) {
   if (!DB) return {};
   try {
-    const result = await DB.prepare("SELECT key,value FROM site_settings WHERE key LIKE 'ai_chatbot_%'").all();
+    const result = await DB.prepare("SELECT key,value FROM site_settings WHERE key LIKE 'ai_chatbot_%' OR key LIKE 'contact_%'").all();
     return Object.fromEntries((result.results || []).map((row) => [row.key, row.value]));
   } catch {
     return {};
@@ -127,7 +146,26 @@ export function configFrom(settings) {
     launcherLabel: clean(settings.ai_chatbot_launcher_label || DEFAULT_CONFIG.launcherLabel, 40),
     inputPlaceholder: clean(settings.ai_chatbot_input_placeholder || DEFAULT_CONFIG.inputPlaceholder, 120),
     showPoweredBy: bool(settings.ai_chatbot_show_powered_by, DEFAULT_CONFIG.showPoweredBy),
-    autoOpenDelaySeconds: integer(settings.ai_chatbot_auto_open_delay_seconds, DEFAULT_CONFIG.autoOpenDelaySeconds, 0, 120)
+    autoOpenDelaySeconds: integer(settings.ai_chatbot_auto_open_delay_seconds, DEFAULT_CONFIG.autoOpenDelaySeconds, 0, 120),
+    contactPageEnabled: bool(settings.contact_page_enabled, DEFAULT_CONFIG.contactPageEnabled),
+    contactEyebrow: clean(settings.contact_page_eyebrow || DEFAULT_CONFIG.contactEyebrow, 120),
+    contactTitle: clean(settings.contact_page_title || DEFAULT_CONFIG.contactTitle, 160),
+    contactIntroduction: clean(settings.contact_page_introduction || DEFAULT_CONFIG.contactIntroduction, 500),
+    contactAiTitle: clean(settings.contact_ai_title || DEFAULT_CONFIG.contactAiTitle, 160),
+    contactAiDescription: clean(settings.contact_ai_description || DEFAULT_CONFIG.contactAiDescription, 600),
+    contactSupportEmail: clean(settings.contact_support_email || DEFAULT_CONFIG.contactSupportEmail, 254),
+    contactGeneralEmail: clean(settings.contact_general_email || DEFAULT_CONFIG.contactGeneralEmail, 254),
+    contactDpoEmail: clean(settings.contact_dpo_email || DEFAULT_CONFIG.contactDpoEmail, 254),
+    contactPhoneDisplay: clean(settings.contact_phone_display || DEFAULT_CONFIG.contactPhoneDisplay, 80),
+    contactPhoneHref: clean(settings.contact_phone_href || DEFAULT_CONFIG.contactPhoneHref, 80),
+    contactRegisteredOffice: clean(settings.contact_registered_office || DEFAULT_CONFIG.contactRegisteredOffice, 500),
+    contactCompanyDetails: clean(settings.contact_company_details || DEFAULT_CONFIG.contactCompanyDetails, 300),
+    contactResponseStandard: clean(settings.contact_response_standard || DEFAULT_CONFIG.contactResponseStandard, 200),
+    contactResponseTechnical: clean(settings.contact_response_technical || DEFAULT_CONFIG.contactResponseTechnical, 200),
+    contactResponseData: clean(settings.contact_response_data || DEFAULT_CONFIG.contactResponseData, 200),
+    contactResponseNote: clean(settings.contact_response_note || DEFAULT_CONFIG.contactResponseNote, 800),
+    contactEmailEnabled: bool(settings.contact_email_enabled, DEFAULT_CONFIG.contactEmailEnabled),
+    contactTelephoneEnabled: bool(settings.contact_telephone_enabled, DEFAULT_CONFIG.contactTelephoneEnabled)
   };
 }
 

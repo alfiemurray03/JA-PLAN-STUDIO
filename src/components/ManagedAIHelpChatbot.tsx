@@ -50,7 +50,7 @@ const DEFAULT_CONFIG: AssistantConfig = {
   allowAnonymous: true,
   selfHelpEnabled: true,
   escalationEnabled: true,
-  assistantName: 'JA Support Assistant',
+  assistantName: 'Planyx Support Assistant',
   logoUrl: '',
   avatarUrl: '',
   fontFamily: 'inherit',
