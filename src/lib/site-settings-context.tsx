@@ -23,6 +23,8 @@ export interface SiteSettings {
   supportEmail: string;
   logoUrl:     string;
   googleAnalyticsId: string;
+  navLinks: Array<{ id: string; label: string; href: string; openNewTab?: boolean }>;
+  footerLinks: Array<{ id: string; label: string; href: string; group: string }>;
 }
 
 const DEFAULTS: SiteSettings = {
@@ -33,6 +35,8 @@ const DEFAULTS: SiteSettings = {
   supportEmail: 'planyx@jagroupservices.co.uk',
   logoUrl:     '',
   googleAnalyticsId: 'G-50QJHHL7H7',
+  navLinks: [],
+  footerLinks: [],
 };
 
 const SiteSettingsContext = createContext<SiteSettings>(DEFAULTS);
@@ -54,6 +58,8 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
           supportEmail: DEFAULTS.supportEmail,
           logoUrl:     s['logo_url']     || DEFAULTS.logoUrl,
           googleAnalyticsId: s['google_analytics_id'] || DEFAULTS.googleAnalyticsId,
+          navLinks: (() => { try { return JSON.parse(s['nav_links'] || '[]'); } catch { return []; } })(),
+          footerLinks: (() => { try { return JSON.parse(s['footer_links'] || '[]'); } catch { return []; } })(),
         });
       })
       .catch(() => { /* use defaults */ });
