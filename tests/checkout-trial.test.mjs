@@ -9,6 +9,12 @@ const PLAN_DETAILS = {
   org_starter: ['Together Plan', 3999],
 };
 
+const OIDC_ENV = {
+  CUSTOMER_OIDC_ISSUER: 'https://login.example.test/tenant/v2.0',
+  CUSTOMER_OIDC_CLIENT_ID: 'client',
+  CUSTOMER_OIDC_CLIENT_SECRET: 'secret',
+};
+
 function database(overrides = {}) {
   return {
     prepare(sql) {
@@ -18,6 +24,15 @@ function database(overrides = {}) {
         async run() { return { success: true }; },
         async first() {
           if (sql.includes('FROM site_settings')) return overrides[this.values[0]] ? { value: overrides[this.values[0]] } : null;
+          if (sql.includes('FROM customer_oidc_sessions')) {
+            return {
+              subject: 'customer-1',
+              tenant_id: 'tenant-1',
+              email: 'customer@example.test',
+              name: 'Test Customer',
+            };
+          }
+          if (sql.includes('FROM profiles')) return null;
           const id = this.values[0];
           const details = PLAN_DETAILS[id];
           if (!details || !sql.includes('FROM service_plans')) return null;
@@ -38,11 +53,12 @@ test('admin Stripe price override is used by the live Explore checkout', async (
   };
   try {
     const response = await onRequestGet({
-      request: new Request('https://planyx.example/create-checkout-session?plan=personal'),
+      request: signedInRequest('https://planyx.example/create-checkout-session?plan=personal'),
       env: {
         DB: database({ toggle_payments: 'true', stripe_price_personal_override: 'price_admin_explore' }),
         STRIPE_SECRET_KEY: 'sk_test',
         STRIPE_PRICE_EXPLORE: 'price_secret_explore',
+        ...OIDC_ENV,
       },
     });
     assert.equal(response.status, 303);
@@ -62,11 +78,12 @@ for (const plan of Object.keys(PLAN_DETAILS)) {
     };
     try {
       const response = await onRequestGet({
-        request: new Request(`https://planyx.example/create-checkout-session?plan=${plan}`),
+        request: signedInRequest(`https://planyx.example/create-checkout-session?plan=${plan}`),
         env: {
           DB: database({ toggle_payments: 'true' }),
           STRIPE_SECRET_KEY: 'sk_test',
           [`STRIPE_PRICE_${plan === 'personal' ? 'EXPLORE' : plan === 'standard' ? 'PLAN' : plan === 'professional' ? 'COMPLETE' : 'TOGETHER'}`]: `price_${plan}`,
+          ...OIDC_ENV,
         },
       });
       assert.equal(response.status, 303);
@@ -78,4 +95,8 @@ for (const plan of Object.keys(PLAN_DETAILS)) {
       globalThis.fetch = originalFetch;
     }
   });
+}
+
+function signedInRequest(url) {
+  return new Request(url, { headers: { cookie: 'ja_customer_oidc_session=test-session' } });
 }
