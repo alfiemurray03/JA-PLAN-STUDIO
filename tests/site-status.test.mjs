@@ -210,3 +210,23 @@ test("D1 site_settings table is created by migration or via API initialisation",
   const allContent = migrationContents.join("\n") + adminApi + siteStatusApi;
   assert.match(allContent, /site_settings/);
 });
+
+test("maintenance preview is rendered from saved settings and remains available to administrators", async () => {
+  const middleware = await readFile(new URL("functions/_middleware.js", root), "utf8");
+  assert.match(middleware, /Canonical maintenance-page preview/);
+  assert.match(middleware, /pageHtml\(settings, "maintenance"\)/);
+  assert.doesNotMatch(middleware, /adminIdentity && \(path\.startsWith\("\/coming-soon"\) \|\| path\.startsWith\("\/maintenance"\)\)/);
+});
+
+test("website pages and legal policy editors are not retired by middleware", async () => {
+  const middleware = await readFile(new URL("functions/_middleware.js", root), "utf8");
+  const retired = middleware.match(/const retiredTransferredRoutes = new Set\(\[([\s\S]*?)\]\);/)?.[1] || "";
+  assert.doesNotMatch(retired, /\/admin\/pages/);
+  assert.doesNotMatch(retired, /\/admin\/legal/);
+});
+
+test("Admin Centre navigation exposes website pages and legal policies", async () => {
+  const layout = await readFile(new URL("src/components/AdminLayout.tsx", root), "utf8");
+  assert.match(layout, /Website Pages[\s\S]*\/admin\/pages/);
+  assert.match(layout, /Legal Policies[\s\S]*\/admin\/legal/);
+});
