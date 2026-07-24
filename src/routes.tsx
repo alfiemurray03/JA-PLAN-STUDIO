@@ -311,6 +311,10 @@ export const routes: RouteObject[] = [
     element: wrap(<AcceptableUsePage />),
   },
   {
+    path: '/refund-policy',
+    element: <Navigate to="/policies/refund-policy" replace />,
+  },
+  {
     path: '/contact',
     element: wrap(<ContactPage />),
   },
