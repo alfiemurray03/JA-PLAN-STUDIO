@@ -7,9 +7,11 @@ import { useBranding } from '@/lib/branding';
 import { Button } from '@/components/ui/button';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useAuth } from '@/lib/auth-context';
+import { useSiteSettings } from '@/lib/site-settings-context';
 
 export default function SiteNavHeader() {
   const branding = useBranding();
+  const { navLinks } = useSiteSettings();
   const { user, isLoading: loading, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -70,6 +72,14 @@ export default function SiteNavHeader() {
                 </div>
               </div>
             </div>)}
+            {navLinks
+              .filter(link => link.label && link.href && !['/contact', '/pricing'].includes(link.href))
+              .slice(0, 3)
+              .map(link => link.openNewTab ? (
+                <a key={link.id} href={link.href} target="_blank" rel="noopener noreferrer" className="px-3.5 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all">{link.label}</a>
+              ) : (
+                <Link key={link.id} to={link.href} className="px-3.5 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all">{link.label}</Link>
+              ))}
             <Link to="/contact" className="px-3.5 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all">
               Contact
             </Link>
@@ -163,6 +173,9 @@ export default function SiteNavHeader() {
         <div id="mobile-menu" className="md:hidden border-t border-border bg-card px-4 py-4 space-y-1"
           style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
           {navGroups.map(group => <div key={group.label} className="py-1"><p className="px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{group.label}</p>{group.links.map(link => <Link key={link.href} to={link.href} className="flex items-center px-4 py-2.5 rounded-xl text-sm font-medium text-foreground hover:bg-muted" onClick={() => setOpen(false)}>{link.label}</Link>)}</div>)}
+          {navLinks.filter(link => link.label && link.href && !['/contact', '/pricing'].includes(link.href)).map(link => (
+            <Link key={link.id} to={link.href} className="flex items-center px-4 py-2.5 rounded-xl text-sm font-medium text-foreground hover:bg-muted" onClick={() => setOpen(false)}>{link.label}</Link>
+          ))}
           <Link to="/contact" className="flex items-center px-4 py-3 rounded-xl text-sm font-semibold text-foreground hover:bg-muted" onClick={() => setOpen(false)}>
             Contact
           </Link>
