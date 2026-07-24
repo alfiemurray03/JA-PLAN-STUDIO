@@ -13,7 +13,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Bot, Building2, CheckCircle2, ChevronRight, Clock, Headphones,
   LifeBuoy, Loader2, Mail, MapPin, MessageSquare, Phone, Send,
-  ShieldCheck, Sparkles, Smartphone, AlertTriangle
+  ShieldCheck, Sparkles, AlertTriangle
 } from 'lucide-react';
 import {
   DATA_PROTECTION_EMAIL, GROUP_CONTACT_EMAIL, GROUP_PHONE_DISPLAY, GROUP_PHONE_HREF, PLAN_STUDIO_EMAIL
@@ -454,10 +454,6 @@ export default function ContactPage() {
                   <Phone className="w-4 h-4 mt-0.5 text-primary shrink-0" />
                   <span><strong className="block text-foreground">Telephone</strong>{GROUP_PHONE_DISPLAY}</span>
                 </a>
-                <a href="tel:+447886158834" className="flex gap-3 hover:text-primary">
-                  <Smartphone className="w-4 h-4 mt-0.5 text-primary shrink-0" />
-                  <span><strong className="block text-foreground">Business mobile and WhatsApp</strong>+44 7886 158834</span>
-                </a>
                 <a href={'mailto:' + PLAN_STUDIO_EMAIL} className="flex gap-3 hover:text-primary">
                   <Mail className="w-4 h-4 mt-0.5 text-primary shrink-0" />
                   <span className="min-w-0"><strong className="block text-foreground">Planyx support</strong><span className="break-all">{PLAN_STUDIO_EMAIL}</span></span>
@@ -476,8 +472,8 @@ export default function ContactPage() {
                 </div>
               </div>
               <p className="mt-5 text-xs text-muted-foreground">
-                Telephone and WhatsApp availability may vary. Please use the secure form or email for
-                account-specific matters so we can keep a written record of your request.
+                Telephone availability may vary. Please use the secure form or email for account-specific
+                matters so we can keep a written record of your request.
               </p>
             </div>
           </div>
