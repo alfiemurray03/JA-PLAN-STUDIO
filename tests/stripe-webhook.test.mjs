@@ -123,3 +123,34 @@ test("subscription events inherit customer email and canonical entitlement code 
   assert.equal(insert.bindings[3], "org_starter");
   assert.equal(insert.bindings[4], "Together Plan");
 });
+
+test("a staff-created Stripe subscription resolves the customer email from Stripe", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    assert.match(String(url), /\/v1\/customers\/cus_manual$/);
+    return Response.json({ id: "cus_manual", email: "Manual.Customer@Example.Test" });
+  };
+  try {
+    const DB = new FakeDB();
+    const response = await onRequestPost({
+      request: signedRequest({
+        id: "evt_manual_subscription",
+        type: "customer.subscription.created",
+        data: {
+          object: {
+            id: "sub_manual",
+            customer: "cus_manual",
+            status: "active",
+            items: { data: [{ price: { id: "price_manual", recurring: { interval: "month" } } }] }
+          }
+        }
+      }),
+      env: { DB, STRIPE_SECRET_KEY: "sk_test_manual" }
+    });
+    assert.equal(response.status, 200);
+    const insert = DB.statements.find(({ sql }) => sql.includes("INSERT INTO stripe_subscriptions"));
+    assert.equal(insert.bindings[2], "manual.customer@example.test");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
