@@ -54,7 +54,12 @@ interface SiteConfig {
   logoUrl: string;
   faviconUrl: string;
   maintenanceMode: boolean;
+  maintenanceTitle: string;
+  maintenanceReason: string;
   maintenanceMessage: string;
+  maintenanceStart: string;
+  maintenanceExpectedReturn: string;
+  maintenanceContactText: string;
   registrationEnabled: boolean;
   freeTrialEnabled: boolean;
   affiliateComingSoon: boolean;
@@ -86,7 +91,12 @@ const DEFAULT_CONFIG: SiteConfig = {
   logoUrl: '',
   faviconUrl: '',
   maintenanceMode: false,
-  maintenanceMessage: 'We are currently performing scheduled maintenance. We will be back shortly.',
+  maintenanceTitle: 'We are making Planyx even better',
+  maintenanceReason: 'Planned platform maintenance',
+  maintenanceMessage: 'Planyx is temporarily unavailable while our team completes essential improvements.',
+  maintenanceStart: '',
+  maintenanceExpectedReturn: '',
+  maintenanceContactText: 'Need help while we are away? Contact planyx@jagroupservices.co.uk or call 020 3834 2790.',
   registrationEnabled: true,
   freeTrialEnabled: true,
   affiliateComingSoon: true,
@@ -193,7 +203,12 @@ function settingsToConfig(s: Record<string, string>): SiteConfig {
     logoUrl:             s['logo_url']             ?? DEFAULT_CONFIG.logoUrl,
     faviconUrl:          s['favicon_url']          ?? DEFAULT_CONFIG.faviconUrl,
     maintenanceMode:     savedStatus === 'maintenance',
+    maintenanceTitle:    s['maintenance_title'] ?? DEFAULT_CONFIG.maintenanceTitle,
+    maintenanceReason:   s['maintenance_reason'] ?? DEFAULT_CONFIG.maintenanceReason,
     maintenanceMessage:  s['maintenance_message']  ?? DEFAULT_CONFIG.maintenanceMessage,
+    maintenanceStart:    s['maintenance_start'] ?? '',
+    maintenanceExpectedReturn: s['maintenance_expected_return'] ?? '',
+    maintenanceContactText: s['maintenance_contact_text'] ?? DEFAULT_CONFIG.maintenanceContactText,
     registrationEnabled: s['registration_enabled'] !== 'false',
     freeTrialEnabled:    s['free_trial_enabled']   !== 'false',
     affiliateComingSoon: s['affiliate_coming_soon'] !== 'false',
@@ -227,7 +242,12 @@ function configToSettings(cfg: SiteConfig): Record<string, string> {
     logo_url:             cfg.logoUrl,
     favicon_url:          cfg.faviconUrl,
     maintenance_mode:     String(cfg.siteStatus === 'maintenance'),
+    maintenance_title:    cfg.maintenanceTitle,
+    maintenance_reason:   cfg.maintenanceReason,
     maintenance_message:  cfg.maintenanceMessage,
+    maintenance_start:    cfg.maintenanceStart,
+    maintenance_expected_return: cfg.maintenanceExpectedReturn,
+    maintenance_contact_text: cfg.maintenanceContactText,
     registration_enabled: String(cfg.registrationEnabled),
     free_trial_enabled:   String(cfg.freeTrialEnabled),
     affiliate_coming_soon: String(cfg.affiliateComingSoon),
@@ -524,9 +544,35 @@ export default function AdminSiteSettings() {
 
               {cfg.siteStatus === 'maintenance' && (
                 <div className={sectionCls}>
-                  <h3 className="text-sm font-semibold text-gray-900">Maintenance Message</h3>
-                  <Textarea value={cfg.maintenanceMessage} onChange={e => update({ maintenanceMessage: e.target.value })}
-                    rows={3} className={`resize-none text-sm ${inputCls}`} />
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Dedicated Maintenance Page</h3>
+                    <p className={`mt-1 text-xs ${muted}`}>Explain why Planyx is unavailable and when customers should expect it to return.</p>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Field label="Page heading">
+                      <Input value={cfg.maintenanceTitle} onChange={e => update({ maintenanceTitle: e.target.value })} className={`h-9 ${inputCls}`} />
+                    </Field>
+                    <Field label="Reason for maintenance">
+                      <Input value={cfg.maintenanceReason} onChange={e => update({ maintenanceReason: e.target.value })} className={`h-9 ${inputCls}`} />
+                    </Field>
+                    <Field label="Maintenance started" hint="Displayed using each visitor's local date and time.">
+                      <Input type="datetime-local" value={cfg.maintenanceStart.slice(0, 16)} onChange={e => update({ maintenanceStart: e.target.value })} className={`h-9 ${inputCls}`} />
+                    </Field>
+                    <Field label="Expected return" hint="Leave blank where no reliable estimate is available.">
+                      <Input type="datetime-local" value={cfg.maintenanceExpectedReturn.slice(0, 16)} onChange={e => update({ maintenanceExpectedReturn: e.target.value })} className={`h-9 ${inputCls}`} />
+                    </Field>
+                  </div>
+                  <Field label="Customer message">
+                    <Textarea value={cfg.maintenanceMessage} onChange={e => update({ maintenanceMessage: e.target.value })}
+                      rows={4} className={`resize-y text-sm ${inputCls}`} />
+                  </Field>
+                  <Field label="Contact guidance">
+                    <Textarea value={cfg.maintenanceContactText} onChange={e => update({ maintenanceContactText: e.target.value })}
+                      rows={2} className={`resize-y text-sm ${inputCls}`} />
+                  </Field>
+                  <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-xs leading-5 text-blue-800 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-200">
+                    The page uses the approved Planyx logo, permanent dark styling, service-status indicator and legal links. Admin and authentication routes remain available.
+                  </div>
                 </div>
               )}
             </TabsContent>
